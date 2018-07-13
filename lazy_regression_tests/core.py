@@ -140,7 +140,7 @@ SYSARG_PASS_MISSING = "--lazy-pass-missing"
 env_handler_ioerror  = "lzrt_handler_ioerror"
 env_on_failed_assert = "lzrt_on_failed_assert"
 env_t_dirname        = "lzrt_template_dirname"
-env_t_basename       = "lzrt_t_basename"
+env_t_basename       = "lzrt_template_basename"
 
 #allows per subject-environment lookups i.e. got may be put somewhere else than exp
 t_env_dirname_subject = "lzrt_template_dirname_%(subject)s"

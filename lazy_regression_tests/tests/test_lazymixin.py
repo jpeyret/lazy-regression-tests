@@ -67,13 +67,13 @@ except (ImportError,) as e:
 lzrt_template_dirname = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
 lzrt_template_dirname_got = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
 lzrt_template_dirname_exp = "/<someroot>/wk/tests/%(subject)s/%(lazy_dirname_extras)s"
-lzrt_t_basename = lzrt_default_t_basename
+lzrt_template_basename = lzrt_default_t_basename
 
 di_mock_env = dict(
     lzrt_template_dirname=lzrt_template_dirname
     ,lzrt_template_dirname_got=lzrt_template_dirname_got
     ,lzrt_template_dirname_exp=lzrt_template_dirname_exp
-    ,lzrt_t_basename=lzrt_t_basename
+    ,lzrt_template_basename=lzrt_template_basename
 )
 
 di_mock_env_no_extras = dict(
@@ -494,7 +494,7 @@ if has_directory_to_write_to:
 
     live_seed = dict(
         lzrt_template_dirname = lzrt_template_dirname
-        ,lzrt_t_basename = lzrt_default_t_basename
+        ,lzrt_template_basename = lzrt_default_t_basename
         ,lzrt_template_dirname_exp = lzrt_template_dirname
         ,lzrt_template_dirname_got = lzrt_template_dirname
         )
