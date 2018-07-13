@@ -576,8 +576,7 @@ class TestLive(LazyMixin, unittest.TestCase):
 
 
     di = di_livetest.copy()
-    di.update(lzrt_on_failed_assert=OnAssertionError.baseline
-        ,lzrt_directive=OnAssertionError.baseline)
+    di.update(lzrt_directive=OnAssertionError.baseline)
     @mock.patch.dict(os.environ,di)    
     def test_004_baseline(self):
 
@@ -595,6 +594,19 @@ class TestLive(LazyMixin, unittest.TestCase):
         #now check that exp == got2 
         with open(self.lazytemp.fnp_exp) as fi:
             self.assertEqual(got2, fi.read())
+
+    di = di_livetest.copy()
+    di.update(lzrt_directive="skip")
+    @mock.patch.dict(os.environ,di)    
+    def test_0041_skip(self):
+
+        got = "something"
+        got2 = "different"
+
+        #OnAssertionError.baseline suppresses everything...
+        self.assertLazy(got)
+
+
 
 
     @mock.patch.dict(os.environ,di_livetest)    

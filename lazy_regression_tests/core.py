@@ -106,7 +106,6 @@ This needs to point to a user-writeable directory of your choice.
 #environment variable names
 #######################
 env_directive  = "lzrt_directive"
-env_on_failed_assert = "lzrt_on_failed_assert"
 env_t_dirname        = "lzrt_template_dirname"
 env_t_basename       = "lzrt_template_basename"
 
@@ -272,8 +271,10 @@ class _Control(object):
         if not env or not env.acquired:
             env.acquire()
 
-        baseline = env.get(env_directive) == OnAssertionError.baseline
-        if baseline:
+        self.skip = env.get(env_directive) == OnAssertionError.ignore
+
+        self.baseline = env.get(env_directive) == OnAssertionError.baseline
+        if self.baseline:
             self.handler_io_error = mixin.lazy_write_passmissing
         else:
             funcname_handler_ioerror = (
@@ -494,28 +495,6 @@ class LazyMixin(object):
         return ".".join(li)
 
 
-    def _lazy_get_handler_io_error(self, onIOError_=None):
-        """what should we do on an IOError reading the exp file?"""
-
-        env = self.lazy_environ
-        if not env or not env.acquired:
-            env.acquire()
-
-        baseline = env.get(env_on_failed_assert) == OnAssertionError.baseline
-        if baseline:
-            return self.lazy_write_passmissing
-
-        funcname_handler_ioerror = (
-            #specified in the assertLazy call?
-            onIOError_
-            #environment?
-            or env.get(env_directive)
-            #default value on instance
-            or self.lazy_onIOError
-            )
-        return getattr(self, funcname_handler_ioerror, None) or self.lazy_write_ioerror
-
-
     def assertLazy(self, got, extension="", suffix="", onIOError=None, message=None, filter_=None, formatter=None, f_notify=None):
         """ check that result matches expectations saved previously.
         when the expectations file doesn't exist yet, it is created with received data
@@ -538,25 +517,14 @@ class LazyMixin(object):
                 env.acquire()
 
             control = _Control(self, env, onIOError)
-            ppp(control.__dict__, "control")
-            # pdb.set_trace()
-
 
             tmp = self.lazytemp = LazyTemp(control, env)
 
 
 
-
-
-
-            on_failed_assert = env.get(env_on_failed_assert)
-            if on_failed_assert == OnAssertionError.ignore:
+            if control.skip:
                 logger.info("skipping lazy checks")
                 return
-
-            baseline = (on_failed_assert == OnAssertionError.baseline)
-            if baseline:
-                onIOError = LazyIOErrorCodes.pass_missing
 
             tmp.fnp_exp = fnp_exp = self._lazy_add_extension(self.lazy_fnp_exp_root(), extension, suffix)
 
@@ -587,17 +555,17 @@ class LazyMixin(object):
                 with codecs.open(fnp_exp, encoding="utf-8", errors="ignore") as fi:
                     exp = fi.read()
             except (IOError,) as e:
-                handler = self._lazy_get_handler_io_error(onIOError)
+                # handler = self._lazy_get_handler_io_error(onIOError)
 
-                try:
-                    assert handler == control.handler_io_error
-                except (Exception,) as e:
-                    if cpdb(): 
-                        self.lazy_debug()
-                        pdb.set_trace()
-                    raise
+                # try:
+                #     assert handler == control.handler_io_error
+                # except (Exception,) as e:
+                #     if cpdb(): 
+                #         self.lazy_debug()
+                #         pdb.set_trace()
+                #     raise
 
-                return handler(fnp_exp, formatted_data, message)
+                return control.handler_io_error(fnp_exp, formatted_data, message)
 
             if self.verbose >= 2:
                 msg = "\nexp:%s:\n<>\ngot:%s:" % (exp, formatted_data)
@@ -608,7 +576,7 @@ class LazyMixin(object):
                 if exp != formatted_data:
                     message = self.lazy_message_formatter.format(exp, formatted_data, window=5)
 
-            if baseline:
+            if control.baseline:
                 try:
                     self.assertEqual(exp, formatted_data, message)
                 except (AssertionError,) as e:
@@ -678,7 +646,7 @@ def lazy_baseline(*classes):
     if SYSARG_BASELINE in sys.argv:
 
         for cls_ in classes:
-            cls_.lazy_environ[env_on_failed_assert] = OnAssertionError.baseline
+            cls_.lazy_environ[env_directive] = OnAssertionError.baseline
         sys.argv.remove(SYSARG_BASELINE)
 
 def lazy_ignore(*classes):
@@ -688,7 +656,7 @@ def lazy_ignore(*classes):
     if SYSARG_IGNORE in sys.argv:
 
         for cls_ in classes:
-            cls_.lazy_environ[env_on_failed_assert] = OnAssertionError.ignore
+            cls_.lazy_environ[env_directive] = OnAssertionError.ignore
         sys.argv.remove(SYSARG_IGNORE)
 
 
