@@ -576,7 +576,8 @@ class TestLive(LazyMixin, unittest.TestCase):
 
 
     di = di_livetest.copy()
-    di.update(lzrt_on_failed_assert=OnAssertionError.baseline)
+    di.update(lzrt_on_failed_assert=OnAssertionError.baseline
+        ,lzrt_directive=OnAssertionError.baseline)
     @mock.patch.dict(os.environ,di)    
     def test_004_baseline(self):
 

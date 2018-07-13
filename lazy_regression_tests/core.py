@@ -210,6 +210,7 @@ class KeepTextFilter(object):
            method
         """
 
+
         regexes_ = regexes[:]
 
         regexes_ = []
@@ -220,6 +221,8 @@ class KeepTextFilter(object):
 
         self.regexes = regexes_
         self.f_notify = f_notify
+
+
 
     def _is_match(self, line):
         try:
@@ -263,6 +266,9 @@ class _Control(object):
     def __init__(self, mixin, env, onIOError_):
         pass
 
+        # pdb.set_trace()
+        if rpdb(): pdb.set_trace()
+
         if not env or not env.acquired:
             env.acquire()
 
@@ -286,8 +292,9 @@ class _Control(object):
 
 
 class LazyTemp(object):
-    def __init__(self, control):
+    def __init__(self, control, env):
         self.fnp_exp = self.fnp_got = None
+        self.env = env.copy()
         self.filterhits = []
         self.control = control
 
@@ -535,7 +542,7 @@ class LazyMixin(object):
             # pdb.set_trace()
 
 
-            tmp = self.lazytemp = LazyTemp(control)
+            tmp = self.lazytemp = LazyTemp(control, env)
 
 
 
@@ -581,6 +588,15 @@ class LazyMixin(object):
                     exp = fi.read()
             except (IOError,) as e:
                 handler = self._lazy_get_handler_io_error(onIOError)
+
+                try:
+                    assert handler == control.handler_io_error
+                except (Exception,) as e:
+                    if cpdb(): 
+                        self.lazy_debug()
+                        pdb.set_trace()
+                    raise
+
                 return handler(fnp_exp, formatted_data, message)
 
             if self.verbose >= 2:
@@ -607,6 +623,21 @@ class LazyMixin(object):
         except (Exception,) as e:
             if cpdb(): pdb.set_trace()
             raise
+
+    def lazy_debug(self):
+        if self.lazytemp:
+            print("lazy_debug")
+            # logger.info(debugObject(self.lazytemp, "temp"))
+            logger.info(debugObject(self.lazytemp.env, "env"))
+            logger.info(
+                "handler_io_error:%s.%s" 
+                % (
+                    self.lazytemp.control.handler_io_error.__module__
+                    ,self.lazytemp.control.handler_io_error.func_name
+                    )
+
+                )
+
 
 def output_help():
 
