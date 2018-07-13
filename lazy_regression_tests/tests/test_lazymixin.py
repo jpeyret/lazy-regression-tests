@@ -64,15 +64,15 @@ except (ImportError,) as e:
     import mock
 
 
-lzrt_t_dirname = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
-lzrt_t_dirname_got = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
-lzrt_t_dirname_exp = "/<someroot>/wk/tests/%(subject)s/%(lazy_dirname_extras)s"
+lzrt_template_dirname = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
+lzrt_template_dirname_got = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
+lzrt_template_dirname_exp = "/<someroot>/wk/tests/%(subject)s/%(lazy_dirname_extras)s"
 lzrt_t_basename = lzrt_default_t_basename
 
 di_mock_env = dict(
-    lzrt_t_dirname=lzrt_t_dirname
-    ,lzrt_t_dirname_got=lzrt_t_dirname_got
-    ,lzrt_t_dirname_exp=lzrt_t_dirname_exp
+    lzrt_template_dirname=lzrt_template_dirname
+    ,lzrt_template_dirname_got=lzrt_template_dirname_got
+    ,lzrt_template_dirname_exp=lzrt_template_dirname_exp
     ,lzrt_t_basename=lzrt_t_basename
 )
 
@@ -87,7 +87,7 @@ funcpath_open = '%s.open' % module_
 if __name__ == "__main__":
     lazy_filename = os.path.splitext(os.path.basename(__file__))[0]
 else:
-    lazy_filename = self.__module__
+    lazy_filename = __module__
 
 
 def debug_env(self):
@@ -122,7 +122,7 @@ class Test_001_Configuration(LazyMixinBasic, unittest.TestCase):
                     tdirname = self._lazy_get_t_dirname("exp")
                 except (ValueError,) as e:
                     message = str(e)
-                    self.assertTrue("lzrt_t_dirname" in message)
+                    self.assertTrue("lzrt_template_dirname" in message)
 
                 tbasename = self._lazy_get_t_basename("exp")
                 #should default to default
@@ -267,7 +267,7 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
         try:
             exp = got = None
             exp = os.path.join(
-                lzrt_t_dirname_exp % {"subject" : "exp", "lazy_dirname_extras":""}
+                lzrt_template_dirname_exp % {"subject" : "exp", "lazy_dirname_extras":""}
                 ,"test_lazymixin.%s.%s" % (self.__class__.__name__,self._testMethodName)
                 )
 
@@ -287,7 +287,7 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
         try:
             exp = got = None
             exp = os.path.join(
-                lzrt_t_dirname_got % {"subject" : "got", "lazy_dirname_extras":""}
+                lzrt_template_dirname_got % {"subject" : "got", "lazy_dirname_extras":""}
                 ,"test_lazymixin.%s.%s" % (self.__class__.__name__,self._testMethodName)
                 )
 
@@ -427,7 +427,7 @@ class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
 
             exp = got = None
             exp = os.path.join(
-                lzrt_t_dirname_exp % {"subject" : "exp", "lazy_dirname_extras":self.rdbname}
+                lzrt_template_dirname_exp % {"subject" : "exp", "lazy_dirname_extras":self.rdbname}
                 ,"test_lazymixin.%s.%s" % (self.__class__.__name__,self._testMethodName)
                 )
 
@@ -449,7 +449,7 @@ class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
 
             exp = got = None
             exp = os.path.join(
-                lzrt_t_dirname_exp % {"subject" : "exp", "lazy_dirname_extras":""}
+                lzrt_template_dirname_exp % {"subject" : "exp", "lazy_dirname_extras":""}
                 ,"test_lazymixin.%s.%s" % (self.__class__.__name__,self._testMethodName)
                 )
 
@@ -472,7 +472,7 @@ class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
 
 
 
-di = dict(lzrt_t_dirname="/Users/jluc/kds2/out/tests/LazyMixin/%(subject)s")
+di = dict(lzrt_template_dirname="/Users/jluc/kds2/out/tests/LazyMixin/%(subject)s")
 
 livetests_dir = os.environ.get("lzrt_livetests_dir","")
 
@@ -490,13 +490,13 @@ if has_directory_to_write_to:
     if os.path.isdir(dirtgt):
         shutil.rmtree(dirtgt)
 
-    lzrt_t_dirname = os.path.join(dirtgt, lzrt_default_t_subdir)
+    lzrt_template_dirname = os.path.join(dirtgt, lzrt_default_t_subdir)
 
     live_seed = dict(
-        lzrt_t_dirname = lzrt_t_dirname
+        lzrt_template_dirname = lzrt_template_dirname
         ,lzrt_t_basename = lzrt_default_t_basename
-        ,lzrt_t_dirname_exp = lzrt_t_dirname
-        ,lzrt_t_dirname_got = lzrt_t_dirname
+        ,lzrt_template_dirname_exp = lzrt_template_dirname
+        ,lzrt_template_dirname_got = lzrt_template_dirname
         )
 
     # pdb.set_trace()
