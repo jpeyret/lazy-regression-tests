@@ -32,7 +32,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    description="LazyMixin.assertLazy ballows you too validate that data matches the last time the test was run.",
+    description="LazyMixin.assertLazy - validates that data matches the last time the test was run.",
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,
