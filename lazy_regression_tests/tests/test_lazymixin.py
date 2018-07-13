@@ -339,7 +339,7 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
         raise IOError()
 
     di = di_mock_env.copy()
-    di.update(lzrt_handler_ioerror=LazyIOErrorCodes.assertion)
+    di.update(lzrt_directive=LazyIOErrorCodes.assertion)
 
     @mock.patch.dict(os.environ,di.copy())
     def test_write_assertionerror(self):
@@ -349,7 +349,7 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
 
             with mock.patch(funcpath_open, mock.mock_open(read_data=exp)) as mocked_open:
 
-                self.lazy_environ["lzrt_handler_ioerror"] = LazyIOErrorCodes.assertion
+                self.lazy_environ["lzrt_directive"] = LazyIOErrorCodes.assertion
 
                 mocked_open.side_effect = IOError("fake IOError")
                 try:
@@ -373,7 +373,7 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
         got = exp = "wont be found"
 
         try:
-            self.lazy_environ["lzrt_handler_ioerror"] = LazyIOErrorCodes.ioerror
+            self.lazy_environ["lzrt_directive"] = LazyIOErrorCodes.ioerror
 
             with mock.patch(funcpath_open, mock.mock_open(read_data=exp)) as mocked_open:
 
@@ -384,7 +384,7 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
                     self.assertEqual(self.handled_by, "lazy_write_ioerror")
 
                 except (AssertionError,) as e:
-                    if self.lazy_environ.get("lzrt_handler_ioerror") == LazyIOErrorCodes.assertion:
+                    if self.lazy_environ.get("lzrt_directive") == LazyIOErrorCodes.assertion:
                         self.assertEqual(self.handled_by, LazyIOErrorCodes.assertion)
                     else:
                         raise

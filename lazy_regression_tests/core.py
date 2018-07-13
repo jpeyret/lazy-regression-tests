@@ -99,6 +99,66 @@ This needs to point to a user-writeable directory of your choice.
 """
 
 
+
+
+
+#########################    
+#environment variable names
+#######################
+env_directive  = "lzrt_directive"
+env_on_failed_assert = "lzrt_on_failed_assert"
+env_t_dirname        = "lzrt_template_dirname"
+env_t_basename       = "lzrt_template_basename"
+
+
+from collections import namedtuple
+
+Choice = namedtuple('Choice', 'code help')
+
+class DirectiveChoices(object):
+    """what can go into environment variable `lzrt_directive"""
+
+    baseline = Choice(
+        "baseline", 
+        """establish a baseline behavior - all mismatches and IOError are ignored
+and existing expecations are reset"""
+        )
+    skip = Choice(
+        "skip",
+        """do not run lazy-regression-tests"""
+        )
+    missing_pass = Choice(
+        "missing_pass",
+        """IOError on expectations will be ignored and treated as a match success
+the formatted `got/received` value will be written to the expectation.
+"""
+        )
+    assert_missing = Choice(
+        "assert_missing",
+        """IOError on expectations throw an AssertionError instead of an IOError.
+the formatted `got/received` value will be written to the expectation.        
+"""
+        )
+
+
+
+
+class OnAssertionError(object):
+
+    #use `baseline` when you want to reset the whole codeline to new expectations
+    #can only be changed on the environment level, or via command line option
+    #also implies onIOError.pass_missing
+    baseline=DirectiveChoices.baseline.code
+
+    #standard assertEqual behavior
+    default="error"
+
+    #we are not running these tests
+    ignore = DirectiveChoices.skip.code
+
+
+
+
 class LazyIOErrorCodes(object):
     """what happens when read.exp throws an IOError?"""
 
@@ -115,32 +175,14 @@ class LazyIOErrorCodes(object):
 
 
 
-
-class OnAssertionError(object):
-
-    #use `baseline` when you want to reset the whole codeline to new expectations
-    #can only be changed on the environment level, or via command line option
-    #also implies onIOError.pass_missing
-    baseline="baseline"
-    #standard assertEqual behavior
-    default="error"
-
-    #we are not running these tests
-    ignore = "ignore"
-
-
 SYSARG_BASELINE = "--lazy-%s" % OnAssertionError.baseline
 SYSARG_IGNORE = "--lazy-%s" % OnAssertionError.ignore
-SYSARG_PASS_MISSING = "--lazy-pass-missing"
+SYSARG_PASS_MISSING = "--lazy-%s" % LazyIOErrorCodes.pass_missing.replace("_","-")
 
     
-#########################    
-#environment variable names
-#######################
-env_handler_ioerror  = "lzrt_handler_ioerror"
-env_on_failed_assert = "lzrt_on_failed_assert"
-env_t_dirname        = "lzrt_template_dirname"
-env_t_basename       = "lzrt_template_basename"
+
+
+
 
 #allows per subject-environment lookups i.e. got may be put somewhere else than exp
 t_env_dirname_subject = "lzrt_template_dirname_%(subject)s"
@@ -217,13 +259,37 @@ class RemoveTextFilter(KeepTextFilter):
 
 
 
+class _Control(object):
+    def __init__(self, mixin, env, onIOError_):
+        pass
+
+        if not env or not env.acquired:
+            env.acquire()
+
+        baseline = env.get(env_directive) == OnAssertionError.baseline
+        if baseline:
+            self.handler_io_error = mixin.lazy_write_passmissing
+        else:
+            funcname_handler_ioerror = (
+                #specified in the assertLazy call?
+                onIOError_
+                #environment?
+                or env.get(env_directive)
+                #default value on instance
+                or mixin.lazy_onIOError
+                )
+            self.handler_io_error = (
+                getattr(mixin, funcname_handler_ioerror, None) 
+                or mixin.lazy_write_ioerror)
+
 
 
 
 class LazyTemp(object):
-    def __init__(self):
+    def __init__(self, control):
         self.fnp_exp = self.fnp_got = None
         self.filterhits = []
+        self.control = control
 
 ENV_PREFIX = "lzrt_"
 
@@ -436,7 +502,7 @@ class LazyMixin(object):
             #specified in the assertLazy call?
             onIOError_
             #environment?
-            or env.get(env_handler_ioerror)
+            or env.get(env_directive)
             #default value on instance
             or self.lazy_onIOError
             )
@@ -459,14 +525,22 @@ class LazyMixin(object):
         """
 
         try:
-            tmp = self.lazytemp = LazyTemp()
-
-
-
             env = self.lazy_environ
             if not bool(self.lazy_environ):
                 env.clear()
                 env.acquire()
+
+            control = _Control(self, env, onIOError)
+            ppp(control.__dict__, "control")
+            # pdb.set_trace()
+
+
+            tmp = self.lazytemp = LazyTemp(control)
+
+
+
+
+
 
             on_failed_assert = env.get(env_on_failed_assert)
             if on_failed_assert == OnAssertionError.ignore:
@@ -562,7 +636,7 @@ def lazy_pass_missing(*classes):
     if SYSARG_PASS_MISSING in sys.argv:
 
         for cls_ in classes:
-            cls_.lazy_environ[env_handler_ioerror] = OnAssertionError.pass_missing
+            cls_.lazy_environ[env_directive] = OnAssertionError.pass_missing
         sys.argv.remove(SYSARG_PASS_MISSING)
 
 
