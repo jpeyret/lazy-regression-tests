@@ -19,7 +19,7 @@
           `exp` files that do not exist get created with `got` data.
           this will be used as `exp` the next time around.
     
-          an error will be thrown, but setting onIOerror = "silent" will 
+          an error will be thrown, but setting onIOerror = "pass_missing" will 
           suppress that.
         
        3.  then `assertEqual` them.
@@ -108,7 +108,7 @@ class LazyIOErrorCodes(object):
 
     #write `got` to File.exp, without throwing an exception.
     #useful when first running, but see also OnAssertionError.baseline mode
-    silent = "lazy_write_silent"
+    pass_missing = "lazy_write_passmissing"
 
     #default behavior: `got` => File.exp, but throw an AssertionError instead
     assertion = "lazy_write_assertionerror"
@@ -120,7 +120,7 @@ class OnAssertionError(object):
 
     #use `baseline` when you want to reset the whole codeline to new expectations
     #can only be changed on the environment level, or via command line option
-    #also implies onIOError.silent
+    #also implies onIOError.pass_missing
     baseline="baseline"
     #standard assertEqual behavior
     default="error"
@@ -131,6 +131,7 @@ class OnAssertionError(object):
 
 SYSARG_BASELINE = "--lazy-%s" % OnAssertionError.baseline
 SYSARG_IGNORE = "--lazy-%s" % OnAssertionError.ignore
+SYSARG_PASS_MISSING = "--lazy-pass-missing"
 
     
 #########################    
@@ -326,7 +327,7 @@ class LazyMixin(object):
             if cpdb(): pdb.set_trace()
             raise
 
-    def lazy_write_silent(self, fnp, formatted_data, message):
+    def lazy_write_passmissing(self, fnp, formatted_data, message):
         try:
             logger.warning("%s.suppressed IOError" % (self))
             self._lazy_write(fnp, formatted_data)
@@ -346,6 +347,7 @@ class LazyMixin(object):
             raise
 
     def lazy_fnp_exp_root(self):
+        if rpdb(): pdb.set_trace()
         return self._lazy_get_fnp_root(subject="exp")
 
     def lazy_fnp_got_root(self):
@@ -382,7 +384,6 @@ class LazyMixin(object):
     def _lazy_get_fnp_root(self, subject):
         """get the root name, before extension and suffix"""
 
-
         subber = Subber(self, {"filename": self.lazy_filename, "subject":subject,"classname":self.__class__.__name__}, self.lazy_rescuedict)
 
         #calculating the directory path
@@ -393,7 +394,11 @@ class LazyMixin(object):
         if dirname_extras:
             #expand something like "foo, bar" into [..."%(foo)s", "%(bar)s"...]
             li_replace = ["%%(%s)s" % (attrname) for attrname in dirname_extras.split()]
-            _litd = replace(_litd, "%(lazy_dirname_extras)s", li_replace)
+
+            if "%(lazy_dirname_extras)s" in _litd:
+                _litd = replace(_litd, "%(lazy_dirname_extras)s", li_replace)
+            else:
+                _litd.extend(li_replace)
 
         _lid = ["/"] + [fill_template(t_, subber) for t_ in _litd]
 
@@ -425,7 +430,7 @@ class LazyMixin(object):
 
         baseline = env.get(env_on_failed_assert) == OnAssertionError.baseline
         if baseline:
-            return self.lazy_write_silent
+            return self.lazy_write_passmissing
 
         funcname_handler_ioerror = (
             #specified in the assertLazy call?
@@ -470,7 +475,7 @@ class LazyMixin(object):
 
             baseline = (on_failed_assert == OnAssertionError.baseline)
             if baseline:
-                onIOError = LazyIOErrorCodes.silent
+                onIOError = LazyIOErrorCodes.pass_missing
 
             tmp.fnp_exp = fnp_exp = self._lazy_add_extension(self.lazy_fnp_exp_root(), extension, suffix)
 
@@ -537,18 +542,29 @@ def output_help():
     module = "lazy-regression-tests"
     logger.info(
         "%s - %s establishes baseline behavior - IOError and mismatches pass" % 
-        (module, "SYSARG_BASELINE")
+        (module, SYSARG_BASELINE)
         )
     logger.info(
         "%s - %s don't run regression tests" % 
-        (module, "SYSARG_IGNORE")
+        (module, SYSARG_IGNORE)
         )
-    # logger.info(
-    #     "%s - %s don't run regression tests" % 
-    #     (module, "SYSARG_IGNORE")
-    #     )
+    logger.info(
+        "%s - %s pass tests with missing expectations" % 
+        (module, SYSARG_PASS_MISSING)
+        )
 
     output_help.done = True
+
+def lazy_pass_missing(*classes):
+    if "-h" in sys.argv:
+        output_help()
+
+    if SYSARG_PASS_MISSING in sys.argv:
+
+        for cls_ in classes:
+            cls_.lazy_environ[env_handler_ioerror] = OnAssertionError.pass_missing
+        sys.argv.remove(SYSARG_PASS_MISSING)
+
 
 def lazy_baseline(*classes):
     if "-h" in sys.argv:

@@ -1,47 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Mixin to support regression testing lazily:
-
-       given a some received data (referred as `got`)
-       does it match what was seen, and saved, the last time?
-
-       Default naming: <module>.<classname>.<function>.<extension>
-
-          but you can specify instance attributes to use in
-          either the directory or file names
-
-       A typical test write might save data as follows:
-
-       For each `got` data passed to assertLazy, the mixin will
-
-       1.  save the `got` to the `got` directory branch.
-       2.  load the matching `exp` file 
-
-          `exp` files that do not exist get created with `got` data.
-          this will be used as `exp` the next time around.
-    
-          an error will be thrown, but setting onIOerror = "silent" will 
-          suppress that.
-        
-       3.  then `assertEqual` them.
-
-
-/Users/jluc/kds2/wk/issues/nfb022.utils/issues/013.utmixin/temp/tmp
-├── exp
-│   ├── db1
-│   │   └── test_lazymixin.TestLive.test_rdbname_in_directory
-│   ├── db2
-│   │   └── test_lazymixin.TestLive.test_rdbname_in_directory
-│   ├── test_lazymixin.TestLive.test_basic
-│   ├── test_lazymixin.TestLive.test_html.html
-│   └── test_lazymixin.TestLive.test_ignore
-└── got
-    ├── db1
-    │   └── test_lazymixin.TestLive.test_rdbname_in_directory
-    ├── db2
-    │   └── test_lazymixin.TestLive.test_rdbname_in_directory
-    ├── test_lazymixin.TestLive.test_basic
-    ├── test_lazymixin.TestLive.test_html.html
-    └── test_lazymixin.TestLive.test_ignore
+"""
+test lazy-regression-tests
 """
 
 import sys
@@ -227,7 +186,7 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
             exp = got = "foo"
 
             with mock.patch(funcpath_open, mock.mock_open(read_data=exp)):
-                self.assertLazy(got, onIOError=LazyIOErrorCodes.silent)
+                self.assertLazy(got, onIOError=LazyIOErrorCodes.pass_missing)
 
             with mock.patch(funcpath_open, mock.mock_open(read_data=exp)):
                 self.assertLazy(got,".txt")
@@ -575,7 +534,7 @@ class TestLive(LazyMixin, unittest.TestCase):
     def test_001_basic(self):
         got = "something"
         #this will warn only first time, because exp does not exist
-        self.assertLazy(got, onIOError=LazyIOErrorCodes.silent)
+        self.assertLazy(got, onIOError=LazyIOErrorCodes.pass_missing)
 
         #and will pass the 2nd because it was just created
         self.assertLazy(got)
@@ -595,7 +554,7 @@ class TestLive(LazyMixin, unittest.TestCase):
     def test_002_html(self):
         data = lorem
 
-        self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.silent)
+        self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.pass_missing)
 
         #and will pass the 2nd because it was just created
         self.assertLazy(data, "html")
@@ -605,8 +564,8 @@ class TestLive(LazyMixin, unittest.TestCase):
         got1 = "<div><span>got1</span></div>"
         got2 = "<div><span>got2</span></div>"
 
-        self.assertLazy(got1, "html", onIOError=LazyIOErrorCodes.silent, suffix="suffix1")
-        self.assertLazy(got2, "html", onIOError=LazyIOErrorCodes.silent, suffix="suffix2")
+        self.assertLazy(got1, "html", onIOError=LazyIOErrorCodes.pass_missing, suffix="suffix1")
+        self.assertLazy(got2, "html", onIOError=LazyIOErrorCodes.pass_missing, suffix="suffix2")
 
 
         self.assertLazy(got1, "html", suffix="suffix1")
@@ -645,7 +604,7 @@ class TestLive(LazyMixin, unittest.TestCase):
         db2 = "db2"
 
         self.rdbname = db1
-        self.assertLazy(got, onIOError=LazyIOErrorCodes.silent)
+        self.assertLazy(got, onIOError=LazyIOErrorCodes.pass_missing)
 
         self.assertTrue(db1 in self.lazytemp.fnp_exp)
         self.assertTrue(db1 in self.lazytemp.fnp_got)
@@ -673,7 +632,7 @@ class TestLive(LazyMixin, unittest.TestCase):
                 ,b=2
                 ,c=3
                 )
-            self.assertLazy(data, "json", onIOError=LazyIOErrorCodes.silent)
+            self.assertLazy(data, "json", onIOError=LazyIOErrorCodes.pass_missing)
             data.update(d=4)
             try:
                 self.assertLazy(data, "json")
@@ -713,7 +672,7 @@ class TestLive(LazyMixin, unittest.TestCase):
 
             self.lazy_filter_html = RemoveTextFilter([ignore],f_notify=self.lazy_filter_notify)
 
-            self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.silent)
+            self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.pass_missing)
 
             with open(self.lazytemp.fnp_exp) as fi:
                 written = fi.read()
@@ -735,7 +694,7 @@ class TestLive(LazyMixin, unittest.TestCase):
             d
             """
 
-            self.assertLazy(data, "txt", onIOError=LazyIOErrorCodes.silent)
+            self.assertLazy(data, "txt", onIOError=LazyIOErrorCodes.pass_missing)
 
             with open(self.lazytemp.fnp_exp) as fi:
                 written = fi.read()
@@ -750,7 +709,7 @@ class TestLive(LazyMixin, unittest.TestCase):
 
             filter_ = KeepTextFilter(["a","b"])
 
-            self.assertLazy(data, "text", onIOError=LazyIOErrorCodes.silent, filter_=filter_)
+            self.assertLazy(data, "text", onIOError=LazyIOErrorCodes.pass_missing, filter_=filter_)
             with open(self.lazytemp.fnp_exp) as fi:
                 written = fi.read()
 
@@ -793,7 +752,7 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
             self.lazy_filter_html = RemoveTextFilter(li_remove, f_notify=self.lazy_filter_notify)
 
             if rpdb(): pdb.set_trace()
-            self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.silent)
+            self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.pass_missing)
 
             with open(self.lazytemp.fnp_exp) as fi:
                 written = fi.read()
@@ -816,7 +775,7 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
             exp = "foo"
             got = exp+".unexpected"
 
-            self.assertLazy(exp, onIOError=LazyIOErrorCodes.silent)
+            self.assertLazy(exp, onIOError=LazyIOErrorCodes.pass_missing)
             try:
                 self.assertLazy(got)
             except (AssertionError,) as e:
