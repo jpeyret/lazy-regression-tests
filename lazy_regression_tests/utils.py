@@ -12,6 +12,19 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+
+###################################################################
+# Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.
+###################################################################
+try:
+    _ = basestring
+except (NameError,) as e:
+    basestring = str
+###################################################################
+
+
+
+
 def cpdb():
     return cpdb.enabled
 cpdb.enabled = False
@@ -87,7 +100,7 @@ class DiffFormatter(difflib.Differ):
 
             msg = "\n".join(lines2)
             msg = msg.strip()
-            if msg and msg[1] <> " ":
+            if msg and msg[1] != " ":
                 msg = "  %s" % (msg) 
             return msg 
 

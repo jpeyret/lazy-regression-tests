@@ -51,12 +51,29 @@ import json
 import codecs
 
 import re
-
 import shutil
 
 
+###################################################################
+# Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.
+###################################################################
+try:
+    _ = basestring
+except (NameError,) as e:
+    basestring = str
+try:
+    _ = unicode
+except (NameError,) as e:
+    unicode = str
 
-from BeautifulSoup import BeautifulSoup as bs
+###################################################################
+
+
+
+try:
+    from bs4 import BeautifulSoup as bs
+except (ImportError,) as e:
+    from BeautifulSoup import BeautifulSoup as bs
 
 import logging
 logger = logging.getLogger(__name__)
@@ -64,12 +81,11 @@ logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp
 
 try:
-    from utils import DiffFormatter, replace, MediatedEnvironDict
+    from lazy_regression_tests.utils import DiffFormatter, replace, MediatedEnvironDict, Found
 except (ImportError,) as e:
     #not sure if needed
     # from .utils import DiffFormatter
     raise
-
 
 from lib.utils import ppp, debugObject
 from lib.utils import fill_template, Subber, RescueDict
@@ -197,7 +213,6 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 # utility functions and classes
 ####################
 
-from utils import Found
 
 
 
@@ -262,6 +277,11 @@ class RemoveTextFilter(KeepTextFilter):
 
 
 class _Control(object):
+    """unifies environment and function arguments
+       to determine handlers for IOError and AssertionError
+       save in the LazyTemp results object as well.
+    """
+
     def __init__(self, mixin, env, onIOError_):
         pass
 
@@ -323,7 +343,7 @@ class LazyMixin(object):
 
     @classmethod
     def lazy_format_dict(cls, dict_):
-        return json.dumps(dict_, sort_keys=True, indent=4)
+        return json.dumps(dict_, sort_keys=True, indent=4, separators=(',', ':'))
 
     @property
     def verbose(self):
