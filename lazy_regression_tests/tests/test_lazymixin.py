@@ -84,10 +84,23 @@ module_ = "builtins"
 module_ = module_ if module_ in sys.modules else '__builtin__'
 funcpath_open = '%s.open' % module_
 
+class Foo(object):
+    pass
+
+
 if __name__ == "__main__":
     lazy_filename = os.path.splitext(os.path.basename(__file__))[0]
 else:
-    lazy_filename = __module__
+    try:
+        logger.error("Foo.__module__:%s:" % (Foo.__module__))
+        lazy_filename = Foo.__module__.split(".")[-1]
+        # lazy_filename = "xxx"
+        # lazy_filename = os.path.splitext(os.path.basename(__file__))[0]
+        logger.error(Foo.__module__)
+    except (NameError,) as e:
+        logger.error(debugObject(globals(), "globals"))
+        logger.error(debugObject(dir(Foo), "Foo"))
+        raise 
 
 
 def debug_env(self):
@@ -202,7 +215,7 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
         if __name__ == "__main__":
             name = os.path.splitext(os.path.basename(__file__))[0]
         else:
-            name = self.__module__
+            name = self.__module__.split(".")[-1]
 
         print("self.__module__:%s" % (self.__module__))
         print("__file__:%s:" % (__file__) )
@@ -277,7 +290,7 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
 
         except (Exception,) as e:
             ppp(os.environ,"os.environ")
-            ppp(dict(exp=exp, got=got))
+            ppp(dict(exp=exp, got=got, lazy_filename=self.lazy_filename))
 
             if cpdb(): pdb.set_trace()
             raise
@@ -472,7 +485,7 @@ class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
 
 
 
-di = dict(lzrt_template_dirname="/Users/jluc/kds2/out/tests/LazyMixin/%(subject)s")
+# di = dict(lzrt_template_dirname="/Users/jluc/kds2/out/tests/LazyMixin/%(subject)s")
 
 livetests_dir = os.environ.get("lzrt_livetests_dir","")
 
@@ -480,7 +493,7 @@ has_directory_to_write_to = os.path.isdir(livetests_dir)
 
 di_livetest = {}
 
-NO_TESTWRITES_MSG = """skipping Live Tests. no writeable test directory provided."""
+NO_TESTWRITES_MSG = """skipping Live Tests. no writeable test directory provided in environment variable $lzrt_livetests_dir """
 
 if has_directory_to_write_to:
 
@@ -761,10 +774,9 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
                 re.compile("var\scsrf_token\s=\s"),
                 ]
 
-            if rpdb(): pdb.set_trace()
+            # if rpdb(): pdb.set_trace()
             self.lazy_filter_html = RemoveTextFilter(li_remove, f_notify=self.lazy_filter_notify)
 
-            if rpdb(): pdb.set_trace()
             self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.pass_missing)
 
             with open(self.lazytemp.fnp_exp) as fi:
@@ -802,8 +814,20 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
 
 
 
+class TestThrottling(LazyMixin, unittest.TestCase):
 
 
+    def setUp(self):
+        self.lazy_message_formatter = DiffFormatter(maxlines=5)
+
+    def test_it(self):
+        exp = "\n".join([str(i) for i in range(0,100)])
+        got = "\n".join([str(i+100) for i in range(0,100)])
+
+
+        message = self.lazy_message_formatter.format(exp, got)
+
+        print(message)
 
 
 class TestFilters(unittest.TestCase):

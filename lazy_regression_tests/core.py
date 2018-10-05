@@ -155,6 +155,18 @@ the formatted `got/received` value will be written to the expectation.
 """
         )
 
+    @classmethod
+    def output_help(cls, writer):
+
+        writer("\n")
+        writer("possible values in $lzrt_directive:\n")
+        for k in dir(cls):
+            v = getattr(cls, k)
+            if isinstance(v, Choice):
+                option = "'%s'" % (k)
+                writer("  %-20s : %s\n" % (option, v.help))
+
+
 
 
 
@@ -243,9 +255,7 @@ class KeepTextFilter(object):
             res = False
             for regex in self.regexes:
                 if regex.search(line):
-                    # if rpdb(): pdb.set_trace()
                     if self.f_notify:
-
                         self.f_notify(Found(line, regex))
                     return True
             return False
@@ -284,9 +294,6 @@ class _Control(object):
 
     def __init__(self, mixin, env, onIOError_):
         pass
-
-        # pdb.set_trace()
-        if rpdb(): pdb.set_trace()
 
         if not env or not env.acquired:
             env.acquire()
@@ -338,12 +345,16 @@ class LazyMixin(object):
     lazytemp = None
     lazy_message_formatter = None
 
+    lazy_message_formatter
+    lazy_message_formatter = DiffFormatter()
+
+
     def lazy_filter_notify(self, found):
         self.lazytemp.filterhits.append(found)
 
     @classmethod
     def lazy_format_dict(cls, dict_):
-        return json.dumps(dict_, sort_keys=True, indent=4, separators=(',', ':'))
+        return unicode(json.dumps(dict_, sort_keys=True, indent=4, separators=(',', ':'))).strip()
 
     @property
     def verbose(self):
@@ -441,7 +452,6 @@ class LazyMixin(object):
             raise
 
     def lazy_fnp_exp_root(self):
-        if rpdb(): pdb.set_trace()
         return self._lazy_get_fnp_root(subject="exp")
 
     def lazy_fnp_got_root(self):
@@ -450,9 +460,9 @@ class LazyMixin(object):
     def lazy_format_string(self, data):
 
         if isinstance(data, unicode):
-            return data
+            return data.strip()
 
-        return unicode(data, encoding="utf-8", errors="ignore")
+        return unicode(data, encoding="utf-8", errors="ignore").strip()
 
     def lazy_format_html(self, data):
         data = self.lazy_format_string(data)
@@ -549,12 +559,12 @@ class LazyMixin(object):
             tmp.fnp_exp = fnp_exp = self._lazy_add_extension(self.lazy_fnp_exp_root(), extension, suffix)
 
             formatter = formatter or self.lazy_format_data
+            # pdb.set_trace()
             formatted_data = formatter(got, extension)
 
             #is there a filter for the extension?
             filter_ = filter_ or getattr(self, "lazy_filter_%s" % (extension), None)
             if filter_:
-                # if rpdb(): pdb.set_trace()
                 reset_notify = False
                 if f_notify is not False and not filter_.f_notify:
                     reset_notify = True
@@ -566,6 +576,7 @@ class LazyMixin(object):
                     filter_.f_notify = None
 
             tmp.fnp_got = fnp_got = self._lazy_add_extension(self.lazy_fnp_got_root(), extension, suffix)
+            # pdb.set_trace()
             self._lazy_write(fnp_got, formatted_data)
 
             try:
@@ -573,7 +584,7 @@ class LazyMixin(object):
                     logger.info("%s.assertLazy.reading:%s" % (self, fnp_exp))
                 # with open(fnp_exp) as fi:
                 with codecs.open(fnp_exp, encoding="utf-8", errors="ignore") as fi:
-                    exp = fi.read()
+                    exp = fi.read().strip()
             except (IOError,) as e:
                 # handler = self._lazy_get_handler_io_error(onIOError)
 
@@ -587,24 +598,40 @@ class LazyMixin(object):
 
                 return control.handler_io_error(fnp_exp, formatted_data, message)
 
+
+            # if isinstance(got, dict) and extension == "json":
+            #     exp = json.loads(exp)
+
+
             if self.verbose >= 2:
                 msg = "\nexp:%s:\n<>\ngot:%s:" % (exp, formatted_data)
                 logger.info(msg)
 
-            # if rpdb(): pdb.set_trace()
+
             if self.lazy_message_formatter and not message:
                 if exp != formatted_data:
+                    # pdb.set_trace()
                     message = self.lazy_message_formatter.format(exp, formatted_data, window=5)
+
+                    if self.verbose:
+                        message += "\n exp @ %(fnp_exp)s \n got @ %(fnp_got)s" % locals()
+
+                    if rpdb() and not message: 
+                        pdb.set_trace()
 
             if control.baseline:
                 try:
                     self.assertEqual(exp, formatted_data, message)
                 except (AssertionError,) as e:
                     self._lazy_write(fnp_exp, formatted_data)
-                    logger.warning("%s.  expectation has been reset" % (e))
+                    logger.warning(u"%s.  expectation has been reset" % (e))
+                    # logger.warning("%s.  expectation has been reset" % (unicode(e, encoding="utf-8", errors="ignore")))
+
                 return
 
+            # if rpdb(): pdb.set_trace()
             self.assertEqual(exp, formatted_data, message)
+            logger.info("must have assertEqual'd")
 
         except (IOError,AssertionError) as e:
             raise
@@ -632,25 +659,48 @@ def output_help():
     if getattr("output_help", "done", False):
         return
 
+    writer = sys.stderr.write 
+
+    writer("\n")
+    writer("*" * 80)
+    writer("\n")
+
+    # pdb.set_trace()
+
     module = "lazy-regression-tests"
-    logger.info(
-        "%s - %s establishes baseline behavior - IOError and mismatches pass" % 
-        (module, SYSARG_BASELINE)
+
+    writer("%s behavior can be controlled with flags or by environment variable $lzrt_directive\n" % (module))
+
+    writer("available flags:\n")
+    writer(
+        "- %s establishes baseline behavior - IOError and mismatches pass\n" % 
+        (SYSARG_BASELINE)
         )
-    logger.info(
-        "%s - %s don't run regression tests" % 
-        (module, SYSARG_IGNORE)
+    writer(
+        "- %s don't run regression tests\n" % 
+        (SYSARG_IGNORE)
         )
-    logger.info(
-        "%s - %s pass tests with missing expectations" % 
-        (module, SYSARG_PASS_MISSING)
+    writer(
+        "- %s pass tests with missing expectations\n" % 
+        (SYSARG_PASS_MISSING)
         )
+
+    DirectiveChoices.output_help(writer)
+
+
+    writer("\n")
+    writer("*" * 80)
 
     output_help.done = True
 
+if "-h" in sys.argv:
+    output_help()
+
+    
+
 def lazy_pass_missing(*classes):
-    if "-h" in sys.argv:
-        output_help()
+    # if "-h" in sys.argv:
+    #     output_help()
 
     if SYSARG_PASS_MISSING in sys.argv:
 
@@ -660,8 +710,8 @@ def lazy_pass_missing(*classes):
 
 
 def lazy_baseline(*classes):
-    if "-h" in sys.argv:
-        output_help()
+    # if "-h" in sys.argv:
+    #     output_help()
 
     if SYSARG_BASELINE in sys.argv:
 
@@ -670,8 +720,8 @@ def lazy_baseline(*classes):
         sys.argv.remove(SYSARG_BASELINE)
 
 def lazy_ignore(*classes):
-    if "-h" in sys.argv:
-        output_help()
+    # if "-h" in sys.argv:
+    #     output_help()
 
     if SYSARG_IGNORE in sys.argv:
 

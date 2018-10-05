@@ -41,32 +41,41 @@ def found_repr(self):
 Found.__repr__ = found_repr
 
 
-class DiffFormatter(difflib.Differ):
+class DiffFormatter(object):
+    """inherit from object to make it a new-style class, else super will complain"""
 
-    # def __init__(self):
-    #     self._differ = difflib.Differ()
+    def __init__(self, *args, **kwds):
+
+        self.window = kwds.pop("window", None)
+        self.maxlines = kwds.pop("maxlines", None)
+
+        self._differ = difflib.Differ()
+
+        # super(DiffFormatter, self).__init__(self, *args, **kwds)
 
     def _window(self, lines, window=None):
         try:
-            # raise NotImplementedError("%s._window" % (self))
 
             if not window:
                 return lines
             if not isinstance(window, int):
                 raise TypeError("window has to be an int")
 
+            #remember, at most, window # of lines
             dq = deque(maxlen=window)
             cntr = 0
 
             res = []
 
+
             for line in lines:
 
                 if line[0] in ("+","-"):
-                    #diff
+                    #cntr, while > 0 adds line to res
                     cntr = window
                     while True:
                         try:
+                            #try if res.extend(dq) works
                             res.append(dq.popleft())
                         except (IndexError,) as e:
                             break
@@ -75,28 +84,33 @@ class DiffFormatter(difflib.Differ):
                     cntr -= 1
                     res.append(line)
                 else:
+                    #this line won't be used, unless a later line
+                    #requires it in context.
                     dq.append(line)
-
-
-
-
             return res
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
             raise
+
 
     def format(self, exp, got, window=None):
         try:
             exp_ = exp.splitlines()
             got_ = got.splitlines()
-            lines = self.compare(exp_, got_)
+            lines = self._differ.compare(exp_, got_)
 
+
+            window = window or self.window
 
             if window:
                 lines2 = self._window(lines, window)
             else:
                 lines2 = list(lines)
 
+
+            if self.maxlines:
+                #this doesn't work well 0 1 2 3 ... vs 100 101 102 103 ... 
+                #will show all the - in the maxlines since there is nothing in common...
+                lines2 = lines2[:self.maxlines]
 
             msg = "\n".join(lines2)
             msg = msg.strip()
@@ -105,7 +119,6 @@ class DiffFormatter(difflib.Differ):
             return msg 
 
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
             raise
 
 def replace(list_, item=None, with_=[]):
@@ -172,6 +185,7 @@ class MediatedEnvironDict(dict):
                             continue
 
             self.acquired = True
+            # pdb.set_trace()
 
         except (Exception,) as e:
             if cpdb(): pdb.set_trace()
