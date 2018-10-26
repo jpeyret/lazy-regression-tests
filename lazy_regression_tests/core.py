@@ -222,13 +222,33 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 # utility functions and classes
 ####################
 
-class RegexSubstit(object):
+from functools import partial
+
+class RegexSubstitHardcoded(object):
     """allows for replacement of the line with different contents
 
        can't use a re.sub directly because the Filter won't know if 
        it's just a match filter or a match & substitution
     """
 
+    def __repr__(self):
+
+        subinfo = None
+
+        try:
+        
+            if callable(self.substitution):
+                if isinstance(self.substitution, partial):
+                    subinfo = "partial:%s" % self.substitution.func.__name__
+                else:
+                    subinfo = "func.%s" % self.substitution.__name__
+            else:
+                subinfo = str(self.substitution)
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+
+        return "%s.(pattern=%s, substitution=%s" % (self.__class__.__name__, self.pattern, subinfo)
 
     def __init__(self, pattern, substitution, *args):
 
@@ -239,7 +259,7 @@ class RegexSubstit(object):
         return getattr(self.patre, attrname)
 
 
-    def substit(self, line):
+    def substitute(self, line):
         return self.substitution
 
 
@@ -272,9 +292,9 @@ class KeepTextFilter(object):
                         self.f_notify(Found(line, regex))
 
                     #ok, now let's substitute if that's what we want to do...
-                    substit = getattr(regex, "substit", None)
-                    if substit:
-                        line = substit(line)
+                    substitute = getattr(regex, "substitute", None)
+                    if substitute:
+                        line = substitute(line)
                         #but if we're called from RemoveTextFilter 
                         #then keep the line
                         return not remover, line
