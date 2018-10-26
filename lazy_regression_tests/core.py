@@ -53,6 +53,8 @@ import codecs
 import re
 import shutil
 
+from functools import partial
+
 
 ###################################################################
 # Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.
@@ -72,7 +74,10 @@ except (NameError,) as e:
 try:
     from bs4 import BeautifulSoup as bs
 except (ImportError,) as e:
-    from BeautifulSoup import BeautifulSoup as bs
+    try:
+        from BeautifulSoup import BeautifulSoup as bs
+    except (Exception,) as e2:
+        bs = None
 
 import logging
 
@@ -222,7 +227,6 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 # utility functions and classes
 ####################
 
-from functools import partial
 
 class RegexSubstitHardcoded(object):
     """allows for replacement of the line with different contents
@@ -503,6 +507,9 @@ class LazyMixin(object):
 
     def lazy_format_html(self, data):
         data = self.lazy_format_string(data)
+        if bs is None:
+            logger.warning("BeautifulSoup is unavaiable")
+            return data
         soup = bs(data)  # make BeautifulSoup
         return soup.prettify()  # prettify the html
 
