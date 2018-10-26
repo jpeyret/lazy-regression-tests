@@ -269,6 +269,9 @@ class RegexSubstitHardcoded(object):
 
 
 class KeepTextFilter(object):
+
+    KEEP = True
+
     def __init__(self, regexes=[], f_notify=None):
 
         """:param regexes: list of regex's.  or strings which will be compiled to regex
@@ -301,7 +304,7 @@ class KeepTextFilter(object):
                         line = substitute(line)
                         #but if we're called from RemoveTextFilter 
                         #then keep the line
-                        return not remover, line
+                        return self.KEEP, line
 
                     return True, line
             return False, line
@@ -322,6 +325,9 @@ class KeepTextFilter(object):
 
 
 class RemoveTextFilter(KeepTextFilter):
+
+    KEEP = False
+
     def filter(self, formatted_data):
         lines = []
         for line in formatted_data.splitlines():
