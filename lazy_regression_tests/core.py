@@ -69,21 +69,26 @@ except (NameError,) as e:
 ###################################################################
 
 
-
 try:
     from bs4 import BeautifulSoup as bs
 except (ImportError,) as e:
     from BeautifulSoup import BeautifulSoup as bs
 
 import logging
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp
 
 try:
-    from lazy_regression_tests.utils import DiffFormatter, replace, MediatedEnvironDict, Found
+    from lazy_regression_tests.utils import (
+        DiffFormatter,
+        replace,
+        MediatedEnvironDict,
+        Found,
+    )
 except (ImportError,) as e:
-    #not sure if needed
+    # not sure if needed
     # from .utils import DiffFormatter
     raise
 
@@ -91,12 +96,19 @@ from lib.utils import ppp, debugObject
 from lib.utils import fill_template, Subber, RescueDict
 
 import pdb
+
+
 def cpdb():
     return cpdb.enabled
+
+
 cpdb.enabled = False
+
 
 def rpdb():
     return rpdb.enabled
+
+
 rpdb.enabled = False
 
 
@@ -115,45 +127,40 @@ This needs to point to a user-writeable directory of your choice.
 """
 
 
-
-
-
-#########################    
-#environment variable names
+#########################
+# environment variable names
 #######################
-env_directive  = "lzrt_directive"
-env_t_dirname        = "lzrt_template_dirname"
-env_t_basename       = "lzrt_template_basename"
+env_directive = "lzrt_directive"
+env_t_dirname = "lzrt_template_dirname"
+env_t_basename = "lzrt_template_basename"
 
 
 from collections import namedtuple
 
-Choice = namedtuple('Choice', 'code help')
+Choice = namedtuple("Choice", "code help")
+
 
 class DirectiveChoices(object):
     """what can go into environment variable `lzrt_directive"""
 
     baseline = Choice(
-        "baseline", 
+        "baseline",
         """establish a baseline behavior - all mismatches and IOError are ignored
-and existing expecations are reset"""
-        )
-    skip = Choice(
-        "skip",
-        """do not run lazy-regression-tests"""
-        )
+and existing expecations are reset""",
+    )
+    skip = Choice("skip", """do not run lazy-regression-tests""")
     missing_pass = Choice(
         "missing_pass",
         """IOError on expectations will be ignored and treated as a match success
 the formatted `got/received` value will be written to the expectation.
-"""
-        )
+""",
+    )
     assert_missing = Choice(
         "assert_missing",
         """IOError on expectations throw an AssertionError instead of an IOError.
 the formatted `got/received` value will be written to the expectation.        
-"""
-        )
+""",
+    )
 
     @classmethod
     def output_help(cls, writer):
@@ -167,55 +174,45 @@ the formatted `got/received` value will be written to the expectation.
                 writer("  %-20s : %s\n" % (option, v.help))
 
 
-
-
-
 class OnAssertionError(object):
 
-    #use `baseline` when you want to reset the whole codeline to new expectations
-    #can only be changed on the environment level, or via command line option
-    #also implies onIOError.pass_missing
-    baseline=DirectiveChoices.baseline.code
+    # use `baseline` when you want to reset the whole codeline to new expectations
+    # can only be changed on the environment level, or via command line option
+    # also implies onIOError.pass_missing
+    baseline = DirectiveChoices.baseline.code
 
-    #standard assertEqual behavior
-    default="error"
+    # standard assertEqual behavior
+    default = "error"
 
-    #we are not running these tests
+    # we are not running these tests
     ignore = DirectiveChoices.skip.code
-
-
 
 
 class LazyIOErrorCodes(object):
     """what happens when read.exp throws an IOError?"""
 
-    #default behavior: `got` => File.exp, but throw an IOError
-    #differentiates data mismatch from missing `exp` files
+    # default behavior: `got` => File.exp, but throw an IOError
+    # differentiates data mismatch from missing `exp` files
     default = ioerror = "lazy_write_ioerror"
 
-    #write `got` to File.exp, without throwing an exception.
-    #useful when first running, but see also OnAssertionError.baseline mode
+    # write `got` to File.exp, without throwing an exception.
+    # useful when first running, but see also OnAssertionError.baseline mode
     pass_missing = "lazy_write_passmissing"
 
-    #default behavior: `got` => File.exp, but throw an AssertionError instead
+    # default behavior: `got` => File.exp, but throw an AssertionError instead
     assertion = "lazy_write_assertionerror"
-
 
 
 SYSARG_BASELINE = "--lazy-%s" % OnAssertionError.baseline
 SYSARG_IGNORE = "--lazy-%s" % OnAssertionError.ignore
-SYSARG_PASS_MISSING = "--lazy-%s" % LazyIOErrorCodes.pass_missing.replace("_","-")
-
-    
+SYSARG_PASS_MISSING = "--lazy-%s" % LazyIOErrorCodes.pass_missing.replace("_", "-")
 
 
-
-
-#allows per subject-environment lookups i.e. got may be put somewhere else than exp
+# allows per subject-environment lookups i.e. got may be put somewhere else than exp
 t_env_dirname_subject = "lzrt_template_dirname_%(subject)s"
 
 ##############
-#defaults 
+# defaults
 ##############
 lzrt_default_t_subdir = "%(subject)s/%(lazy_dirname_extras)s"
 lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
@@ -226,16 +223,13 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 ####################
 
 
-
-
 class KeepTextFilter(object):
-    def __init__(self, regexes = [], f_notify=None):
+    def __init__(self, regexes=[], f_notify=None):
 
         """:param regexes: list of regex's.  or strings which will be compiled to regex
            you could also pass your own matching objects, they need `search(string)=>boolean`
            method
         """
-
 
         regexes_ = regexes[:]
 
@@ -248,8 +242,6 @@ class KeepTextFilter(object):
         self.regexes = regexes_
         self.f_notify = f_notify
 
-
-
     def _is_match(self, line):
         try:
             res = False
@@ -260,7 +252,8 @@ class KeepTextFilter(object):
                     return True
             return False
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
     def filter(self, formatted_data):
@@ -274,16 +267,14 @@ class KeepTextFilter(object):
 
 
 class RemoveTextFilter(KeepTextFilter):
-
     def filter(self, formatted_data):
         lines = []
         for line in formatted_data.splitlines():
             if not self._is_match(line):
-                lines.append(line)                
+                lines.append(line)
         return "\n".join(lines)
 
     __call__ = filter
-
 
 
 class _Control(object):
@@ -305,18 +296,17 @@ class _Control(object):
             self.handler_io_error = mixin.lazy_write_passmissing
         else:
             funcname_handler_ioerror = (
-                #specified in the assertLazy call?
+                # specified in the assertLazy call?
                 onIOError_
-                #environment?
+                # environment?
                 or env.get(env_directive)
-                #default value on instance
+                # default value on instance
                 or mixin.lazy_onIOError
-                )
+            )
             self.handler_io_error = (
-                getattr(mixin, funcname_handler_ioerror, None) 
-                or mixin.lazy_write_ioerror)
-
-
+                getattr(mixin, funcname_handler_ioerror, None)
+                or mixin.lazy_write_ioerror
+            )
 
 
 class LazyTemp(object):
@@ -326,7 +316,9 @@ class LazyTemp(object):
         self.filterhits = []
         self.control = control
 
+
 ENV_PREFIX = "lzrt_"
+
 
 class LazyMixin(object):
     """main class.  see `assertLazy`"""
@@ -336,9 +328,9 @@ class LazyMixin(object):
     lazy_onIOError = LazyIOErrorCodes.default
     lazy_rescuedict = RescueDict(template="")
 
-    lazy_environ = MediatedEnvironDict(filters=[ENV_PREFIX]) 
+    lazy_environ = MediatedEnvironDict(filters=[ENV_PREFIX])
 
-    #default for extra attributes.
+    # default for extra attributes.
     lazy_dirname_extras = ""
     lazy_basename_extras = ""
 
@@ -348,65 +340,53 @@ class LazyMixin(object):
     lazy_message_formatter
     lazy_message_formatter = DiffFormatter()
 
-
     def lazy_filter_notify(self, found):
         self.lazytemp.filterhits.append(found)
 
     @classmethod
     def lazy_format_dict(cls, dict_):
-        return unicode(json.dumps(dict_, sort_keys=True, indent=4, separators=(',', ':'))).strip()
+        return unicode(
+            json.dumps(dict_, sort_keys=True, indent=4, separators=(",", ":"))
+        ).strip()
 
     @property
     def verbose(self):
         res = sys.argv.count("-v")
         return res
 
-
     @classmethod
     def _lazy_get_t_dirname(cls, subject=""):
 
-        env_t_dirname_specific = fill_template(t_env_dirname_subject, {"subject" : subject})
+        env_t_dirname_specific = fill_template(
+            t_env_dirname_subject, {"subject": subject}
+        )
 
         env = cls.lazy_environ
         if not env or not env.acquired:
             env.acquire()
 
-
-        res = ( 
-                env.get(
-                    env_t_dirname_specific
-                )
-                or 
-                env.get(
-                fill_template(env_t_dirname)
-                )
-            )
+        res = env.get(env_t_dirname_specific) or env.get(fill_template(env_t_dirname))
 
         if res is None:
             raise ValueError(
-                MISSING_ENV_T_DIRNAME % dict(
-                    subject=subject
-                    ,specific=env_t_dirname_specific
-                    ,generic=env_t_dirname
-                    )
+                MISSING_ENV_T_DIRNAME
+                % dict(
+                    subject=subject,
+                    specific=env_t_dirname_specific,
+                    generic=env_t_dirname,
                 )
+            )
 
         return res
 
     @classmethod
-    def _lazy_get_t_basename(cls,subject):
+    def _lazy_get_t_basename(cls, subject):
 
         env = cls.lazy_environ
         if not env or not env.acquired:
             env.acquire()
 
-
-        res = ( 
-                env.get(
-                fill_template(env_t_basename)
-                )
-                or lzrt_default_t_basename
-            )
+        res = env.get(fill_template(env_t_basename)) or lzrt_default_t_basename
         return res
 
     def _lazy_write(self, fnp, formatted_data):
@@ -426,10 +406,12 @@ class LazyMixin(object):
             self._lazy_write(fnp, formatted_data)
             self.assertEqual(str(IOError(fnp)), formatted_data, message)
         except (AssertionError,) as e:
-            if rpdb(): pdb.set_trace()
+            if rpdb():
+                pdb.set_trace()
             raise
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
     def lazy_write_passmissing(self, fnp, formatted_data, message):
@@ -437,7 +419,8 @@ class LazyMixin(object):
             logger.warning("%s.suppressed IOError" % (self))
             self._lazy_write(fnp, formatted_data)
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
     def lazy_write_ioerror(self, fnp, formatted_data, message):
@@ -445,10 +428,12 @@ class LazyMixin(object):
             self._lazy_write(fnp, formatted_data)
             raise IOError(fnp)
         except (IOError,) as e:
-            if rpdb(): pdb.set_trace()
+            if rpdb():
+                pdb.set_trace()
             raise
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
     def lazy_fnp_exp_root(self):
@@ -466,8 +451,8 @@ class LazyMixin(object):
 
     def lazy_format_html(self, data):
         data = self.lazy_format_string(data)
-        soup = bs(data)                #make BeautifulSoup
-        return soup.prettify() #prettify the html
+        soup = bs(data)  # make BeautifulSoup
+        return soup.prettify()  # prettify the html
 
     def lazy_format_json(self, data):
         di = json.loads(data)
@@ -480,7 +465,10 @@ class LazyMixin(object):
 
         elif isinstance(data, basestring):
 
-            f = getattr(self, "format_%s" % (extension.lower()), None) or self.lazy_format_string
+            f = (
+                getattr(self, "format_%s" % (extension.lower()), None)
+                or self.lazy_format_string
+            )
             return f(data)
         else:
             return self.lazy_format_string(data)
@@ -488,15 +476,23 @@ class LazyMixin(object):
     def _lazy_get_fnp_root(self, subject):
         """get the root name, before extension and suffix"""
 
-        subber = Subber(self, {"filename": self.lazy_filename, "subject":subject,"classname":self.__class__.__name__}, self.lazy_rescuedict)
+        subber = Subber(
+            self,
+            {
+                "filename": self.lazy_filename,
+                "subject": subject,
+                "classname": self.__class__.__name__,
+            },
+            self.lazy_rescuedict,
+        )
 
-        #calculating the directory path
+        # calculating the directory path
         t_dirname = self._lazy_get_t_dirname(subject=subject)
         _litd = t_dirname.split(os.path.sep)
 
-        dirname_extras = getattr(self, "lazy_dirname_extras","")
+        dirname_extras = getattr(self, "lazy_dirname_extras", "")
         if dirname_extras:
-            #expand something like "foo, bar" into [..."%(foo)s", "%(bar)s"...]
+            # expand something like "foo, bar" into [..."%(foo)s", "%(bar)s"...]
             li_replace = ["%%(%s)s" % (attrname) for attrname in dirname_extras.split()]
 
             if "%(lazy_dirname_extras)s" in _litd:
@@ -508,24 +504,33 @@ class LazyMixin(object):
 
         dirname = os.path.join(*_lid)
 
-        #calculating the filename
+        # calculating the filename
         t_basename = self._lazy_get_t_basename(subject)
         _litb = t_basename.split()
         _lib = [fill_template(t_, subber) for t_ in _litb]
         basename = ".".join([i_ for i_ in _lib if i_])
 
         return os.path.join(dirname, basename)
-    
+
     def _lazy_add_extension(self, fnp, extension="", suffix=""):
         """adds suffix, extension to the filename"""
 
-        #don't add empty parts...
+        # don't add empty parts...
         li = [str(i_) for i_ in [fnp, suffix, extension] if i_]
 
         return ".".join(li)
 
-
-    def assertLazy(self, got, extension="", suffix="", onIOError=None, message=None, filter_=None, formatter=None, f_notify=None):
+    def assertLazy(
+        self,
+        got,
+        extension="",
+        suffix="",
+        onIOError=None,
+        message=None,
+        filter_=None,
+        formatter=None,
+        f_notify=None,
+    ):
         """ check that result matches expectations saved previously.
         when the expectations file doesn't exist yet, it is created with received data
         but an error is raised unless suppressed by `onIOError`.
@@ -550,19 +555,19 @@ class LazyMixin(object):
 
             tmp = self.lazytemp = LazyTemp(control, env)
 
-
-
             if control.skip:
                 logger.info("skipping lazy checks")
                 return
 
-            tmp.fnp_exp = fnp_exp = self._lazy_add_extension(self.lazy_fnp_exp_root(), extension, suffix)
+            tmp.fnp_exp = fnp_exp = self._lazy_add_extension(
+                self.lazy_fnp_exp_root(), extension, suffix
+            )
 
             formatter = formatter or self.lazy_format_data
             # pdb.set_trace()
             formatted_data = formatter(got, extension)
 
-            #is there a filter for the extension?
+            # is there a filter for the extension?
             filter_ = filter_ or getattr(self, "lazy_filter_%s" % (extension), None)
             if filter_:
                 reset_notify = False
@@ -575,7 +580,9 @@ class LazyMixin(object):
                 finally:
                     filter_.f_notify = None
 
-            tmp.fnp_got = fnp_got = self._lazy_add_extension(self.lazy_fnp_got_root(), extension, suffix)
+            tmp.fnp_got = fnp_got = self._lazy_add_extension(
+                self.lazy_fnp_got_root(), extension, suffix
+            )
             # pdb.set_trace()
             self._lazy_write(fnp_got, formatted_data)
 
@@ -591,32 +598,33 @@ class LazyMixin(object):
                 # try:
                 #     assert handler == control.handler_io_error
                 # except (Exception,) as e:
-                #     if cpdb(): 
+                #     if cpdb():
                 #         self.lazy_debug()
                 #         pdb.set_trace()
                 #     raise
 
                 return control.handler_io_error(fnp_exp, formatted_data, message)
 
-
             # if isinstance(got, dict) and extension == "json":
             #     exp = json.loads(exp)
-
 
             if self.verbose >= 2:
                 msg = "\nexp:%s:\n<>\ngot:%s:" % (exp, formatted_data)
                 logger.info(msg)
 
-
             if self.lazy_message_formatter and not message:
                 if exp != formatted_data:
                     # pdb.set_trace()
-                    message = self.lazy_message_formatter.format(exp, formatted_data, window=5)
+                    message = self.lazy_message_formatter.format(
+                        exp, formatted_data, window=5
+                    )
 
                     if self.verbose:
-                        message += "\n exp @ %(fnp_exp)s \n got @ %(fnp_got)s" % locals()
+                        message += (
+                            "\n exp @ %(fnp_exp)s \n got @ %(fnp_got)s" % locals()
+                        )
 
-                    if rpdb() and not message: 
+                    if rpdb() and not message:
                         pdb.set_trace()
 
             if control.baseline:
@@ -633,10 +641,11 @@ class LazyMixin(object):
             self.assertEqual(exp, formatted_data, message)
             logger.info("must have assertEqual'd")
 
-        except (IOError,AssertionError) as e:
+        except (IOError, AssertionError) as e:
             raise
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
     def lazy_debug(self):
@@ -645,13 +654,12 @@ class LazyMixin(object):
             # logger.info(debugObject(self.lazytemp, "temp"))
             logger.info(debugObject(self.lazytemp.env, "env"))
             logger.info(
-                "handler_io_error:%s.%s" 
+                "handler_io_error:%s.%s"
                 % (
-                    self.lazytemp.control.handler_io_error.__module__
-                    ,self.lazytemp.control.handler_io_error.func_name
-                    )
-
+                    self.lazytemp.control.handler_io_error.__module__,
+                    self.lazytemp.control.handler_io_error.func_name,
                 )
+            )
 
 
 def output_help():
@@ -659,7 +667,7 @@ def output_help():
     if getattr("output_help", "done", False):
         return
 
-    writer = sys.stderr.write 
+    writer = sys.stderr.write
 
     writer("\n")
     writer("*" * 80)
@@ -669,34 +677,30 @@ def output_help():
 
     module = "lazy-regression-tests"
 
-    writer("%s behavior can be controlled with flags or by environment variable $lzrt_directive\n" % (module))
+    writer(
+        "%s behavior can be controlled with flags or by environment variable $lzrt_directive\n"
+        % (module)
+    )
 
     writer("available flags:\n")
     writer(
-        "- %s establishes baseline behavior - IOError and mismatches pass\n" % 
-        (SYSARG_BASELINE)
-        )
-    writer(
-        "- %s don't run regression tests\n" % 
-        (SYSARG_IGNORE)
-        )
-    writer(
-        "- %s pass tests with missing expectations\n" % 
-        (SYSARG_PASS_MISSING)
-        )
+        "- %s establishes baseline behavior - IOError and mismatches pass\n"
+        % (SYSARG_BASELINE)
+    )
+    writer("- %s don't run regression tests\n" % (SYSARG_IGNORE))
+    writer("- %s pass tests with missing expectations\n" % (SYSARG_PASS_MISSING))
 
     DirectiveChoices.output_help(writer)
-
 
     writer("\n")
     writer("*" * 80)
 
     output_help.done = True
 
+
 if "-h" in sys.argv:
     output_help()
 
-    
 
 def lazy_pass_missing(*classes):
     # if "-h" in sys.argv:
@@ -719,6 +723,7 @@ def lazy_baseline(*classes):
             cls_.lazy_environ[env_directive] = OnAssertionError.baseline
         sys.argv.remove(SYSARG_BASELINE)
 
+
 def lazy_ignore(*classes):
     # if "-h" in sys.argv:
     #     output_help()
@@ -728,6 +733,3 @@ def lazy_ignore(*classes):
         for cls_ in classes:
             cls_.lazy_environ[env_directive] = OnAssertionError.ignore
         sys.argv.remove(SYSARG_IGNORE)
-
-
-

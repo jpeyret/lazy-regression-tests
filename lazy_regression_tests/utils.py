@@ -9,6 +9,7 @@ from lib.utils import set_cpdb, set_rpdb, ppp, debugObject
 from traceback import print_exc as xp
 
 import logging
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
@@ -23,20 +24,25 @@ except (NameError,) as e:
 ###################################################################
 
 
-
-
 def cpdb():
     return cpdb.enabled
+
+
 cpdb.enabled = False
+
 
 def rpdb():
     return rpdb.enabled
+
+
 rpdb.enabled = False
 
-Found = namedtuple('Found', 'found by')
+Found = namedtuple("Found", "found by")
+
 
 def found_repr(self):
-    return "found:%-30.30s: by:%s:" % (self[0],self[1])
+    return "found:%-30.30s: by:%s:" % (self[0], self[1])
+
 
 Found.__repr__ = found_repr
 
@@ -61,21 +67,20 @@ class DiffFormatter(object):
             if not isinstance(window, int):
                 raise TypeError("window has to be an int")
 
-            #remember, at most, window # of lines
+            # remember, at most, window # of lines
             dq = deque(maxlen=window)
             cntr = 0
 
             res = []
 
-
             for line in lines:
 
-                if line[0] in ("+","-"):
-                    #cntr, while > 0 adds line to res
+                if line[0] in ("+", "-"):
+                    # cntr, while > 0 adds line to res
                     cntr = window
                     while True:
                         try:
-                            #try if res.extend(dq) works
+                            # try if res.extend(dq) works
                             res.append(dq.popleft())
                         except (IndexError,) as e:
                             break
@@ -84,20 +89,18 @@ class DiffFormatter(object):
                     cntr -= 1
                     res.append(line)
                 else:
-                    #this line won't be used, unless a later line
-                    #requires it in context.
+                    # this line won't be used, unless a later line
+                    # requires it in context.
                     dq.append(line)
             return res
         except (Exception,) as e:
             raise
-
 
     def format(self, exp, got, window=None):
         try:
             exp_ = exp.splitlines()
             got_ = got.splitlines()
             lines = self._differ.compare(exp_, got_)
-
 
             window = window or self.window
 
@@ -106,20 +109,20 @@ class DiffFormatter(object):
             else:
                 lines2 = list(lines)
 
-
             if self.maxlines:
-                #this doesn't work well 0 1 2 3 ... vs 100 101 102 103 ... 
-                #will show all the - in the maxlines since there is nothing in common...
-                lines2 = lines2[:self.maxlines]
+                # this doesn't work well 0 1 2 3 ... vs 100 101 102 103 ...
+                # will show all the - in the maxlines since there is nothing in common...
+                lines2 = lines2[: self.maxlines]
 
             msg = "\n".join(lines2)
             msg = msg.strip()
             if msg and msg[1] != " ":
-                msg = "  %s" % (msg) 
-            return msg 
+                msg = "  %s" % (msg)
+            return msg
 
         except (Exception,) as e:
             raise
+
 
 def replace(list_, item=None, with_=[]):
     """utility function:
@@ -134,7 +137,7 @@ def replace(list_, item=None, with_=[]):
             return list_[:]
 
         if isinstance(with_, list):
-            li = list_[0:pos] + with_ + list_[pos+1:]
+            li = list_[0:pos] + with_ + list_[pos + 1 :]
             return li
 
         res = list_[:]
@@ -142,12 +145,12 @@ def replace(list_, item=None, with_=[]):
         return res
 
     except (Exception,) as e:
-        if cpdb(): pdb.set_trace()
+        if cpdb():
+            pdb.set_trace()
         raise
 
 
 class MediatedEnvironDict(dict):
-
     def __init__(self, filters=[], seed={}, *args, **kwds):
         """
         :param filters: filter.search(envname) will  
@@ -175,11 +178,11 @@ class MediatedEnvironDict(dict):
         note `seed` keys will not get updated"""
 
         try:
-            
+
             for k, v in os.environ.items():
                 for filter_ in self.filters:
                     if filter_.search(k):
-                        #dont override what's already set
+                        # dont override what's already set
                         if not k in self:
                             self[k] = v
                             continue
@@ -188,13 +191,13 @@ class MediatedEnvironDict(dict):
             # pdb.set_trace()
 
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
-
 
     def clear(self):
         """flushes the dict and reapplies the seed"""
-        self.acquired = False        
+        self.acquired = False
         super(MediatedEnvironDict, self).clear()
         self.update(**self.seed)
 
@@ -216,10 +219,10 @@ class Finder(object):
                 notify(Found(names, self))
         except (Exception,) as e:
             ppp(self, "%s.is_match" % (self))
-            logger.info( "names:%s" %  names)
-            if cpdb(): pdb.set_trace()
+            logger.info("names:%s" % names)
+            if cpdb():
+                pdb.set_trace()
             raise
-
 
     def __init__(self, target):
         self.target = target
@@ -228,8 +231,8 @@ class Finder(object):
     def _init(self):
         pass
 
-class RegexFinder(Finder):
 
+class RegexFinder(Finder):
     def _init(self):
         self.patre = re.compile(target)
 
@@ -245,13 +248,15 @@ class NamesMatchTemp(object):
     def __repr__(self):
         return """
   hits:%s
-  work:%s\n""" % (self.finds, self.work)
+  work:%s\n""" % (
+            self.finds,
+            self.work,
+        )
+
 
 class WorkerNamesMatch(object):
-
     def __init__(self):
         self.done = {}
-
 
     def process(self, target, matchtemp):
         self.done = {}
@@ -273,14 +278,13 @@ class RemoveWorkerNamesMatch(WorkerNamesMatch):
                 key = found.found[0]
                 di[key] = target.pop(key)
 
-
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
 
 class _Filter(object):
-
     def __init__(self, matchers_=[], notify=None, callback=None):
 
         self.matchers = []
@@ -306,12 +310,12 @@ class _Filter(object):
     def _notify(self, found):
         self.temp.finds.append(found)
 
+
 NamesMatcher = _Filter
 
-class DictionaryKeyFilter(_Filter):
 
+class DictionaryKeyFilter(_Filter):
     def __init__(self, *args, **kwds):
         super(DictionaryKeyFilter, self).__init__(*args, **kwds)
         self.worker = RemoveWorkerNamesMatch()
         self.callback = self.worker.process
-
