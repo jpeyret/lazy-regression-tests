@@ -290,7 +290,7 @@ class KeepTextFilter(object):
         self.regexes = regexes_
         self.f_notify = f_notify
 
-    def _is_match(self, line, remover=False):
+    def _is_match(self, line):
         try:
             res = False
             for regex in self.regexes:
@@ -316,8 +316,8 @@ class KeepTextFilter(object):
     def filter(self, formatted_data):
         lines = []
         for line in formatted_data.splitlines():
-            match, line = self._is_match(line)
-            if match:
+            keep, line = self._is_match(line)
+            if keep:
                 lines.append(line)
         return "\n".join(lines)
 
@@ -331,8 +331,8 @@ class RemoveTextFilter(KeepTextFilter):
     def filter(self, formatted_data):
         lines = []
         for line in formatted_data.splitlines():
-            match, line = self._is_match(line, remover=True)
-            if not match:
+            keep, line = self._is_match(line)
+            if not keep:
                 lines.append(line)
         return "\n".join(lines)
 
