@@ -240,7 +240,7 @@ class RegexSubstit(object):
 
 
     def substit(self, line):
-        return "xxx"
+        return self.substitution
 
 
 
