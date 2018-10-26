@@ -222,6 +222,27 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 # utility functions and classes
 ####################
 
+class RegexSubstit(object):
+    """allows for replacement of the line with different contents
+
+       can't use a re.sub directly because the Filter won't know if 
+       it's just a match filter or a match & substitution
+    """
+
+
+    def __init__(self, pattern, substitution, *args):
+
+        self.patre = re.compile(pattern, *args)
+        self.substitution = substitution
+
+    def __getattr__(self, attrname):
+        return getattr(self.patre, attrname)
+
+
+    def substit(self, line):
+        return "xxx"
+
+
 
 class KeepTextFilter(object):
     def __init__(self, regexes=[], f_notify=None):
@@ -242,15 +263,24 @@ class KeepTextFilter(object):
         self.regexes = regexes_
         self.f_notify = f_notify
 
-    def _is_match(self, line):
+    def _is_match(self, line, remover=False):
         try:
             res = False
             for regex in self.regexes:
                 if regex.search(line):
                     if self.f_notify:
                         self.f_notify(Found(line, regex))
-                    return True
-            return False
+
+                    #ok, now let's substitute if that's what we want to do...
+                    substit = getattr(regex, "substit", None)
+                    if substit:
+                        line = substit(line)
+                        #but if we're called from RemoveTextFilter 
+                        #then keep the line
+                        return not remover, line
+
+                    return True, line
+            return False, line
         except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
@@ -259,7 +289,8 @@ class KeepTextFilter(object):
     def filter(self, formatted_data):
         lines = []
         for line in formatted_data.splitlines():
-            if self._is_match(line):
+            match, line = self._is_match(line)
+            if match:
                 lines.append(line)
         return "\n".join(lines)
 
@@ -270,7 +301,8 @@ class RemoveTextFilter(KeepTextFilter):
     def filter(self, formatted_data):
         lines = []
         for line in formatted_data.splitlines():
-            if not self._is_match(line):
+            match, line = self._is_match(line, remover=True)
+            if not match:
                 lines.append(line)
         return "\n".join(lines)
 
