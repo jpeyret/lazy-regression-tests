@@ -54,17 +54,6 @@ import re
 import shutil
 
 
-###################################################################
-# Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.
-###################################################################
-try:
-    _ = basestring
-except (NameError,) as e:
-    basestring = str
-try:
-    _ = unicode
-except (NameError,) as e:
-    unicode = str
 
 ###################################################################
 
@@ -89,6 +78,7 @@ try:
         replace,
         MediatedEnvironDict,
         Found,
+        basestring_, unicode_
     )
 except (ImportError,) as e:
     # not sure if needed
@@ -229,77 +219,6 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 
 
 
-class KeepTextFilter(object):
-
-    KEEP = True
-
-    def __init__(self, regexes=[], f_notify=None):
-
-        """:param regexes: list of regex's.  or strings which will be compiled to regex
-           you could also pass your own matching objects, they need `search(string)=>boolean`
-           method
-        """
-
-        regexes_ = regexes[:]
-
-        regexes_ = []
-        for regex in regexes:
-            if isinstance(regex, basestring):
-                regex = re.compile(regex)
-            regexes_.append(regex)
-
-        self.regexes = regexes_
-        self.f_notify = f_notify
-
-    def _is_match(self, line):
-        try:
-            res = False
-            for regex in self.regexes:
-                if regex.search(line):
-                    if self.f_notify:
-                        self.f_notify(Found(line, regex))
-
-                    #these are special classes such as 
-                    #utils.RegexSubstitHardcoded
-                    #utils.RegexSubstitFilter
-                    substitute = getattr(regex, "substitute", None)
-                    if substitute:
-                        line = substitute(line)
-                        #but if we're called from RemoveTextFilter 
-                        #then keep the line
-                        return self.KEEP, line
-
-                    return True, line
-            return False, line
-        except (Exception,) as e:
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-    def filter(self, formatted_data):
-        lines = []
-        for line in formatted_data.splitlines():
-            keep, line = self._is_match(line)
-            if keep:
-                lines.append(line)
-        return "\n".join(lines)
-
-    __call__ = filter
-
-
-class RemoveTextFilter(KeepTextFilter):
-
-    KEEP = False
-
-    def filter(self, formatted_data):
-        lines = []
-        for line in formatted_data.splitlines():
-            keep, line = self._is_match(line)
-            if not keep:
-                lines.append(line)
-        return "\n".join(lines)
-
-    __call__ = filter
 
 
 class _Control(object):
@@ -491,7 +410,7 @@ class LazyMixin(object):
         if isinstance(data, dict):
             return self.lazy_format_dict(data)
 
-        elif isinstance(data, basestring):
+        elif isinstance(data, basestring_):
 
             f = (
                 getattr(self, "format_%s" % (extension.lower()), None)
