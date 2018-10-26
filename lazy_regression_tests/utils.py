@@ -3,6 +3,8 @@ import re
 import os
 import difflib
 from collections import deque, namedtuple
+from functools import partial
+
 
 import pdb
 from lib.utils import set_cpdb, set_rpdb, ppp, debugObject
@@ -319,3 +321,69 @@ class DictionaryKeyFilter(_Filter):
         super(DictionaryKeyFilter, self).__init__(*args, **kwds)
         self.worker = RemoveWorkerNamesMatch()
         self.callback = self.worker.process
+
+
+class RegexSubstitHardcoded(object):
+    """allows for replacement of the line with different contents
+
+       can't use a re.sub directly because the Filter won't know if 
+       it's just a match filter or a match & substitution
+    """
+
+    def __repr__(self):
+
+        subinfo = None
+
+        try:
+        
+            if callable(self.substitution):
+                if isinstance(self.substitution, partial):
+                    subinfo = "partial:%s" % self.substitution.func.__name__
+                else:
+                    subinfo = "func.%s" % self.substitution.__name__
+            else:
+                subinfo = str(self.substitution)
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+
+        return "%s.(pattern=%s, substitution=%s" % (self.__class__.__name__, self.pattern, subinfo)
+
+    def __init__(self, pattern, substitution, *args):
+
+        self.patre = re.compile(pattern, *args)
+        self.substitution = substitution
+
+    def __getattr__(self, attrname):
+        return getattr(self.patre, attrname)
+
+
+    def substitute(self, line):
+        return self.substitution
+
+
+
+class RegexSubstitFilter(RegexSubstitHardcoded):
+
+    def __init__(self, pattern, substitution, *args, **kwds):
+
+        self.verbose = kwds.get("verbose")
+
+        if not callable(substitution):
+            raise TypeError("substitution needs to be a callable f(re.MatchObject)=>str")
+
+        super(RegexSubstitFilter, self).__init__(pattern, substitution, *args)
+
+    def substitute(self, line):
+        try:
+            res = self.patre.sub(self.substitution, line)
+            if rpdb(): 
+                pdb.set_trace()
+            if self.verbose:
+                print("\n  %s\n  :%s:\n  =>\n  :%s:" % (self, line, res))
+            return res
+
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+

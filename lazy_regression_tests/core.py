@@ -53,8 +53,6 @@ import codecs
 import re
 import shutil
 
-from functools import partial
-
 
 ###################################################################
 # Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.
@@ -228,43 +226,6 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 ####################
 
 
-class RegexSubstitHardcoded(object):
-    """allows for replacement of the line with different contents
-
-       can't use a re.sub directly because the Filter won't know if 
-       it's just a match filter or a match & substitution
-    """
-
-    def __repr__(self):
-
-        subinfo = None
-
-        try:
-        
-            if callable(self.substitution):
-                if isinstance(self.substitution, partial):
-                    subinfo = "partial:%s" % self.substitution.func.__name__
-                else:
-                    subinfo = "func.%s" % self.substitution.__name__
-            else:
-                subinfo = str(self.substitution)
-        except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
-            raise
-
-        return "%s.(pattern=%s, substitution=%s" % (self.__class__.__name__, self.pattern, subinfo)
-
-    def __init__(self, pattern, substitution, *args):
-
-        self.patre = re.compile(pattern, *args)
-        self.substitution = substitution
-
-    def __getattr__(self, attrname):
-        return getattr(self.patre, attrname)
-
-
-    def substitute(self, line):
-        return self.substitution
 
 
 
@@ -298,7 +259,9 @@ class KeepTextFilter(object):
                     if self.f_notify:
                         self.f_notify(Found(line, regex))
 
-                    #ok, now let's substitute if that's what we want to do...
+                    #these are special classes such as 
+                    #utils.RegexSubstitHardcoded
+                    #utils.RegexSubstitFilter
                     substitute = getattr(regex, "substitute", None)
                     if substitute:
                         line = substitute(line)
