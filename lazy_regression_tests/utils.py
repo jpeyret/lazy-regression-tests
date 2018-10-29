@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-
 ###################################################################
 # Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.
 ###################################################################
@@ -24,13 +23,11 @@ try:
     basestring_ = basestring
 except (NameError,) as e:
     basestring_ = str
-    
+
 try:
     unicode_ = unicode
 except (NameError,) as e:
     unicode_ = str
-
-
 
 
 def cpdb():
@@ -342,7 +339,7 @@ class RegexSubstitHardcoded(object):
         subinfo = None
 
         try:
-        
+
             if callable(self.substitution):
                 if isinstance(self.substitution, partial):
                     subinfo = "partial:%s" % self.substitution.func.__name__
@@ -351,10 +348,15 @@ class RegexSubstitHardcoded(object):
             else:
                 subinfo = str(self.substitution)
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
-        return "%s.(pattern=%s, substitution=%s" % (self.__class__.__name__, self.pattern, subinfo)
+        return "%s.(pattern=%s, substitution=%s" % (
+            self.__class__.__name__,
+            self.pattern,
+            subinfo,
+        )
 
     def __init__(self, pattern, substitution, *args):
 
@@ -364,34 +366,34 @@ class RegexSubstitHardcoded(object):
     def __getattr__(self, attrname):
         return getattr(self.patre, attrname)
 
-
     def substitute(self, line):
         return self.substitution
 
 
-
 class RegexSubstitFilter(RegexSubstitHardcoded):
-
     def __init__(self, pattern, substitution, *args, **kwds):
 
         self.verbose = kwds.get("verbose")
 
         if not callable(substitution):
-            raise TypeError("substitution needs to be a callable f(re.MatchObject)=>str")
+            raise TypeError(
+                "substitution needs to be a callable f(re.MatchObject)=>str"
+            )
 
         super(RegexSubstitFilter, self).__init__(pattern, substitution, *args)
 
     def substitute(self, line):
         try:
             res = self.patre.sub(self.substitution, line)
-            if rpdb(): 
+            if rpdb():
                 pdb.set_trace()
             if self.verbose:
                 print("\n  %s\n  :%s:\n  =>\n  :%s:" % (self, line, res))
             return res
 
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
 
@@ -425,14 +427,14 @@ class KeepTextFilter(object):
                     if self.f_notify:
                         self.f_notify(Found(line, regex))
 
-                    #these are special classes such as 
-                    #utils.RegexSubstitHardcoded
-                    #utils.RegexSubstitFilter
+                    # these are special classes such as
+                    # utils.RegexSubstitHardcoded
+                    # utils.RegexSubstitFilter
                     substitute = getattr(regex, "substitute", None)
                     if substitute:
                         line = substitute(line)
-                        #but if we're called from RemoveTextFilter 
-                        #then keep the line
+                        # but if we're called from RemoveTextFilter
+                        # then keep the line
                         return self.KEEP, line
 
                     return True, line
@@ -467,9 +469,10 @@ class RemoveTextFilter(KeepTextFilter):
 
     __call__ = filter
 
-def curry_func(func, replacement, verbose=False):
+
+def curry_func(func, replacement, verbose=False, **kwds):
     """preps the function for replacement"""
-    return partial(func, replacement=replacement, verbose=verbose)
+    return partial(func, replacement=replacement, verbose=verbose, **kwds)
 
 
 def simple_subber(match, *args, **kwds):
@@ -488,37 +491,41 @@ def simple_subber(match, *args, **kwds):
         try:
             replacement = kwds["replacement"]
         except (KeyError,) as e:
-            raise TypeError("missing replacement keyword parameter.  refer to docstring")
+            raise TypeError(
+                "missing replacement keyword parameter.  refer to docstring"
+            )
             raise
+
+        rpdb = kwds.get("rpdb")
 
         verbose = kwds.get("verbose")
 
         assert isinstance(replacement, basestring_)
-        if rpdb() or verbose: 
+        if rpdb or verbose:
             # ppp(match)
 
             di = {
-                "match.re.pattern" : match.re.pattern,
-                "match.groups" : match.groups(),
-                "match.string" : match.string,
-                "todo" : '%s.replace("%s", "even_odd")' % ((match.string[:match.end()], match.groups(0)[0])),
+                "match.re.pattern": match.re.pattern,
+                "match.groups": match.groups(),
+                "match.string": match.string,
+                "todo": '%s.replace("%s", "even_odd")'
+                % ((match.string[: match.end()], match.groups(0)[0])),
             }
             ppp(di)
 
-        res = match.string[match.start():match.end()].replace(match.groups(0)[0], replacement)
+        res = match.string[match.start() : match.end()].replace(
+            match.groups(0)[0], replacement
+        )
 
         if verbose:
             print("\nsubstit02:\n  %s \n  =>\n  %s" % (match.string, res))
-        if rpdb():
+        if rpdb:
             pdb.set_trace()
 
         # raise NotImplementedError()
         return res
 
-
     except (Exception,) as e:
-        if cpdb(): pdb.set_trace()
+        if cpdb():
+            pdb.set_trace()
         raise
-
-
-

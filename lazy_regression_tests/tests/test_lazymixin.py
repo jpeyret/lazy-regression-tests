@@ -57,12 +57,15 @@ from lazy_regression_tests.core import (
     LazyIOErrorCodes,
     OnAssertionError,
     DiffFormatter,
-    RemoveTextFilter,
-    KeepTextFilter,
     lzrt_default_t_basename,
 )
 
-from lazy_regression_tests.utils import DictionaryKeyFilter, _Filter
+from lazy_regression_tests.utils import (
+    DictionaryKeyFilter,
+    _Filter,
+    RemoveTextFilter,
+    KeepTextFilter,
+)
 
 ##########################################################
 # tests

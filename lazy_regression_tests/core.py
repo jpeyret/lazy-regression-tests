@@ -54,7 +54,6 @@ import re
 import shutil
 
 
-
 ###################################################################
 
 
@@ -78,7 +77,8 @@ try:
         replace,
         MediatedEnvironDict,
         Found,
-        basestring_, unicode_
+        basestring_,
+        unicode_,
     )
 except (ImportError,) as e:
     # not sure if needed
@@ -214,11 +214,6 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 ###################
 # utility functions and classes
 ####################
-
-
-
-
-
 
 
 class _Control(object):
