@@ -488,6 +488,9 @@ def simple_subber(match, *args, **kwds):
                use `operator.partial` or `curry_func` 
 
                ex: `partial(simple_subber, replacement="myreplacement"))`
+
+        :param onlyonce: keyword parameter - used to avoid replacing on a reformat when 
+        the replacement is found in the match string.
         :return: a string as per result of re.sub(pattern, callable)
     """
 
@@ -504,6 +507,13 @@ def simple_subber(match, *args, **kwds):
 
         verbose = kwds.get("verbose")
 
+
+        #avoid re doing multiple replaces...
+        onlyonce = kwds.get("onlyonce")
+        if onlyonce and replacement in match.string:
+            return match.string[match.start() : match.end()]
+
+        
         assert isinstance(replacement, basestring_)
         if rpdb or verbose:
             # ppp(match)

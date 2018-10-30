@@ -56,7 +56,7 @@ class MainManager(object):
             msg += debugObject(self.options, "\noptions")
 
             func_filter_factory = import_string(self.options.filter_builder)
-            self.filter_ = func_filter_factory()
+            self.filter_ = func_filter_factory(onlyonce=True)
 
             if self.options.output_dir and not os.path.isdir(self.options.output_dir):
                 raise ValueError("output_dir:%s does not exist" % (self.options.output_dir))
@@ -132,6 +132,18 @@ class MainManager(object):
             action="store",  # store_true, store_false
             help="%s output directory, if not in-place" % (dest),
         )
+
+
+        dest="write"
+        default=False
+        #choices=["a","b","c"]
+        parser.add_argument(
+            "--" + dest,
+            default=default,
+            action="store_true",
+            help="%s [%s]" % (dest, default)
+            )
+        
 
         return parser
 
