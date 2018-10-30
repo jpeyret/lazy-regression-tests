@@ -445,8 +445,12 @@ class KeepTextFilter(object):
             raise
 
     def filter(self, formatted_data):
+
+        if not isinstance(formatted_data, list):
+            formatted_data = formatted_data.splitlines()
+
         lines = []
-        for line in formatted_data.splitlines():
+        for line in formatted_data:
             keep, line = self._is_match(line)
             if keep:
                 lines.append(line)

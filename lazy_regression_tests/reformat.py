@@ -1,6 +1,7 @@
 """docstring"""
 import unittest
 import sys
+import os
 import logging
 import argparse
 
@@ -56,17 +57,29 @@ class MainManager(object):
             func_filter_factory = import_string(self.options.filter_builder)
             self.filter = func_filter_factory()
 
+
+
             logging.info(msg)
             print(msg)
 
-            raise NotImplementedError()
 
         except (Exception,) as e:
             if cpdb(): pdb.set_trace()
             raise
 
     def process(self):
-        pass
+        try:
+
+            if self.options.fnp_i and os.path.isfile(self.options.fnp_i):
+                self.reformat(self.options.fnp_i)
+            else:
+                raise NotImplementedError()
+        except (Exception,) as e:
+            ppp(self, self)
+            ppp(self.options, "options")
+            if cpdb(): 
+                pdb.set_trace()
+            raise
 
 
     def reformat(self, fnp_i):
