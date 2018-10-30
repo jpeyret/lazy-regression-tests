@@ -72,8 +72,8 @@ class MainManager(object):
     def process(self):
         try:
 
-            if self.options.fnp_i and os.path.isfile(self.options.fnp_i):
-                self.reformat(self.options.fnp_i)
+            if self.options.input_ and os.path.isfile(self.options.input_):
+                self.reformat(self.options.input_)
             else:
                 raise NotImplementedError()
         except (Exception,) as e:
@@ -119,7 +119,7 @@ class MainManager(object):
             help="python import path to a function returning a lazy_regression_tests.utils.KeepTextFilter/RemoveTextFilter",
         )
 
-        dest = "fnp_i"
+        dest = "input_"
         parser.add_argument(
             dest=dest,
             action="store",  # store_true, store_false
