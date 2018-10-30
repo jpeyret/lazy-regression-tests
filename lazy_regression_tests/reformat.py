@@ -4,11 +4,12 @@ import sys
 import os
 import logging
 import argparse
+import codecs
 
 import glob
 import re
 
-logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -55,16 +56,17 @@ class MainManager(object):
             msg += debugObject(self.options, "\noptions")
 
             func_filter_factory = import_string(self.options.filter_builder)
-            self.filter = func_filter_factory()
+            self.filter_ = func_filter_factory()
 
-
+            if self.options.output_dir and not os.path.isdir(self.options.output_dir):
+                raise ValueError("output_dir:%s does not exist" % (self.options.output_dir))
 
             logging.info(msg)
             print(msg)
 
-
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
     def process(self):
@@ -77,19 +79,32 @@ class MainManager(object):
         except (Exception,) as e:
             ppp(self, self)
             ppp(self.options, "options")
-            if cpdb(): 
+            if cpdb():
                 pdb.set_trace()
             raise
-
 
     def reformat(self, fnp_i):
         try:
 
-            with open(fnp_i) as fi:
-                lines = fi.readlines()
-            raise NotImplementedError()
+            with codecs.open(fnp_i, encoding="utf-8", errors="ignore") as fi:
+                previous = fi.read()
+            refiltered = self.filter_(previous)
+
+            print(refiltered)
+
+            if self.options.output_dir:
+                basename = os.path.basename(fnp_i)
+                fnp_o = os.path.join(self.options.output_dir, basename)
+                with codecs.open(
+                    fnp_o, encoding="utf-8", errors="ignore", mode="w"
+                ) as fo:
+                    fo.write(refiltered)
+
+                logger.info("\ndiff %s %s" % (fnp_i, fnp_o))
+
         except (Exception,) as e:
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
 
     @classmethod
@@ -109,6 +124,13 @@ class MainManager(object):
             dest=dest,
             action="store",  # store_true, store_false
             help="%s dump file needing formatting" % (dest),
+        )
+
+        dest = "output_dir"
+        parser.add_argument(
+            "--" + dest,
+            action="store",  # store_true, store_false
+            help="%s output directory, if not in-place" % (dest),
         )
 
         return parser
@@ -146,8 +168,8 @@ def import_string(dotted_path):
 
     except (Exception,) as e:
 
-        if cpdb(): 
-            ppp(locals(),"\nlocals")
+        if cpdb():
+            ppp(locals(), "\nlocals")
             print("sys.path:")
             for pa in sys.path:
                 print(pa)
