@@ -132,6 +132,7 @@ from collections import namedtuple
 
 Choice = namedtuple("Choice", "code help")
 
+opt_nodiff = "nodiff"
 
 class DirectiveChoices(object):
     """what can go into environment variable `lzrt_directive"""
@@ -142,6 +143,9 @@ class DirectiveChoices(object):
 and existing expecations are reset""",
     )
     skip = Choice("skip", """do not run lazy-regression-tests""")
+
+    nodiff = Choice(opt_nodiff, """check equality, but don't run diff""")
+
     missing_pass = Choice(
         "missing_pass",
         """IOError on expectations will be ignored and treated as a match success
@@ -179,6 +183,8 @@ class OnAssertionError(object):
 
     # we are not running these tests
     ignore = DirectiveChoices.skip.code
+
+    nodiff = DirectiveChoices.nodiff.code
 
 
 class LazyIOErrorCodes(object):
@@ -228,7 +234,11 @@ class _Control(object):
         if not env or not env.acquired:
             env.acquire()
 
-        self.skip = env.get(env_directive) == OnAssertionError.ignore
+        directive = env.get(env_directive)
+
+        self.skip = (directive == OnAssertionError.ignore)
+
+        self.nodiff = (directive == OnAssertionError.nodiff)
 
         self.baseline = env.get(env_directive) == OnAssertionError.baseline
         if self.baseline:
@@ -507,7 +517,10 @@ class LazyMixin(object):
 
             formatter = formatter or self.lazy_format_data
             # pdb.set_trace()
-            formatted_data = formatter(got, extension)
+            if got:
+                formatted_data = formatter(got, extension)
+            else:
+                formatted_data = ""
 
             # is there a filter for the extension?
             filter_ = filter_ or getattr(self, "lazy_filter_%s" % (extension), None)
@@ -554,6 +567,12 @@ class LazyMixin(object):
                 msg = "\nexp:%s:\n<>\ngot:%s:" % (exp, formatted_data)
                 logger.info(msg)
 
+            # ppp(control, "control")
+            # pdb.set_trace()
+
+            if control.nodiff:
+                message = " not equal but diffing disabled"
+
             if self.lazy_message_formatter and not message:
                 if exp != formatted_data:
                     # pdb.set_trace()
@@ -581,7 +600,7 @@ class LazyMixin(object):
 
             # if rpdb(): pdb.set_trace()
             self.assertEqual(exp, formatted_data, message)
-            logger.info("must have assertEqual'd")
+            # logger.info("must have assertEqual'd")
 
         except (IOError, AssertionError) as e:
             raise

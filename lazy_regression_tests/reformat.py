@@ -5,6 +5,7 @@ import os
 import logging
 import argparse
 import codecs
+import hashlib
 
 import glob
 import re
@@ -55,8 +56,8 @@ class MainManager(object):
             msg = debugObject(self, "\n\n MainManager.__init__:end")
             msg += debugObject(self.options, "\noptions")
 
-            func_filter_factory = import_string(self.options.filter_builder)
-            self.filter_ = func_filter_factory(onlyonce=True)
+            self.func_filter_factory = import_string(self.options.filter_builder)
+            self.filter_ = self.func_filter_factory(onlyonce=True)
 
             if self.options.output_dir and not os.path.isdir(self.options.output_dir):
                 raise ValueError("output_dir:%s does not exist" % (self.options.output_dir))
@@ -69,11 +70,32 @@ class MainManager(object):
                 pdb.set_trace()
             raise
 
+    def process_input_directory(self, dir_in):
+        try:
+            globmask = getattr(self.func_filter_factory, "globmask","*")
+
+            li = glob.glob(os.path.join(dir_in,globmask))
+            for fnp in li:
+                self.reformat(fnp)
+
+            if not self.options.write:
+                raise NotImplementedError("need to implement output_dir on input dir.  for now only write-in-place is supported")
+        except (Exception,) as e:
+            print("\n\nli (first 5):")
+            for fnp in li[0:5]:
+                print(fnp)
+
+            if cpdb(): pdb.set_trace()
+            raise
+
+
     def process(self):
         try:
 
             if self.options.input_ and os.path.isfile(self.options.input_):
                 self.reformat(self.options.input_)
+            elif self.options.input_ and os.path.isdir(self.options.input_):
+                self.process_input_directory(self.options.input_)
             else:
                 raise NotImplementedError()
         except (Exception,) as e:
@@ -83,24 +105,43 @@ class MainManager(object):
                 pdb.set_trace()
             raise
 
+    def _hash(self, data):
+        h = hashlib.sha1()
+        try:
+            h.update(data)
+        except (UnicodeEncodeError,) as e:
+            return None
+        return h.digest()
+
+
     def reformat(self, fnp_i):
         try:
 
             with codecs.open(fnp_i, encoding="utf-8", errors="ignore") as fi:
                 previous = fi.read()
+
+            h_previous = self._hash(previous)
+
             refiltered = self.filter_(previous)
 
-            print(refiltered)
+            h_refiltered = self._hash(refiltered)
+            if h_previous is not None and h_previous == h_refiltered:
+                logger.info("no changes for %s" % (fnp_i))
+                return
 
             if self.options.output_dir:
                 basename = os.path.basename(fnp_i)
                 fnp_o = os.path.join(self.options.output_dir, basename)
-                with codecs.open(
-                    fnp_o, encoding="utf-8", errors="ignore", mode="w"
-                ) as fo:
-                    fo.write(refiltered)
 
                 logger.info("\ndiff %s %s" % (fnp_i, fnp_o))
+            else:
+                fnp_o = fnp_i
+
+            with codecs.open(
+                fnp_o, encoding="utf-8", errors="ignore", mode="w"
+            ) as fo:
+                fo.write(refiltered)
+
 
         except (Exception,) as e:
             if cpdb():
