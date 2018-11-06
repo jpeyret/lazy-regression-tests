@@ -7,7 +7,17 @@ from functools import partial
 
 
 import pdb
-from lib.utils import set_cpdb, set_rpdb, ppp, debugObject
+
+from lazy_regression_tests._baseutils import (
+    set_cpdb,
+    set_rpdb,
+    ppp,
+    debugObject,
+    fill_template,
+    Subber,
+    RescueDict,
+)
+
 from traceback import print_exc as xp
 
 import logging
@@ -507,13 +517,11 @@ def simple_subber(match, *args, **kwds):
 
         verbose = kwds.get("verbose")
 
-
-        #avoid re doing multiple replaces...
+        # avoid re doing multiple replaces...
         onlyonce = kwds.get("onlyonce")
         if onlyonce and replacement in match.string:
             return match.string[match.start() : match.end()]
 
-        
         assert isinstance(replacement, basestring_)
         if rpdb or verbose:
             # ppp(match)

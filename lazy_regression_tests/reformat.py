@@ -60,7 +60,9 @@ class MainManager(object):
             self.filter_ = self.func_filter_factory(onlyonce=True)
 
             if self.options.output_dir and not os.path.isdir(self.options.output_dir):
-                raise ValueError("output_dir:%s does not exist" % (self.options.output_dir))
+                raise ValueError(
+                    "output_dir:%s does not exist" % (self.options.output_dir)
+                )
 
             logging.info(msg)
             print(msg)
@@ -72,22 +74,24 @@ class MainManager(object):
 
     def process_input_directory(self, dir_in):
         try:
-            globmask = getattr(self.func_filter_factory, "globmask","*")
+            globmask = getattr(self.func_filter_factory, "globmask", "*")
 
-            li = glob.glob(os.path.join(dir_in,globmask))
+            li = glob.glob(os.path.join(dir_in, globmask))
             for fnp in li:
                 self.reformat(fnp)
 
             if not self.options.write:
-                raise NotImplementedError("need to implement output_dir on input dir.  for now only write-in-place is supported")
+                raise NotImplementedError(
+                    "need to implement output_dir on input dir.  for now only write-in-place is supported"
+                )
         except (Exception,) as e:
             print("\n\nli (first 5):")
             for fnp in li[0:5]:
                 print(fnp)
 
-            if cpdb(): pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
             raise
-
 
     def process(self):
         try:
@@ -113,7 +117,6 @@ class MainManager(object):
             return None
         return h.digest()
 
-
     def reformat(self, fnp_i):
         try:
 
@@ -137,11 +140,8 @@ class MainManager(object):
             else:
                 fnp_o = fnp_i
 
-            with codecs.open(
-                fnp_o, encoding="utf-8", errors="ignore", mode="w"
-            ) as fo:
+            with codecs.open(fnp_o, encoding="utf-8", errors="ignore", mode="w") as fo:
                 fo.write(refiltered)
-
 
         except (Exception,) as e:
             if cpdb():
@@ -174,17 +174,15 @@ class MainManager(object):
             help="%s output directory, if not in-place" % (dest),
         )
 
-
-        dest="write"
-        default=False
-        #choices=["a","b","c"]
+        dest = "write"
+        default = False
+        # choices=["a","b","c"]
         parser.add_argument(
             "--" + dest,
             default=default,
             action="store_true",
-            help="%s [%s]" % (dest, default)
-            )
-        
+            help="%s [%s]" % (dest, default),
+        )
 
         return parser
 

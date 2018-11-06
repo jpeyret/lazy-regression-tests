@@ -79,14 +79,16 @@ try:
         Found,
         basestring_,
         unicode_,
+        debugObject,
+        fill_template,
+        Subber,
+        RescueDict,
+        ppp,
     )
 except (ImportError,) as e:
     # not sure if needed
     # from .utils import DiffFormatter
     raise
-
-from lib.utils import ppp, debugObject
-from lib.utils import fill_template, Subber, RescueDict
 
 import pdb
 
@@ -133,6 +135,7 @@ from collections import namedtuple
 Choice = namedtuple("Choice", "code help")
 
 opt_nodiff = "nodiff"
+
 
 class DirectiveChoices(object):
     """what can go into environment variable `lzrt_directive"""
@@ -236,9 +239,9 @@ class _Control(object):
 
         directive = env.get(env_directive)
 
-        self.skip = (directive == OnAssertionError.ignore)
+        self.skip = directive == OnAssertionError.ignore
 
-        self.nodiff = (directive == OnAssertionError.nodiff)
+        self.nodiff = directive == OnAssertionError.nodiff
 
         self.baseline = env.get(env_directive) == OnAssertionError.baseline
         if self.baseline:
