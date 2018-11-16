@@ -1,6 +1,17 @@
 import sys
 import types
 
+try:
+    from cStringIO import StringIO  # 223ed
+except (ImportError,) as e:
+    from io import StringIO  # 223ed
+
+try:
+    basestring_ = basestring
+except (NameError,) as e:
+    basestring_ = str
+
+
 def set_rpdb(rpdb, remove=False, recurse=True):
     if "--rpdb" in sys.argv:
         rpdb.enabled = True

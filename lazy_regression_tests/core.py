@@ -297,7 +297,7 @@ class LazyMixin(object):
 
     @classmethod
     def lazy_format_dict(cls, dict_):
-        return unicode(
+        return unicode_(
             json.dumps(dict_, sort_keys=True, indent=4, separators=(",", ":"))
         ).strip()
 
@@ -396,10 +396,10 @@ class LazyMixin(object):
 
     def lazy_format_string(self, data):
 
-        if isinstance(data, unicode):
+        if isinstance(data, unicode_):
             return data.strip()
 
-        return unicode(data, encoding="utf-8", errors="ignore").strip()
+        return unicode_(data, encoding="utf-8", errors="ignore").strip()
 
     def lazy_format_html(self, data):
         data = self.lazy_format_string(data)
@@ -597,7 +597,6 @@ class LazyMixin(object):
                 except (AssertionError,) as e:
                     self._lazy_write(fnp_exp, formatted_data)
                     logger.warning(u"%s.  expectation has been reset" % (e))
-                    # logger.warning("%s.  expectation has been reset" % (unicode(e, encoding="utf-8", errors="ignore")))
 
                 return
 
