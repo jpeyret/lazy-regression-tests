@@ -11,17 +11,22 @@ import codecs
 from collections import namedtuple
 
 import re
-
 import shutil
-
 import difflib
+
+pyver = sys.version_info.major
+
 
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
     import mock
 
-from BeautifulSoup import BeautifulSoup as bs
+try:
+    from BeautifulSoup import BeautifulSoup as bs
+except (ImportError,) as ei:
+    import bs4 as bs
+
 
 import logging
 
@@ -29,8 +34,19 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp
 
-from lib.utils import set_cpdb, set_rpdb, ppp, debugObject
-from lib.utils import fill_template, Subber, RescueDict
+# from lib.utils import set_cpdb, set_rpdb, ppp, debugObject
+# from lib.utils import fill_template, Subber, RescueDict
+
+from lazy_regression_tests._baseutils import (
+    set_cpdb,
+    set_rpdb,
+    ppp,
+    debugObject,
+    fill_template,
+    Subber,
+    RescueDict,
+)
+
 
 import pdb
 
@@ -212,6 +228,10 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
         try:
             exp = got = "foo"
 
+            if pyver == 3:
+                exp = str.encode(exp)
+                got = str.encode(got)
+
             with mock.patch(funcpath_open, mock.mock_open(read_data=exp)):
                 self.assertLazy(got, onIOError=LazyIOErrorCodes.pass_missing)
 
@@ -237,6 +257,10 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
 
         exp = got = "foo"
 
+        if pyver == 3:
+            exp = str.encode(exp)
+            got = str.encode(got)
+
         with mock.patch(funcpath_open, mock.mock_open(read_data=exp)):
             self.assertLazy(got)
 
@@ -249,6 +273,9 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
     def test_003_suffix(self):
 
         got = "something"
+
+        if pyver == 3:
+            got = str.encode(got)
 
         suffix = "mysuffix"
         with mock.patch(funcpath_open, mock.mock_open(read_data=got)):
@@ -878,7 +905,8 @@ class TestFilters(unittest.TestCase):
             res = self.watcher.scan(self.data)
 
             for key in self.matchers:
-                if self.data.has_key(key):
+                # if self.data.has_key(key):
+                if key in self.data:
                     found = None
                     for f_ in res.finds:
                         if key == f_.found[0]:

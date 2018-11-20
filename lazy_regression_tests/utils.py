@@ -337,6 +337,26 @@ class DictionaryKeyFilter(_Filter):
         self.callback = self.worker.process
 
 
+class DataMatcher(object):
+    pass
+
+
+class RegexMatcher(DataMatcher):
+    def __init__(self, pattern, *args, **kwds):
+        self.patre = re.compile(pattern, *args)
+        self.verbose = kwds.get("verbose")
+
+    def search(self, *args, **kwds):
+        return self.patre.search(*args, **kwds)
+
+
+class RegexRemoveSaver(RegexMatcher):
+    """this will remove the matching line but also save it"""
+
+    def __getattr__(self, attrname):
+        return getattr(self.patre, attrname)
+
+
 class RegexSubstitHardcoded(object):
     """allows for replacement of the line with different contents
 
@@ -398,7 +418,7 @@ class RegexSubstitFilter(RegexSubstitHardcoded):
             if rpdb():
                 pdb.set_trace()
             if self.verbose:
-                print("\n  %s\n  :%s:\n  =>\n  :%s:" % (self, line, res))
+                logger.info("\n  %s\n  :%s:\n  =>\n  :%s:" % (self, line, res))
             return res
 
         except (Exception,) as e:
@@ -530,8 +550,6 @@ def simple_subber(match, *args, **kwds):
                 "match.re.pattern": match.re.pattern,
                 "match.groups": match.groups(),
                 "match.string": match.string,
-                "todo": '%s.replace("%s", "even_odd")'
-                % ((match.string[: match.end()], match.groups(0)[0])),
             }
             ppp(di)
 

@@ -14,12 +14,10 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 
-from lib.utils import debugObject, ppp, Dummy, set_cpdb, set_rpdb
+from lazy_regression_tests._baseutils import debugObject, ppp, Dummy, set_cpdb, set_rpdb
+
 
 from importlib import import_module
-
-# from django.utils.module_loading import import_string
-
 
 from traceback import print_exc as xp
 import pdb

@@ -293,6 +293,7 @@ class Subber(object):
         self.di_res[keyname] = res
         return res
 
+
 class RescueDict(object):
     """fall through in case a fillTemplate does not find a key
        use sparingly as it covers up exceptions
