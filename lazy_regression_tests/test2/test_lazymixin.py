@@ -80,6 +80,7 @@ from lazy_regression_tests.utils import (
     DictionaryKeyFilter,
     _Filter,
     RemoveTextFilter,
+    RegexRemoveSaver,
     KeepTextFilter,
 )
 
@@ -760,7 +761,7 @@ class TestLive(LazyMixin, unittest.TestCase):
             self.assertFalse(ignore in written, written)
 
             # check what the filter stripped out
-            self.assertTrue(ignore in self.lazytemp.filterhits[0].found)
+            #self.assertTrue(ignore in list(self.lazytemp.filterhits.values())[0].found)
 
             data = data.replace(ignore, "%s this" % (ignore))
 
@@ -820,6 +821,12 @@ var settings = {"tags": [{"disable_override": true, "checked": null, "descriptio
 var csrfmiddlewaretoken = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFutW';
 var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFutW';
 
+    <script>
+    
+    // settings are set up by <ViewManager>.calc_json_settings()
+    var settings = {"li_user_message": [], "rdbname_0": "hcm91dmo", "rdbname_1": "pgfin92", "objectvalue01": "FEDTBHADMN1", "objectvalue11": "AMARTIN", "xdb_mode": true, "rdbname_r": "pgfin92", "rdbname_l": "hcm91dmo"};
+    
+    </script>
 
 
 // require( ["pssecurity/detail_require"], function(module){
@@ -828,7 +835,10 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
 """
 
             li_remove = [
-                re.compile("var\ssettings\s=\s"),
+                # re.compile("var\ssettings\s=\s"),
+
+                #RegexRemoveSaver saves the hit in list temp.filterhis[hitname]
+                RegexRemoveSaver("var\ssettings\s=\s", hitname="settings"),
                 re.compile("var\scsrfmiddlewaretoken\s=\s"),
                 re.compile("var\scsrf_token\s=\s"),
             ]
@@ -838,10 +848,14 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
                 li_remove, f_notify=self.lazy_filter_notify
             )
 
-            self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.pass_missing)
+            temp = self.assertLazy(data, "html", onIOError=LazyIOErrorCodes.pass_missing)
+
+            # ppp(temp)
+            self.assertTrue(self.lazytemp.filterhits["settings"][0].found.startswith("var settings"))
 
             with open(self.lazytemp.fnp_exp) as fi:
                 written = fi.read()
+            pdb.set_trace()
 
             self.assertFalse("csrf" in written, written)
             self.assertFalse("var settings" in written, written)

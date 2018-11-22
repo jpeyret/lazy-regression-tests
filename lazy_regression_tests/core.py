@@ -265,8 +265,19 @@ class LazyTemp(object):
     def __init__(self, control, env):
         self.fnp_exp = self.fnp_got = None
         self.env = env.copy()
-        self.filterhits = []
+        self.filterhits = {}
         self.control = control
+
+    def notify(self, found):
+        try:
+            #only save hits that have a finder.hitname
+            if found.by.hitname:
+                li = self.filterhits.setdefault(found.by.hitname, [])
+                li.append(found)
+
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
 
 
 ENV_PREFIX = "lzrt_"
@@ -293,7 +304,7 @@ class LazyMixin(object):
     lazy_message_formatter = DiffFormatter()
 
     def lazy_filter_notify(self, found):
-        self.lazytemp.filterhits.append(found)
+        self.lazytemp.notify(found)
 
     @classmethod
     def lazy_format_dict(cls, dict_):
@@ -509,6 +520,7 @@ class LazyMixin(object):
             control = _Control(self, env, onIOError)
 
             tmp = self.lazytemp = LazyTemp(control, env)
+            tmp.got = got
 
             if control.skip:
                 logger.info("skipping lazy checks")
@@ -598,11 +610,13 @@ class LazyMixin(object):
                     self._lazy_write(fnp_exp, formatted_data)
                     logger.warning(u"%s.  expectation has been reset" % (e))
 
-                return
+                return self.lazytemp
 
             # if rpdb(): pdb.set_trace()
             self.assertEqual(exp, formatted_data, message)
             # logger.info("must have assertEqual'd")
+
+            return self.lazytemp
 
         except (IOError, AssertionError) as e:
             raise

@@ -248,13 +248,6 @@ class Finder(object):
         pass
 
 
-class RegexFinder(Finder):
-    def _init(self):
-        self.patre = re.compile(target)
-
-    def is_match(self, notify, *names):
-        raise NotImplementedError()
-
 
 class NamesMatchTemp(object):
     def __init__(self):
@@ -301,6 +294,9 @@ class RemoveWorkerNamesMatch(WorkerNamesMatch):
 
 
 class _Filter(object):
+    """hacky because this is different for dictionary than text filtering"""
+
+
     def __init__(self, matchers_=[], notify=None, callback=None):
 
         self.matchers = []
@@ -312,15 +308,24 @@ class _Filter(object):
         self.notify = notify or self._notify
         self.callback = callback
 
+    # def scan(self, target, temp=None):
     def scan(self, target):
+        # self.temp = temp or getattr(self, "temp", None) or NamesMatchTemp()
         self.temp = NamesMatchTemp()
 
-        for key in target.keys():
+        for key, value in target.items():
+            #!!!TODO!!! - recurse into nested dicts.
+
             for matcher in self.matchers:
                 if matcher.is_match(self.notify, key):
                     continue
 
-        self.callback and self.callback(target, self.temp)
+            #recursion error....
+            # if isinstance(value, dict):
+            #     self.scan(target, self.temp)
+
+        if self.callback:
+            self.callback(target, self.temp)
         return self.temp
 
     def _notify(self, found):
@@ -338,26 +343,33 @@ class DictionaryKeyFilter(_Filter):
 
 
 class DataMatcher(object):
-    pass
+    hitname = None
 
 
 class RegexMatcher(DataMatcher):
+
     def __init__(self, pattern, *args, **kwds):
         self.patre = re.compile(pattern, *args)
         self.verbose = kwds.get("verbose")
+        self.hitname = kwds.get("hitname")
 
     def search(self, *args, **kwds):
         return self.patre.search(*args, **kwds)
-
-
-class RegexRemoveSaver(RegexMatcher):
-    """this will remove the matching line but also save it"""
 
     def __getattr__(self, attrname):
         return getattr(self.patre, attrname)
 
 
-class RegexSubstitHardcoded(object):
+class RegexRemoveSaver(RegexMatcher):
+    """this will remove the matching line but also save it"""
+
+    def __init__(self, pattern, *args, **kwds):
+        assert kwds.get("hitname"), "RegexRemoveSaver needs a hitname"
+        super(RegexRemoveSaver, self).__init__(pattern, *args, **kwds)
+
+
+
+class RegexSubstitHardcoded(RegexMatcher):
     """allows for replacement of the line with different contents
 
        can't use a re.sub directly because the Filter won't know if 
@@ -431,6 +443,8 @@ class KeepTextFilter(object):
 
     KEEP = True
 
+    dflt_cls = RegexMatcher
+
     def __init__(self, regexes=[], f_notify=None):
 
         """:param regexes: list of regex's.  or strings which will be compiled to regex
@@ -438,16 +452,36 @@ class KeepTextFilter(object):
            method
         """
 
-        regexes_ = regexes[:]
+        try:
+            regexes_ = regexes[:]
 
-        regexes_ = []
-        for regex in regexes:
-            if isinstance(regex, basestring_):
-                regex = re.compile(regex)
-            regexes_.append(regex)
+            regexes_ = []
+            for regex in regexes:
+                if not isinstance(regex, self.dflt_cls):
+                    regex = self.dflt_cls(re.compile(regex))
+                regexes_.append(regex)
 
-        self.regexes = regexes_
-        self.f_notify = f_notify
+            self.regexes = regexes_
+            self.f_notify = f_notify
+
+        except (Exception,) as e:
+            if 1 or cpdb(): pdb.set_trace()
+            raise
+
+    def copy(self):
+        """return a duplicate, but with a copy of the regexes..."""
+
+        newinst = self.__class__(regexes=[],f_notify=self.f_notify)
+        newinst.regexes = self.regexes[:]
+        return newinst
+
+
+
+    def add_regex(self, regex):
+        if not isinstance(regex, self.dflt_cls):
+            regex = self.dflt_cls(re.compile(regex))
+        self.regexes.append(regex)
+
 
     def _is_match(self, line):
         try:
