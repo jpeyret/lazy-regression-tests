@@ -427,7 +427,10 @@ class LazyMixin(object):
     def lazy_format_data(self, data, extension=""):
 
         if isinstance(data, dict):
-            return self.lazy_format_dict(data)
+            res = self.lazy_format_dict(data)
+            if isinstance(res, basestring_):
+                res = res.strip()
+            return res
 
         elif isinstance(data, basestring_):
 
@@ -435,9 +438,9 @@ class LazyMixin(object):
                 getattr(self, "format_%s" % (extension.lower()), None)
                 or self.lazy_format_string
             )
-            return f(data)
+            return f(data).strip()
         else:
-            return self.lazy_format_string(data)
+            return self.lazy_format_string(data).strip()
 
     def _lazy_get_fnp_root(self, subject):
         """get the root name, before extension and suffix"""
@@ -496,6 +499,7 @@ class LazyMixin(object):
         filter_=None,
         formatter=None,
         f_notify=None,
+        no_assert=False,
     ):
         """ check that result matches expectations saved previously.
         when the expectations file doesn't exist yet, it is created with received data
@@ -519,11 +523,14 @@ class LazyMixin(object):
 
             control = _Control(self, env, onIOError)
 
+            smsg = "%s.assertLazy:" % (self)
+
             tmp = self.lazytemp = LazyTemp(control, env)
             tmp.got = got
 
             if control.skip:
-                logger.info("skipping lazy checks")
+                if self.verbose:
+                    logger.info("%s skipping lazy checks" % (smsg))
                 return
 
             tmp.fnp_exp = fnp_exp = self._lazy_add_extension(
@@ -555,6 +562,14 @@ class LazyMixin(object):
             )
             # pdb.set_trace()
             self._lazy_write(fnp_got, formatted_data)
+
+            #the caller requested not to check exp == got.  this can be done, for example
+            #to use the parsing and formatting mechanisms without actually comparing.
+            if no_assert:
+                if self.verbose:
+                    logger.info("%s no_assert:%1.  returning" % (smsg, no_assert))
+                return self.lazytemp
+
 
             try:
                 if self.verbose:
@@ -603,22 +618,29 @@ class LazyMixin(object):
                     if rpdb() and not message:
                         pdb.set_trace()
 
+
+
             if control.baseline:
                 try:
                     self.assertEqual(exp, formatted_data, message)
                 except (AssertionError,) as e:
                     self._lazy_write(fnp_exp, formatted_data)
-                    logger.warning(u"%s.  expectation has been reset" % (e))
+                    logger.warning(u"lazy: %s.  expectation has been reset" % (e))
 
                 return self.lazytemp
 
-            # if rpdb(): pdb.set_trace()
+            if isinstance(formatted_data, basestring_):
+                formatted_data = formatted_data.strip()
             self.assertEqual(exp, formatted_data, message)
-            # logger.info("must have assertEqual'd")
+            
 
             return self.lazytemp
 
         except (IOError, AssertionError) as e:
+            if cpdb():
+                pdb.set_trace()
+
+
             raise
         except (Exception,) as e:
             if cpdb():

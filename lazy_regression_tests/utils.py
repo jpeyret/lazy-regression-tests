@@ -587,9 +587,13 @@ def simple_subber(match, *args, **kwds):
             }
             ppp(di)
 
-        res = match.string[match.start() : match.end()].replace(
-            match.groups(0)[0], replacement
-        )
+        try:
+            res = match.string[match.start() : match.end()].replace(
+                match.groups(0)[0], replacement
+            )
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            return "!lazy_regression_tests:bad substitution:!"
 
         if verbose:
             print("\nsubstit02:\n  %s \n  =>\n  %s" % (match.string, res))
