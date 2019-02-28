@@ -427,8 +427,8 @@ class RegexSubstitFilter(RegexSubstitHardcoded):
     def substitute(self, line):
         try:
             res = self.patre.sub(self.substitution, line)
-            if rpdb():
-                pdb.set_trace()
+            # if rpdb():
+            #     pdb.set_trace()
             if self.verbose:
                 logger.info("\n  %s\n  :%s:\n  =>\n  :%s:" % (self, line, res))
             return res
@@ -465,7 +465,7 @@ class KeepTextFilter(object):
             self.f_notify = f_notify
 
         except (Exception,) as e:
-            if 1 or cpdb(): pdb.set_trace()
+            if cpdb(): pdb.set_trace()
             raise
 
     def copy(self):

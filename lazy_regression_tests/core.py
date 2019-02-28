@@ -208,6 +208,7 @@ class LazyIOErrorCodes(object):
 SYSARG_BASELINE = "--lazy-%s" % OnAssertionError.baseline
 SYSARG_IGNORE = "--lazy-%s" % OnAssertionError.ignore
 SYSARG_PASS_MISSING = "--lazy-%s" % LazyIOErrorCodes.pass_missing.replace("_", "-")
+SYSARG_NODIFF = "--lazy-%s" % OnAssertionError.nodiff
 
 
 # allows per subject-environment lookups i.e. got may be put somewhere else than exp
@@ -637,10 +638,6 @@ class LazyMixin(object):
             return self.lazytemp
 
         except (IOError, AssertionError) as e:
-            if cpdb():
-                pdb.set_trace()
-
-
             raise
         except (Exception,) as e:
             if cpdb():
@@ -688,6 +685,7 @@ def output_help():
     )
     writer("- %s don't run regression tests\n" % (SYSARG_IGNORE))
     writer("- %s pass tests with missing expectations\n" % (SYSARG_PASS_MISSING))
+    writer("- %s check equality but dont run diff s\n" % (SYSARG_NODIFF))
 
     DirectiveChoices.output_help(writer)
 
@@ -710,6 +708,18 @@ def lazy_pass_missing(*classes):
         for cls_ in classes:
             cls_.lazy_environ[env_directive] = OnAssertionError.pass_missing
         sys.argv.remove(SYSARG_PASS_MISSING)
+
+def lazy_nodiff(*classes):
+    # if "-h" in sys.argv:
+    #     output_help()
+    # pdb.set_trace()
+
+
+    if SYSARG_NODIFF in sys.argv:
+
+        for cls_ in classes:
+            cls_.lazy_environ[env_directive] = OnAssertionError.nodiff
+        sys.argv.remove(SYSARG_NODIFF)
 
 
 def lazy_baseline(*classes):
