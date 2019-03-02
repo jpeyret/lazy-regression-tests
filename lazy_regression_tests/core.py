@@ -67,6 +67,11 @@ except (ImportError,) as e:
 
 import logging
 
+
+from yaml import dump as ydump, safe_load as yload
+
+
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp
@@ -284,6 +289,31 @@ class LazyTemp(object):
 ENV_PREFIX = "lzrt_"
 
 
+PATRE_YAML_OBJECTSPEC = re.compile("!!python/object:.+$")
+
+
+def yaml_to_dict(data):
+    """take an arbitrary python object and transform it to dict form"""
+    try:
+
+        #
+        str_yaml = ydump(data, default_flow_style=False)
+
+        lines = []
+        for line in str_yaml.split("\n"):
+            line2 = PATRE_YAML_OBJECTSPEC.sub("", line).rstrip()
+            if line2:
+                lines.append(line2)
+
+        safe_yaml = "\n".join(lines)
+
+        res = yload(safe_yaml)
+
+        return res
+    except (Exception,) as e:
+        if cpdb(): pdb.set_trace()
+        raise
+
 class LazyMixin(object):
     """main class.  see `assertLazy`"""
 
@@ -312,6 +342,11 @@ class LazyMixin(object):
         return unicode_(
             json.dumps(dict_, sort_keys=True, indent=4, separators=(",", ":"))
         ).strip()
+
+    @classmethod
+    def lazy_format_dict2yaml(cls, dict_):
+        return ydump(dict_, default_flow_style=False)
+
 
     @property
     def verbose(self):
@@ -425,6 +460,16 @@ class LazyMixin(object):
         di = json.loads(data)
         return self.lazy_format_dict(di)
 
+    def lazy_format_yaml(self, data):
+        try:
+            di = yaml_to_dict(data)
+            return self.lazy_format_dict2yaml(di)
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+
+
+
     def lazy_format_data(self, data, extension=""):
 
         if isinstance(data, dict):
@@ -440,7 +485,11 @@ class LazyMixin(object):
                 or self.lazy_format_string
             )
             return f(data).strip()
+
+        elif extension == "yaml":
+            return self.lazy_format_yaml(data)
         else:
+            raise NotImplementedError("%s.lazy_format_data(%s)" % (self, locals()))
             return self.lazy_format_string(data).strip()
 
     def _lazy_get_fnp_root(self, subject):
