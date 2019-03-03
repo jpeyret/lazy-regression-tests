@@ -299,6 +299,8 @@ def yaml_to_dict(data):
         #
         str_yaml = ydump(data, default_flow_style=False)
 
+        # pdb.set_trace()
+
         lines = []
         for line in str_yaml.split("\n"):
             line2 = PATRE_YAML_OBJECTSPEC.sub("", line).rstrip()
