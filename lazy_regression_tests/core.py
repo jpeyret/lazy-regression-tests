@@ -292,7 +292,7 @@ ENV_PREFIX = "lzrt_"
 PATRE_YAML_OBJECTSPEC = re.compile("!!python/object:.+$")
 
 
-def yaml_to_dict(data):
+def yaml_to_dict(data, track_type=False):
     """take an arbitrary python object and transform it to dict form"""
     try:
 
@@ -303,9 +303,20 @@ def yaml_to_dict(data):
 
         lines = []
         for line in str_yaml.split("\n"):
-            line2 = PATRE_YAML_OBJECTSPEC.sub("", line).rstrip()
-            if line2:
+
+            hit = PATRE_YAML_OBJECTSPEC.search(line)
+            if hit:
+                line2 = PATRE_YAML_OBJECTSPEC.sub("", line).rstrip()
                 lines.append(line2)
+
+                #this isnt working yet...
+                if track_type:
+                    lines.append("""  _ytype : "%s" """ % line[hit.start():hit.end()])
+
+            else:
+                lines.append(line)                  
+
+
 
         safe_yaml = "\n".join(lines)
 
@@ -313,7 +324,8 @@ def yaml_to_dict(data):
 
         return res
     except (Exception,) as e:
-        if cpdb(): pdb.set_trace()
+        if cpdb(): 
+            pdb.set_trace()
         raise
 
 class LazyMixin(object):
