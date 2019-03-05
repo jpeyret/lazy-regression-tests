@@ -289,7 +289,7 @@ class LazyTemp(object):
 ENV_PREFIX = "lzrt_"
 
 
-PATRE_YAML_OBJECTSPEC = re.compile("!!python/object:.+$")
+PATRE_YAML_OBJECTSPEC = re.compile("!!python/.+$")
 
 
 def yaml_to_dict(data, track_type=False):
@@ -298,8 +298,6 @@ def yaml_to_dict(data, track_type=False):
 
         #
         str_yaml = ydump(data, default_flow_style=False)
-
-        # pdb.set_trace()
 
         lines = []
         for line in str_yaml.split("\n"):
@@ -492,6 +490,18 @@ class LazyMixin(object):
                 res = res.strip()
             return res
 
+        elif isinstance(data, bytes):
+            data = data.decode("utf-8")
+            if extension == "html":
+                #track the cast
+                data = "<!-- lazy_format_data.info:cast via bytes.decode(utf-8) -->\n%s" %(data) 
+
+            f = (
+                getattr(self, "format_%s" % (extension.lower()), None)
+                or self.lazy_format_string
+            )
+            return f(data).strip()
+
         elif isinstance(data, basestring_):
 
             f = (
@@ -500,10 +510,17 @@ class LazyMixin(object):
             )
             return f(data).strip()
 
+
         elif extension == "yaml":
             return self.lazy_format_yaml(data)
         else:
-            raise NotImplementedError("%s.lazy_format_data(%s)" % (self, locals()))
+            di_diag = dict(
+                data=str(data)[:100],
+                datatype=type(data),
+                extension=extension,
+                )
+
+            raise NotImplementedError("%s.lazy_format_data(%s)" % (self, di_diag ))
             return self.lazy_format_string(data).strip()
 
     def _lazy_get_fnp_root(self, subject):
@@ -602,7 +619,6 @@ class LazyMixin(object):
             )
 
             formatter = formatter or self.lazy_format_data
-            # pdb.set_trace()
             if got:
                 formatted_data = formatter(got, extension)
             else:
@@ -624,7 +640,6 @@ class LazyMixin(object):
             tmp.fnp_got = fnp_got = self._lazy_add_extension(
                 self.lazy_fnp_got_root(), extension, suffix
             )
-            # pdb.set_trace()
             self._lazy_write(fnp_got, formatted_data)
 
             #the caller requested not to check exp == got.  this can be done, for example
@@ -638,31 +653,14 @@ class LazyMixin(object):
             try:
                 if self.verbose:
                     logger.info("%s.assertLazy.reading:%s" % (self, fnp_exp))
-                # with open(fnp_exp) as fi:
                 with codecs.open(fnp_exp, encoding="utf-8", errors="ignore") as fi:
                     exp = fi.read().strip()
             except (IOError,) as e:
-                # handler = self._lazy_get_handler_io_error(onIOError)
-
-                # try:
-                #     assert handler == control.handler_io_error
-                # except (Exception,) as e:
-                #     if cpdb():
-                #         self.lazy_debug()
-                #         pdb.set_trace()
-                #     raise
-
                 return control.handler_io_error(fnp_exp, formatted_data, message)
-
-            # if isinstance(got, dict) and extension == "json":
-            #     exp = json.loads(exp)
 
             if self.verbose >= 2:
                 msg = "\nexp:%s:\n<>\ngot:%s:" % (exp, formatted_data)
                 logger.info(msg)
-
-            # ppp(control, "control")
-            # pdb.set_trace()
 
             if control.nodiff:
                 message = " not equal but diffing disabled"
@@ -681,8 +679,6 @@ class LazyMixin(object):
 
                     if rpdb() and not message:
                         pdb.set_trace()
-
-
 
             if control.baseline:
                 try:
