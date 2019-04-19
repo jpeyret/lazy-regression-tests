@@ -20,7 +20,7 @@ pyver = sys.version_info.major
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
-    import mock
+    import mock  #python 2?
 
 try:
     from BeautifulSoup import BeautifulSoup as bs
@@ -87,11 +87,6 @@ from lazy_regression_tests.utils import (
 ##########################################################
 # tests
 ##########################################################
-
-try:
-    import unittest.mock as mock
-except (ImportError,) as e:
-    import mock
 
 
 lzrt_template_dirname = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
