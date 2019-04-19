@@ -349,7 +349,7 @@ class DataMatcher(object):
 
     hitname = None
 
-    formatter_filter = False
+    raw_format_filter = False
 
 
 class RegexMatcher(DataMatcher):
@@ -465,7 +465,7 @@ class KeepTextFilter(object):
 
             regexes_ = []
             for regex in regexes:
-                if getattr(regex, "formatter_filter", False):
+                if getattr(regex, "raw_format_filter", False):
                     self.formatters.append(regex)
                     continue
 

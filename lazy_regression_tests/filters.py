@@ -23,7 +23,7 @@ from lazy_regression_tests.utils import (
 )
 
 class FormatterRemoveFilter(DataMatcher):
-    formatter_filter = True
+    raw_format_filter = True
 
 class CSSRemoveFilter(FormatterRemoveFilter):
 
