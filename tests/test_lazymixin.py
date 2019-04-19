@@ -24,9 +24,12 @@ except (ImportError,) as ei:
     import mock  #python 2?
 
 try:
-    from BeautifulSoup import BeautifulSoup as bs
-except (ImportError,) as ei:
-    import bs4 as bs
+    from bs4 import BeautifulSoup as bs
+except (ImportError,) as e:
+    try:
+        from BeautifulSoup import BeautifulSoup as bs
+    except (Exception,) as e2:
+        bs = None
 
 
 import logging
@@ -580,7 +583,7 @@ if has_directory_to_write_to:
 
 
 
-class BaseFilter(LazyMixinBasic, unittest.TestCase):
+class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
 
 
     patre_manual_remove = re.compile("csrfmiddlewaretoken|var\ssettings|nodiff")
@@ -595,7 +598,11 @@ class BaseFilter(LazyMixinBasic, unittest.TestCase):
         for line in self.data.split("\n"):
             if not self.patre_manual_remove.search(line):
                 exp.append(line)
-        return "\n".join(exp)
+
+        res = "\n".join(exp)
+
+        res = bs(res).prettify()
+        return res
                 
 
 
@@ -604,10 +611,10 @@ class BaseFilter(LazyMixinBasic, unittest.TestCase):
 
 
         try:
-            if self.__class__ == BaseFilter:
+            if self.__class__ == BaseHtmlFilter:
                 return
 
-            super(BaseFilter, self).setUp()
+            super(BaseHtmlFilter, self).setUp()
 
             li_remove = self._li_remove + getattr(self, "li_remove",[])
 
@@ -631,7 +638,7 @@ class BaseFilter(LazyMixinBasic, unittest.TestCase):
     @mock.patch.dict(os.environ, di)
     def test(self):
         try:
-            if self.__class__ == BaseFilter:
+            if self.__class__ == BaseHtmlFilter:
                 return
 
             # if rpdb(): pdb.set_trace()
@@ -646,7 +653,7 @@ class BaseFilter(LazyMixinBasic, unittest.TestCase):
             raise
 
 
-class TestCssFilter(BaseFilter):
+class TestCssFilter(BaseHtmlFilter):
     data = """
 <script>
 var csrfmiddlewaretoken = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFutW';

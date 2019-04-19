@@ -350,13 +350,13 @@ class LazyMixin(object):
         self.lazytemp.notify(found)
 
     @classmethod
-    def lazy_format_dict(cls, dict_):
+    def lazy_format_dict(cls, dict_, filter=None):
         return unicode_(
             json.dumps(dict_, sort_keys=True, indent=4, separators=(",", ":"))
         ).strip()
 
     @classmethod
-    def lazy_format_dict2yaml(cls, dict_):
+    def lazy_format_dict2yaml(cls, dict_, filter=None):
         return ydump(dict_, default_flow_style=False)
 
 
@@ -453,14 +453,14 @@ class LazyMixin(object):
     def lazy_fnp_got_root(self):
         return self._lazy_get_fnp_root(subject="got")
 
-    def lazy_format_string(self, data):
+    def lazy_format_string(self, data, filter=None):
 
         if isinstance(data, unicode_):
             return data.strip()
 
         return unicode_(data, encoding="utf-8", errors="ignore").strip()
 
-    def lazy_format_html(self, data):
+    def lazy_format_html(self, data, filter=None):
         # raise NotImplementedError("%s.lazy_format_html(%s)" % (self, locals()))
 
         data = self.lazy_format_string(data)
@@ -469,15 +469,18 @@ class LazyMixin(object):
             return data
         soup = bs(data)  # make BeautifulSoup
 
-        # pdb.set_trace()
+        if filter:
+            soup = filter.format(soup)
+
+        if rpdb(): pdb.set_trace()
 
         return soup.prettify()  # prettify the html
 
-    def lazy_format_json(self, data):
+    def lazy_format_json(self, data, filter=None):
         di = json.loads(data)
         return self.lazy_format_dict(di)
 
-    def lazy_format_yaml(self, data):
+    def lazy_format_yaml(self, data, filter=None):
         try:
             di = yaml_to_dict(data)
             return self.lazy_format_dict2yaml(di)
@@ -485,12 +488,10 @@ class LazyMixin(object):
             if cpdb(): pdb.set_trace()
             raise
 
-
-
-    def lazy_format_data(self, data, extension=""):
+    def lazy_format_data(self, data, extension="", filter=None):
 
         if isinstance(data, dict):
-            res = self.lazy_format_dict(data)
+            res = self.lazy_format_dict(data, filter=filter)
             if isinstance(res, basestring_):
                 res = res.strip()
             return res
@@ -513,7 +514,7 @@ class LazyMixin(object):
                 getattr(self, "lazy_format_%s" % (extension.lower()), None)
                 or self.lazy_format_string
             )
-            return f(data).strip()
+            return f(data,filter=filter).strip()
 
 
         elif extension == "yaml":
@@ -623,14 +624,16 @@ class LazyMixin(object):
                 self.lazy_fnp_exp_root(), extension, suffix
             )
 
+            # is there a filter for the extension?
+            filter_ = filter_ or getattr(self, "lazy_filter_%s" % (extension), None)
+
+
             formatter = formatter or self.lazy_format_data
             if got:
-                formatted_data = formatter(got, extension)
+                formatted_data = formatter(got, extension, filter=filter_)
             else:
                 formatted_data = ""
 
-            # is there a filter for the extension?
-            filter_ = filter_ or getattr(self, "lazy_filter_%s" % (extension), None)
             if filter_:
                 reset_notify = False
                 if f_notify is not False and not filter_.f_notify:

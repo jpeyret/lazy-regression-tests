@@ -343,6 +343,10 @@ class DictionaryKeyFilter(_Filter):
 
 
 class DataMatcher(object):
+
+    def __repr__(self):
+        return "%s.%s" % (self.__module__, self.__class__.__name__)
+
     hitname = None
 
     formatter_filter = False
@@ -465,7 +469,6 @@ class KeepTextFilter(object):
                     self.formatters.append(regex)
                     continue
 
-
                 if not isinstance(regex, DataMatcher):
                     regex = self.dflt_cls(re.compile(regex))
                 regexes_.append(regex)
@@ -532,6 +535,25 @@ class KeepTextFilter(object):
     __call__ = filter
 
 
+    def format(self, data, **kwargs):
+
+        if not self.formatters:
+            return data
+
+        try:
+            for formatter in self.formatters:
+                data = formatter.format(data, **kwargs)
+
+            return data
+
+
+            # raise NotImplementedError("format(%s)" % (locals()))
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+    
+
+
 class RemoveTextFilter(KeepTextFilter):
 
     KEEP = False
@@ -545,6 +567,18 @@ class RemoveTextFilter(KeepTextFilter):
         return "\n".join(lines)
 
     __call__ = filter
+
+
+    # def format(self, data, **kwargs):
+
+    #     if not self.formatters:
+    #         return data
+
+    #     try:
+    #         raise NotImplementedError("format(%s)" % (locals()))
+    #     except (Exception,) as e:
+    #         if cpdb(): pdb.set_trace()
+    #         raise
 
 
 def curry_func(func, replacement, verbose=False, **kwds):

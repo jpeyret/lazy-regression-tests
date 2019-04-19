@@ -5,6 +5,12 @@ from lazy_regression_tests._baseutils import (
     debugObject,
 )
 
+import pdb
+
+def cpdb():
+    return cpdb.enabled
+cpdb.enabled = False
+
 
 from lazy_regression_tests.utils import (
     _Filter,
@@ -19,7 +25,6 @@ from lazy_regression_tests.utils import (
 class FormatterRemoveFilter(DataMatcher):
     formatter_filter = True
 
-
 class CSSRemoveFilter(FormatterRemoveFilter):
 
     def __init__(self, css, *args, **kwds):
@@ -27,11 +32,13 @@ class CSSRemoveFilter(FormatterRemoveFilter):
         self.verbose = kwds.get("verbose")
         self.hitname = kwds.get("hitname")    
 
-    def filter(self, soup):
+    def format(self, soup):
         try:
-            raise NotImplementedError("filter(%s)" % (locals()))
+            for hit in soup.select(self.css):
+                hit.decompose()
+            return soup
         except (Exception,) as e:
             if cpdb(): pdb.set_trace()
             raise
 
-    __call__ = filter
+    __call__ = format
