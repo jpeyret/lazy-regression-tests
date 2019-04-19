@@ -27,5 +27,11 @@ class CSSRemoveFilter(FormatterRemoveFilter):
         self.verbose = kwds.get("verbose")
         self.hitname = kwds.get("hitname")    
 
+    def filter(self, soup):
+        try:
+            raise NotImplementedError("filter(%s)" % (locals()))
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
 
-
+    __call__ = filter

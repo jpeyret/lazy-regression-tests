@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 test lazy-regression-tests
@@ -609,7 +610,18 @@ class BaseFilter(LazyMixinBasic, unittest.TestCase):
             super(BaseFilter, self).setUp()
 
             li_remove = self._li_remove + getattr(self, "li_remove",[])
-            self.exp = self.get_exp()
+
+            self.lazy_filter_html = RemoveTextFilter(
+                li_remove, f_notify=self.lazy_filter_notify
+            )
+
+            self.b_exp =self.exp = self.get_exp()
+
+            if pyver == 3:
+                self.b_exp = str.encode(self.exp)
+                # self.data = str.encode(self.data)
+
+
         except (Exception,) as e:
             if cpdb(): pdb.set_trace()
             raise
@@ -623,24 +635,12 @@ class BaseFilter(LazyMixinBasic, unittest.TestCase):
                 return
 
             # if rpdb(): pdb.set_trace()
-            self.lazy_filter_html = RemoveTextFilter(
-                self.li_remove, f_notify=self.lazy_filter_notify
-            )
 
-            with mock.patch(funcpath_open, mock.mock_open(read_data=self.exp)):
+
+
+            with mock.patch(funcpath_open, mock.mock_open(read_data=self.b_exp)):
                 if rpdb(): pdb.set_trace()
-                self.assertLazy(self.data)
-
-
-            # temp = self.assertLazy(self.data, "html")
-
-            # self.assertTrue(self.lazytemp.filterhits["settings"][0].found.startswith("var settings"))
-
-            # with open(self.lazytemp.fnp_exp) as fi:
-            #     written = fi.read()
-
-            # self.assertFalse("csrf" in written, written)
-            # self.assertFalse("var settings" in written, written)
+                self.assertLazy(self.data, extension="html")
         except (Exception,) as e:
             if cpdb(): pdb.set_trace()
             raise

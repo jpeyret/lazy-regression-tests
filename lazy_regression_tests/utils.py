@@ -457,9 +457,6 @@ class KeepTextFilter(object):
         try:
             self.formatters = []
 
-
-
-
             regexes_ = regexes[:]
 
             regexes_ = []
