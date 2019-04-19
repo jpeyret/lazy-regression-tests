@@ -84,6 +84,12 @@ from lazy_regression_tests.utils import (
     KeepTextFilter,
 )
 
+from lazy_regression_tests.filters import (
+    CSSRemoveFilter
+)
+
+
+
 ##########################################################
 # tests
 ##########################################################
@@ -895,7 +901,76 @@ class TestThrottling(LazyMixin, unittest.TestCase):
         print(message)
 
 
-class TestFilters(unittest.TestCase):
+class BaseFilter(LazyMixin, unittest.TestCase):
+
+
+    patre_manual_remove = re.compile("csrfmiddlewaretoken|var\ssettings|nodiff")
+
+    _li_remove = [
+        RegexRemoveSaver("var\ssettings\s=\s", hitname="settings"),
+        re.compile("var\scsrfmiddlewaretoken\s=\s"),
+    ]
+
+    def get_exp(self):
+        exp = []
+        for line in self.data.split("\n"):
+            if not self.patre_manual_remove.search(line):
+                exp.append(line)
+        return "\n".join(exp)
+                
+
+
+
+    def setUp(self):
+        try:
+            if self.__class__ == BaseFilter:
+                return
+            li_remove = self._li_remove + getattr(self, "li_remove",[])
+            self.exp = self.get_exp()
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+
+    def test(self):
+        try:
+            if self.__class__ == BaseFilter:
+                return
+
+            # if rpdb(): pdb.set_trace()
+            self.lazy_filter_html = RemoveTextFilter(
+                li_remove, f_notify=self.lazy_filter_notify
+            )
+
+            temp = self.assertLazy(data, "html")
+
+            self.assertTrue(self.lazytemp.filterhits["settings"][0].found.startswith("var settings"))
+
+            with open(self.lazytemp.fnp_exp) as fi:
+                written = fi.read()
+
+            self.assertFalse("csrf" in written, written)
+            self.assertFalse("var settings" in written, written)
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+
+
+class TestCssFilter(BaseFilter):
+    data = """
+<script>
+var csrfmiddlewaretoken = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFutW';
+var settings = {"li_user_message": []};
+</script>
+<div class="row">
+    <div>keep ante</div>
+    <div class="nodiff">remove this</div>
+    <div>keep post</div>
+</div>
+
+    """
+
+
+class TestDictFilters(unittest.TestCase):
 
     matchers = ["csrf", "sysdate"]
     _data = dict(csrf="skip.csrf", sysdate="skip.sysdate", keep1="keep1", keep2="keep2")
@@ -962,14 +1037,13 @@ class TestFilters(unittest.TestCase):
             raise
 
 
-class TestFilters_Absent(TestFilters):
+class TestFilters_Absent(TestDictFilters):
 
     matchers = ["xcsrf", "xsysdate"]
     _data = dict(csrf="skip.csrf", sysdate="skip.sysdate", keep1="keep1", keep2="keep2")
 
 
 if __name__ == "__main__":
-
     set_cpdb(cpdb, remove=True)
     set_rpdb(rpdb, remove=True)
 

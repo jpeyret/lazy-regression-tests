@@ -1,6 +1,15 @@
 import sys
 import types
 
+import logging
+
+from string import Template
+
+from functools import partial, wraps
+
+logger = logging.getLogger(__name__)
+
+
 try:
     from cStringIO import StringIO  # 223ed
 except (ImportError,) as e:
@@ -10,6 +19,52 @@ try:
     basestring_ = basestring
 except (NameError,) as e:
     basestring_ = str
+
+
+#################################
+# Python 3 bytes=>str support
+#################################
+
+
+def cast_bytes2str(fn):
+    """decorator to cast the result of a function to a str if and only if it's bytes"""
+
+    def decorated(*args, **kwds):
+
+        res = fn(*args, **kwds)
+        if isinstance(res, bytes):
+            return res.decode("utf-8")
+        return res
+
+    return decorated
+
+
+def _pseudo_decor(fn, attrname):
+    """decorator to cast the an attribute with a function result to a str if and only if it's bytes
+
+       can't be used directly, see `cast_contentbytes2str`
+    """
+
+    # https://stackoverflow.com/a/25827070
+
+    # magic sauce to lift the name and doc of the function
+    @wraps(fn)
+    def ret_fun(*args, **kwargs):
+        # do stuff here, for eg.
+
+        # print ("decorator arg is %s" % str(attrname))
+        res = fn(*args, **kwargs)
+        value = getattr(res, attrname)
+        if isinstance(value, bytes):
+            # howto- bytes=>str
+            value = value.decode("utf-8")
+            setattr(res, attrname, value)
+        return res
+
+    return ret_fun
+
+
+cast_contentbytes2str = partial(_pseudo_decor, attrname="content")
 
 
 def set_rpdb(rpdb, remove=False, recurse=True):
@@ -32,8 +87,22 @@ def set_rpdb(rpdb, remove=False, recurse=True):
 
 
 def set_cpdb(cpdb, remove=False, recurse=True, boolvalue=None):
+
+    # !!!TODO!!!p4 - stop handling --pdb and consider it reserved
+
+    single_use_flag = "--cpdb"
+
+    flags = set(["--cpdbmany", "--cpdbonce", single_use_flag])
+    args = set(sys.argv)
+
+    # print("sys.argv#20", id(sys.argv), sys.argv, id(sys.argv))
+
+    single_use_flag = "once" if single_use_flag in sys.argv else False
+
+    found = single_use_flag or (args & flags)
+
     if boolvalue is None:
-        boolvalue = "--pdb" in sys.argv
+        boolvalue = getattr(cpdb, "enabled", False) or found
 
     if boolvalue:
         cpdb.enabled = boolvalue
@@ -45,11 +114,18 @@ def set_cpdb(cpdb, remove=False, recurse=True, boolvalue=None):
                     module.cpdb = cpdb
                 except AttributeError:
                     pass
-        if remove:
+    # import pdb
+    # pdb.set_trace()
+    if remove:
+        # pdb.set_trace()
+        for flag in flags:
             try:
-                sys.argv.remove("--pdb")
+                sys.argv.remove(flag)
             except (ValueError,) as e:
                 pass
+                # print("couldnt remove:%s:" % (flag) )
+                # print("sys.argv#250", id(sys.argv), sys.argv)
+    # print("sys.argv#29", id(sys.argv), sys.argv, id(sys.argv))
 
 
 def ppp(o, header=None):
@@ -101,22 +177,19 @@ def debugObject(
 
     else:
 
-        if not header and inspect.isclass(obj):
+        if not header and isinstance(obj, object):
             header = "%s@%s" % (obj.__class__.__name__, obj.__module__)
 
         di = {}
 
-        # properties can make a huge mess of things...
-        li_skip_properties = []
         cls_ = getattr(obj, "__class__", None)
-        if cls_:
-            for k, v in vars(cls_).items():
-                if isinstance(v, property):
-                    li_skip_properties.append(k)
 
         for attrname in dir(obj):
 
-            if attrname in li_skip_properties:
+            # properties can make a huge mess of things...
+            attr = getattr(cls_, attrname, None)
+            if attr and isinstance(attr, property):
+                di[attrname] = "[property]"
                 continue
 
             if skip__ and attrname.startswith("__") and attrname.endswith("__"):
@@ -124,7 +197,7 @@ def debugObject(
             try:
                 attrval = di[attrname] = getattr(obj, attrname, "???")
             except Exception as e:
-                attrval = "?"
+                attrval = "exception:%s" % (e)
 
             if type(attrval) in li_skiptype:
                 li_skipfield.append(attrname)
@@ -208,9 +281,20 @@ def debugDict(
     return buf.getvalue()
 
 
-def fill_template(tmpl, *args):  #!!!TODO!!! _baseutils
+def fill_template(tmpl, *args):
     try:
         return tmpl % Subber(*args)
+    except Exception as e:
+        logger.debug("tmpl:%s,args:%s" % (tmpl, args))
+        raise
+
+
+def sub_template(tmpl, *args):
+    if isinstance(tmpl, basestring_):
+        tmpl = Template(tmpl)
+
+    try:
+        return tmpl.substitute(Subber(*args))
     except Exception as e:
         logger.debug("tmpl:%s,args:%s" % (tmpl, args))
         raise
@@ -221,6 +305,18 @@ class Subber(object):
         self.li_arg = list(args)
         # raise NotImplementedError, "li_arg:%s" % (self.li_arg)
         self.di_res = {}
+
+    def __repr__(self):
+        def fmt(arg, maxlen=20):
+            msg = "%s" % (arg)
+            if len(msg) > maxlen:
+                return msg[:maxlen] + "..."
+            else:
+                return msg
+
+        return "Subber([" + ",".join([fmt(arg) for arg in self.li_arg]) + "])"
+
+        # return str(self.li_arg)
 
     @classmethod
     def factory(cls, obj, *args):
