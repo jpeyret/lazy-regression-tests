@@ -47,13 +47,18 @@ from lazy_regression_tests._baseutils import (
     RescueDict,
 )
 
+from lazy_regression_tests.filters import (
+    CSSRemoveFilter
+)
+
 
 import pdb
 
-
-def cpdb():
+def cpdb(**kwds):
+    if cpdb.enabled == "once":
+        cpdb.enabled = False
+        return True
     return cpdb.enabled
-
 
 cpdb.enabled = False
 
@@ -571,6 +576,93 @@ if has_directory_to_write_to:
 
     # pdb.set_trace()
     ppp(live_seed, "live_seed")
+
+
+
+class BaseFilter(LazyMixinBasic, unittest.TestCase):
+
+
+    patre_manual_remove = re.compile("csrfmiddlewaretoken|var\ssettings|nodiff")
+
+    _li_remove = [
+        RegexRemoveSaver("var\ssettings\s=\s", hitname="settings"),
+        re.compile("var\scsrfmiddlewaretoken\s=\s"),
+    ]
+
+    def get_exp(self):
+        exp = []
+        for line in self.data.split("\n"):
+            if not self.patre_manual_remove.search(line):
+                exp.append(line)
+        return "\n".join(exp)
+                
+
+
+
+    def setUp(self):
+
+
+        try:
+            if self.__class__ == BaseFilter:
+                return
+
+            super(BaseFilter, self).setUp()
+
+            li_remove = self._li_remove + getattr(self, "li_remove",[])
+            self.exp = self.get_exp()
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+
+    di = di_livetest.copy()
+
+    @mock.patch.dict(os.environ, di)
+    def test(self):
+        try:
+            if self.__class__ == BaseFilter:
+                return
+
+            # if rpdb(): pdb.set_trace()
+            self.lazy_filter_html = RemoveTextFilter(
+                self.li_remove, f_notify=self.lazy_filter_notify
+            )
+
+            with mock.patch(funcpath_open, mock.mock_open(read_data=self.exp)):
+                if rpdb(): pdb.set_trace()
+                self.assertLazy(self.data)
+
+
+            # temp = self.assertLazy(self.data, "html")
+
+            # self.assertTrue(self.lazytemp.filterhits["settings"][0].found.startswith("var settings"))
+
+            # with open(self.lazytemp.fnp_exp) as fi:
+            #     written = fi.read()
+
+            # self.assertFalse("csrf" in written, written)
+            # self.assertFalse("var settings" in written, written)
+        except (Exception,) as e:
+            if cpdb(): pdb.set_trace()
+            raise
+
+
+class TestCssFilter(BaseFilter):
+    data = """
+<script>
+var csrfmiddlewaretoken = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFutW';
+var settings = {"li_user_message": []};
+</script>
+<div class="row">
+    <div>keep ante</div>
+    <div class="nodiff">remove this</div>
+    <div>keep post</div>
+</div>
+
+    """
+
+    li_remove = [
+        CSSRemoveFilter(".nodiff")
+    ]
 
 
 @unittest.skipUnless(has_directory_to_write_to, NO_TESTWRITES_MSG)
