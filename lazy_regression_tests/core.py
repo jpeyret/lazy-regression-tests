@@ -461,11 +461,16 @@ class LazyMixin(object):
         return unicode_(data, encoding="utf-8", errors="ignore").strip()
 
     def lazy_format_html(self, data):
+        # raise NotImplementedError("%s.lazy_format_html(%s)" % (self, locals()))
+
         data = self.lazy_format_string(data)
         if bs is None:
             logger.warning("BeautifulSoup is unavaiable")
             return data
         soup = bs(data)  # make BeautifulSoup
+
+        # pdb.set_trace()
+
         return soup.prettify()  # prettify the html
 
     def lazy_format_json(self, data):
@@ -497,7 +502,7 @@ class LazyMixin(object):
                 data = "<!-- lazy_format_data.info:cast via bytes.decode(utf-8) -->\n%s" %(data) 
 
             f = (
-                getattr(self, "format_%s" % (extension.lower()), None)
+                getattr(self, "lazy_format_%s" % (extension.lower()), None)
                 or self.lazy_format_string
             )
             return f(data).strip()
@@ -505,7 +510,7 @@ class LazyMixin(object):
         elif isinstance(data, basestring_):
 
             f = (
-                getattr(self, "format_%s" % (extension.lower()), None)
+                getattr(self, "lazy_format_%s" % (extension.lower()), None)
                 or self.lazy_format_string
             )
             return f(data).strip()
@@ -653,6 +658,7 @@ class LazyMixin(object):
             try:
                 if self.verbose:
                     logger.info("%s.assertLazy.reading:%s" % (self, fnp_exp))
+
                 with codecs.open(fnp_exp, encoding="utf-8", errors="ignore") as fi:
                     exp = fi.read().strip()
             except (IOError,) as e:
