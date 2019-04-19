@@ -9,20 +9,23 @@ from lazy_regression_tests._baseutils import (
 from lazy_regression_tests.utils import (
     _Filter,
     RemoveTextFilter,
+    DataMatcher,
     ppp,
     fill_template,
     Subber,
     RescueDict,
 )
 
-class FormatterRemoveFilter(_Filter):
+class FormatterRemoveFilter(DataMatcher):
     formatter_filter = True
 
 
 class CSSRemoveFilter(FormatterRemoveFilter):
-    pass
 
-    
+    def __init__(self, css, *args, **kwds):
+        self.css = css
+        self.verbose = kwds.get("verbose")
+        self.hitname = kwds.get("hitname")    
 
 
 

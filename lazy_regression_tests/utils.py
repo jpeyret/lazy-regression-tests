@@ -345,6 +345,8 @@ class DictionaryKeyFilter(_Filter):
 class DataMatcher(object):
     hitname = None
 
+    formatter_filter = False
+
 
 class RegexMatcher(DataMatcher):
 
@@ -453,11 +455,21 @@ class KeepTextFilter(object):
         """
 
         try:
+            self.formatters = []
+
+
+
+
             regexes_ = regexes[:]
 
             regexes_ = []
             for regex in regexes:
-                if not isinstance(regex, self.dflt_cls):
+                if getattr(regex, "formatter_filter", False):
+                    self.formatters.append(regex)
+                    continue
+
+
+                if not isinstance(regex, DataMatcher):
                     regex = self.dflt_cls(re.compile(regex))
                 regexes_.append(regex)
 
