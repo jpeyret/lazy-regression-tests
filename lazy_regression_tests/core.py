@@ -691,7 +691,10 @@ class LazyMixin(object):
 
             if control.baseline:
                 try:
-                    self.assertEqual(exp, formatted_data, message)
+                    #don't try a comparison, because those that often runs too long
+                    #and you're not learning that much anyway on baseline
+                    self.assertTrue(exp == formatted_data, message)
+                    # self.assertEqual(exp, formatted_data, message)
                 except (AssertionError,) as e:
                     self._lazy_write(fnp_exp, formatted_data)
                     logger.warning(u"lazy: %s.  expectation has been reset" % (e))
