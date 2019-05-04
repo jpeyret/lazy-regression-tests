@@ -144,12 +144,22 @@ def debug_env(self):
 
 class LazyMixinBasic(LazyMixin):
 
+    """
+    these are for not-live tests.
+
+
+
+    """
+
+
     debug_env = debug_env
 
     lazy_filename = lazy_filename
 
+    tmp_formatted_data = None
+
     def _lazy_write(self, fnp, formatted_data):
-        pass
+        self.tmp_formatted_data = formatted_data
 
 
 class Test_001_Configuration(LazyMixinBasic, unittest.TestCase):
@@ -585,7 +595,6 @@ if has_directory_to_write_to:
 
 class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
 
-
     patre_manual_remove = re.compile("csrfmiddlewaretoken|var\ssettings|nodiff")
 
     _li_remove = [
@@ -593,7 +602,7 @@ class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
         re.compile("var\scsrfmiddlewaretoken\s=\s"),
     ]
 
-    def get_exp(self):
+    def format_exp(self):
         exp = []
         for line in self.data.split("\n"):
             if not self.patre_manual_remove.search(line):
@@ -601,14 +610,11 @@ class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
 
         res = "\n".join(exp)
 
-        res = bs(res).prettify()
-        return res
+        self.exp = self.mock_exp = bs(res).prettify()
+        if pyver == 3:
+            self.mock_exp = str.encode(self.exp)
                 
-
-
-
     def setUp(self):
-
 
         try:
             if self.__class__ == BaseHtmlFilter:
@@ -622,11 +628,8 @@ class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
                 li_remove, f_notify=self.lazy_filter_notify
             )
 
-            self.b_exp =self.exp = self.get_exp()
+            self.format_exp()
 
-            if pyver == 3:
-                self.b_exp = str.encode(self.exp)
-                # self.data = str.encode(self.data)
 
 
         except (Exception,) as e:
@@ -641,11 +644,7 @@ class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
             if self.__class__ == BaseHtmlFilter:
                 return
 
-            # if rpdb(): pdb.set_trace()
-
-
-
-            with mock.patch(funcpath_open, mock.mock_open(read_data=self.b_exp)):
+            with mock.patch(funcpath_open, mock.mock_open(read_data=self.mock_exp)):
                 if rpdb(): pdb.set_trace()
                 self.assertLazy(self.data, extension="html")
         except (Exception,) as e:
