@@ -40,9 +40,12 @@ except (NameError,) as e:
     unicode_ = str
 
 
-def cpdb():
-    return cpdb.enabled
 
+def cpdb(**kwds):
+    if cpdb.enabled == "once":
+        cpdb.enabled = False
+        return True
+    return cpdb.enabled
 
 cpdb.enabled = False
 
