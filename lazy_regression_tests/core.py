@@ -566,6 +566,9 @@ class LazyMixin(object):
         _lib = [fill_template(t_, subber) for t_ in _litb]
         basename = ".".join([i_ for i_ in _lib if i_])
 
+        basename = basename.replace(" ","_")
+        basename = basename.replace("/","_")
+
         return os.path.join(dirname, basename)
 
     def _lazy_add_extension(self, fnp, extension="", suffix=""):
@@ -667,7 +670,7 @@ class LazyMixin(object):
             except (IOError,) as e:
                 return control.handler_io_error(fnp_exp, formatted_data, message)
 
-            if self.verbose >= 2:
+            if self.verbose and self.verbose >= 2:
                 msg = "\nexp:%s:\n<>\ngot:%s:" % (exp, formatted_data)
                 logger.info(msg)
 
@@ -677,9 +680,12 @@ class LazyMixin(object):
             if self.lazy_message_formatter and not message:
                 if exp != formatted_data:
                     # pdb.set_trace()
-                    message = self.lazy_message_formatter.format(
-                        exp, formatted_data, window=5
-                    )
+                    if not control.baseline:                
+                        message = self.lazy_message_formatter.format(
+                            exp, formatted_data, window=5
+                        )
+                    else:
+                        message = "no match but baseline mode: will reset %(fnp_exp)s and pass test"
 
                     if self.verbose:
                         message += (
