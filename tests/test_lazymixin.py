@@ -60,19 +60,16 @@ import pdb
 
 def cpdb(**kwds):
     if cpdb.enabled == "once":
-        cpdb.enabled = False
+        cpdb.enabled = False #type: ignore
         return True
     return cpdb.enabled
 
-cpdb.enabled = False
-
-
+cpdb.enabled = False #type: ignore
 def rpdb():
     return rpdb.enabled
 
 
-rpdb.enabled = False
-
+rpdb.enabled = False #type: ignore
 #
 
 from lazy_regression_tests.core import (

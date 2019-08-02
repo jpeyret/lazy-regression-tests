@@ -43,19 +43,16 @@ except (NameError,) as e:
 
 def cpdb(**kwds):
     if cpdb.enabled == "once":
-        cpdb.enabled = False
+        cpdb.enabled = False #type: ignore
         return True
     return cpdb.enabled
 
-cpdb.enabled = False
-
-
+cpdb.enabled = False #type: ignore
 def rpdb():
     return rpdb.enabled
 
 
-rpdb.enabled = False
-
+rpdb.enabled = False #type: ignore
 Found = namedtuple("Found", "found by")
 
 
@@ -354,13 +351,17 @@ class DataMatcher(object):
 
     raw_format_filter = False
 
+    def __init__(self, *args, **kwds):
+        self.verbose = kwds.get("verbose")
+        self.hitname = kwds.get("hitname")
+
+
 
 class RegexMatcher(DataMatcher):
 
     def __init__(self, pattern, *args, **kwds):
         self.patre = re.compile(pattern, *args)
-        self.verbose = kwds.get("verbose")
-        self.hitname = kwds.get("hitname")
+        super(RegexMatcher, self).__init__(*args, **kwds)
 
     def search(self, *args, **kwds):
         return self.patre.search(*args, **kwds)

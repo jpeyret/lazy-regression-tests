@@ -27,15 +27,12 @@ def cpdb():
     return cpdb.enabled
 
 
-cpdb.enabled = False
-
-
+cpdb.enabled = False #type: ignore
 def rpdb():
     return rpdb.enabled
 
 
-rpdb.enabled = False
-
+rpdb.enabled = False #type: ignore
 if __name__ == "__main__":
     set_cpdb(cpdb, remove=True)
     set_rpdb(rpdb, remove=True)

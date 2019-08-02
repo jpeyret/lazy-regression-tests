@@ -6,10 +6,15 @@ from lazy_regression_tests._baseutils import (
 )
 
 import pdb
+from bemyerp.lib.utils import set_cpdb, set_rpdb
 
-def cpdb():
-    return cpdb.enabled
-cpdb.enabled = False
+def cpdb(**kwds) -> bool:   # pragma : no cover
+    if cpdb.enabled == "once":
+        cpdb.enabled = False # type : ignore
+        return True
+    return cpdb.enabled # type : ignore
+cpdb.enabled = False # type : ignore
+
 
 
 from lazy_regression_tests.utils import (
@@ -28,12 +33,14 @@ class FormatterRemoveFilter(DataMatcher):
 class CSSRemoveFilter(FormatterRemoveFilter):
 
     def __init__(self, css, *args, **kwds):
+        pdb.set_trace()
         self.css = css
         self.verbose = kwds.get("verbose")
         self.hitname = kwds.get("hitname")    
 
     def format(self, soup):
         try:
+            pdb.set_trace()
             for hit in soup.select(self.css):
                 hit.decompose()
             return soup

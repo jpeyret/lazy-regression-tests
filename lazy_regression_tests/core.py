@@ -44,6 +44,14 @@
     └── test_uthelper_mixin.TestLive.test_ignore
 """
 
+#######################################################
+# Typing
+#######################################################
+
+from typing import Any
+
+###################################################################
+
 import sys
 import os
 import unittest
@@ -102,16 +110,12 @@ def cpdb():
     return cpdb.enabled
 
 
-cpdb.enabled = False
-
-
+cpdb.enabled = False #type: ignore
 def rpdb():
     return rpdb.enabled
 
 
-rpdb.enabled = False
-
-
+rpdb.enabled = False #type: ignore
 ###################
 # configuration
 #####################
@@ -237,7 +241,7 @@ class _Control(object):
        save in the LazyTemp results object as well.
     """
 
-    def __init__(self, mixin, env, onIOError_):
+    def __init__(self, mixin : "LazyMixin", env : MediatedEnvironDict, onIOError_, **kwargs):
         pass
 
         if not env or not env.acquired:
@@ -248,6 +252,10 @@ class _Control(object):
         self.skip = directive == OnAssertionError.ignore
 
         self.nodiff = directive == OnAssertionError.nodiff
+
+        self.nest_testfilename = kwargs.get("nest_testfilename")
+
+        self.lazy_filename = kwargs.get("lazy_filename")
 
         self.baseline = env.get(env_directive) == OnAssertionError.baseline
         if self.baseline:
@@ -366,7 +374,8 @@ class LazyMixin(object):
         return res
 
     @classmethod
-    def _lazy_get_t_dirname(cls, subject=""):
+    def _lazy_get_t_dirname(cls, subject="", control=None):
+
 
         env_t_dirname_specific = fill_template(
             t_env_dirname_subject, {"subject": subject}
@@ -387,6 +396,12 @@ class LazyMixin(object):
                     generic=env_t_dirname,
                 )
             )
+
+        #nesting each test script under its own subdirectory 
+        nest_testfilename = getattr(control, "nest_testfilename", False)
+        nest_testfilename = getattr(control, "lazy_filename", "")
+        if nest_testfilename:
+            res = os.path.join(res, control.lazy_filename)
 
         return res
 
@@ -412,7 +427,7 @@ class LazyMixin(object):
         with codecs.open(fnp, mode="w", encoding="utf-8", errors="ignore") as fo:
             fo.write(formatted_data)
 
-    def lazy_write_assertionerror(self, fnp, formatted_data, message):
+    def lazy_write_assertionerror(self, fnp, formatted_data, message, exc=None):
         try:
             self._lazy_write(fnp, formatted_data)
             self.assertEqual(str(IOError(fnp)), formatted_data, message)
@@ -425,19 +440,20 @@ class LazyMixin(object):
                 pdb.set_trace()
             raise
 
-    def lazy_write_passmissing(self, fnp, formatted_data, message):
+    def lazy_write_passmissing(self, fnp, formatted_data, message, exc=None):
         try:
-            logger.warning("%s.suppressed IOError" % (self))
+            logger.warning("%s.suppressed IOError:%s" % (self,exc))
             self._lazy_write(fnp, formatted_data)
         except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
 
-    def lazy_write_ioerror(self, fnp, formatted_data, message):
+    def lazy_write_ioerror(self, fnp, formatted_data, message, exc):
         try:
             self._lazy_write(fnp, formatted_data)
-            raise IOError(fnp)
+            self.fail(str(exc))
+            # raise exc
         except (IOError,) as e:
             if rpdb():
                 pdb.set_trace()
@@ -447,11 +463,11 @@ class LazyMixin(object):
                 pdb.set_trace()
             raise
 
-    def lazy_fnp_exp_root(self):
-        return self._lazy_get_fnp_root(subject="exp")
+    def lazy_fnp_exp_root(self, control=None):
+        return self._lazy_get_fnp_root(subject="exp", control=control)
 
-    def lazy_fnp_got_root(self):
-        return self._lazy_get_fnp_root(subject="got")
+    def lazy_fnp_got_root(self, control=None):
+        return self._lazy_get_fnp_root(subject="got", control=control)
 
     def lazy_format_string(self, data, filter=None):
 
@@ -529,7 +545,7 @@ class LazyMixin(object):
             raise NotImplementedError("%s.lazy_format_data(%s)" % (self, di_diag ))
             return self.lazy_format_string(data).strip()
 
-    def _lazy_get_fnp_root(self, subject):
+    def _lazy_get_fnp_root(self, subject, control=None):
         """get the root name, before extension and suffix"""
 
         subber = Subber(
@@ -542,8 +558,10 @@ class LazyMixin(object):
             self.lazy_rescuedict,
         )
 
+        # pdb.set_trace()
+
         # calculating the directory path
-        t_dirname = self._lazy_get_t_dirname(subject=subject)
+        t_dirname = self._lazy_get_t_dirname(subject=subject, control=control)
         _litd = t_dirname.split(os.path.sep)
 
         dirname_extras = getattr(self, "lazy_dirname_extras", "")
@@ -590,6 +608,7 @@ class LazyMixin(object):
         formatter=None,
         f_notify=None,
         no_assert=False,
+        nest_testfilename=True,
     ):
         """ check that result matches expectations saved previously.
         when the expectations file doesn't exist yet, it is created with received data
@@ -611,7 +630,7 @@ class LazyMixin(object):
                 env.clear()
                 env.acquire()
 
-            control = _Control(self, env, onIOError)
+            control = _Control(self, env, onIOError, **{"nest_testfilename": nest_testfilename, "lazy_filename" : self.lazy_filename})
 
             smsg = "%s.assertLazy:" % (self)
 
@@ -624,7 +643,7 @@ class LazyMixin(object):
                 return
 
             tmp.fnp_exp = fnp_exp = self._lazy_add_extension(
-                self.lazy_fnp_exp_root(), extension, suffix
+                self.lazy_fnp_exp_root(control=control), extension, suffix
             )
 
             # is there a filter for the extension?
@@ -649,7 +668,7 @@ class LazyMixin(object):
                     filter_.f_notify = None
 
             tmp.fnp_got = fnp_got = self._lazy_add_extension(
-                self.lazy_fnp_got_root(), extension, suffix
+                self.lazy_fnp_got_root(control=control), extension, suffix
             )
             self._lazy_write(fnp_got, formatted_data)
 
@@ -668,7 +687,10 @@ class LazyMixin(object):
                 with codecs.open(fnp_exp, encoding="utf-8", errors="ignore") as fi:
                     exp = fi.read().strip()
             except (IOError,) as e:
-                return control.handler_io_error(fnp_exp, formatted_data, message)
+                return control.handler_io_error(fnp_exp, formatted_data, message, exc=e)
+            except (Exception,) as e:
+                pdb.set_trace()
+                raise
 
             if self.verbose and self.verbose >= 2:
                 msg = "\nexp:%s:\n<>\ngot:%s:" % (exp, formatted_data)
@@ -702,6 +724,7 @@ class LazyMixin(object):
                     self.assertTrue(exp == formatted_data, message)
                     # self.assertEqual(exp, formatted_data, message)
                 except (AssertionError,) as e:
+                    e.lazytemp = self.lazytemp
                     self._lazy_write(fnp_exp, formatted_data)
                     logger.warning(u"lazy: %s.  expectation has been reset" % (e))
 
@@ -715,8 +738,11 @@ class LazyMixin(object):
             return self.lazytemp
 
         except (IOError, AssertionError) as e:
+            e.lazytemp = self.lazytemp
             raise
         except (Exception,) as e:
+            e.lazytemp = getattr(self,"lazytemp",None)
+
             if cpdb():
                 pdb.set_trace()
             raise
