@@ -25,6 +25,7 @@ from lazy_regression_tests.utils import (
     fill_template,
     Subber,
     RescueDict,
+    NamesMatchTemp,
 )
 
 class FormatterRemoveFilter(DataMatcher):
@@ -33,16 +34,21 @@ class FormatterRemoveFilter(DataMatcher):
 class CSSRemoveFilter(FormatterRemoveFilter):
 
     def __init__(self, css, *args, **kwds):
-        pdb.set_trace()
         self.css = css
         self.verbose = kwds.get("verbose")
         self.hitname = kwds.get("hitname")    
+        self.temp = NamesMatchTemp()
 
-    def format(self, soup):
+    def format(self, soup, lazytemp, **kwds):
+
         try:
-            pdb.set_trace()
             for hit in soup.select(self.css):
+
+                if self.hitname:
+                    lazytemp.notify(repr(hit), self)
+
                 hit.decompose()
+
             return soup
         except (Exception,) as e:
             if cpdb(): pdb.set_trace()

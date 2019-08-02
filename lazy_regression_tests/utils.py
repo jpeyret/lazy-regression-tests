@@ -539,14 +539,15 @@ class KeepTextFilter(object):
     __call__ = filter
 
 
-    def format(self, data, **kwargs):
+    def format(self, data, lazytemp, **kwargs):
+
 
         if not self.formatters:
             return data
 
         try:
             for formatter in self.formatters:
-                data = formatter.format(data, **kwargs)
+                data = formatter.format(data, lazytemp=lazytemp, **kwargs)
 
             return data
 

@@ -282,11 +282,14 @@ class LazyTemp(object):
         self.filterhits = {}
         self.control = control
 
-    def notify(self, found):
+    def notify(self, found, by_ = None):
         try:
             #only save hits that have a finder.hitname
-            if found.by.hitname:
-                li = self.filterhits.setdefault(found.by.hitname, [])
+
+            hitname = getattr(getattr(found, "by", None), "hitname", None) or getattr(by_, "hitname", None)
+
+            if hitname:
+                li = self.filterhits.setdefault(hitname, [])
                 li.append(found)
 
         except (Exception,) as e:
@@ -486,7 +489,7 @@ class LazyMixin(object):
         soup = bs(data)  # make BeautifulSoup
 
         if filter:
-            soup = filter.format(soup)
+            soup = filter.format(soup, lazytemp=self.lazytemp)
 
         if rpdb(): pdb.set_trace()
 
