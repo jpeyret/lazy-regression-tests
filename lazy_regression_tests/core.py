@@ -79,7 +79,6 @@ import logging
 from yaml import dump as ydump, safe_load as yload
 
 
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp
@@ -110,12 +109,14 @@ def cpdb():
     return cpdb.enabled
 
 
-cpdb.enabled = False #type: ignore
-def rpdb(): # pragma : no cover
+cpdb.enabled = False  # type: ignore
+
+
+def rpdb():  # pragma : no cover
     return rpdb.enabled
 
 
-rpdb.enabled = False #type: ignore
+rpdb.enabled = False  # type: ignore
 ###################
 # configuration
 #####################
@@ -241,7 +242,9 @@ class _Control(object):
        save in the LazyTemp results object as well.
     """
 
-    def __init__(self, mixin : "LazyMixin", env : MediatedEnvironDict, onIOError_, **kwargs):
+    def __init__(
+        self, mixin: "LazyMixin", env: MediatedEnvironDict, onIOError_, **kwargs
+    ):
         pass
 
         if not env or not env.acquired:
@@ -282,18 +285,21 @@ class LazyTemp(object):
         self.filterhits = {}
         self.control = control
 
-    def notify(self, found, by_ = None):
+    def notify(self, found, by_=None):
         try:
-            #only save hits that have a finder.hitname
+            # only save hits that have a finder.hitname
 
-            hitname = getattr(getattr(found, "by", None), "hitname", None) or getattr(by_, "hitname", None)
+            hitname = getattr(getattr(found, "by", None), "hitname", None) or getattr(
+                by_, "hitname", None
+            )
 
             if hitname:
                 li = self.filterhits.setdefault(hitname, [])
                 li.append(found)
 
-        except (Exception,) as e: # pragma : no cover
-            if cpdb(): pdb.set_trace()
+        except (Exception,) as e:  # pragma : no cover
+            if cpdb():
+                pdb.set_trace()
             raise
 
 
@@ -318,24 +324,23 @@ def yaml_to_dict(data, track_type=False):
                 line2 = PATRE_YAML_OBJECTSPEC.sub("", line).rstrip()
                 lines.append(line2)
 
-                #this isnt working yet...
+                # this isnt working yet...
                 if track_type:
-                    lines.append("""  _ytype : "%s" """ % line[hit.start():hit.end()])
+                    lines.append("""  _ytype : "%s" """ % line[hit.start() : hit.end()])
 
             else:
-                lines.append(line)                  
-
-
+                lines.append(line)
 
         safe_yaml = "\n".join(lines)
 
         res = yload(safe_yaml)
 
         return res
-    except (Exception,) as e: # pragma : no cover
-        if cpdb(): 
+    except (Exception,) as e:  # pragma : no cover
+        if cpdb():
             pdb.set_trace()
         raise
+
 
 class LazyMixin(object):
     """main class.  see `assertLazy`"""
@@ -370,7 +375,6 @@ class LazyMixin(object):
     def lazy_format_dict2yaml(cls, dict_, filter=None):
         return ydump(dict_, default_flow_style=False)
 
-
     @property
     def verbose(self):
         res = sys.argv.count("-v")
@@ -378,7 +382,6 @@ class LazyMixin(object):
 
     @classmethod
     def _lazy_get_t_dirname(cls, subject="", control=None):
-
 
         env_t_dirname_specific = fill_template(
             t_env_dirname_subject, {"subject": subject}
@@ -400,7 +403,7 @@ class LazyMixin(object):
                 )
             )
 
-        #nesting each test script under its own subdirectory 
+        # nesting each test script under its own subdirectory
         nest_testfilename = getattr(control, "nest_testfilename", False)
         nest_testfilename = getattr(control, "lazy_filename", "")
         if nest_testfilename:
@@ -435,19 +438,19 @@ class LazyMixin(object):
             self._lazy_write(fnp, formatted_data)
             self.assertEqual(str(IOError(fnp)), formatted_data, message)
         except (AssertionError,) as e:
-            if rpdb(): # pragma : no cover
+            if rpdb():  # pragma : no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e: # pragma : no cover
+        except (Exception,) as e:  # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
 
     def lazy_write_passmissing(self, fnp, formatted_data, message, exc=None):
         try:
-            logger.warning("%s.suppressed IOError:%s" % (self,exc))
+            logger.warning("%s.suppressed IOError:%s" % (self, exc))
             self._lazy_write(fnp, formatted_data)
-        except (Exception,) as e: # pragma : no cover
+        except (Exception,) as e:  # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -458,10 +461,10 @@ class LazyMixin(object):
             self.fail(str(exc))
             # raise exc
         except (IOError,) as e:
-            if rpdb(): # pragma : no cover
+            if rpdb():  # pragma : no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e: # pragma : no cover
+        except (Exception,) as e:  # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -491,7 +494,8 @@ class LazyMixin(object):
         if filter:
             soup = filter.format(soup, lazytemp=self.lazytemp)
 
-        if rpdb(): pdb.set_trace()
+        if rpdb():
+            pdb.set_trace()
 
         return soup.prettify()  # prettify the html
 
@@ -503,8 +507,9 @@ class LazyMixin(object):
         try:
             di = yaml_to_dict(data)
             return self.lazy_format_dict2yaml(di)
-        except (Exception,) as e: # pragma : no cover
-            if cpdb(): pdb.set_trace()
+        except (Exception,) as e:  # pragma : no cover
+            if cpdb():
+                pdb.set_trace()
             raise
 
     def lazy_format_data(self, data, extension="", filter=None):
@@ -518,8 +523,11 @@ class LazyMixin(object):
         elif isinstance(data, bytes):
             data = data.decode("utf-8")
             if extension == "html":
-                #track the cast
-                data = "<!-- lazy_format_data.info:cast via bytes.decode(utf-8) -->\n%s" %(data) 
+                # track the cast
+                data = (
+                    "<!-- lazy_format_data.info:cast via bytes.decode(utf-8) -->\n%s"
+                    % (data)
+                )
 
             f = (
                 getattr(self, "lazy_format_%s" % (extension.lower()), None)
@@ -533,19 +541,16 @@ class LazyMixin(object):
                 getattr(self, "lazy_format_%s" % (extension.lower()), None)
                 or self.lazy_format_string
             )
-            return f(data,filter=filter).strip()
-
+            return f(data, filter=filter).strip()
 
         elif extension == "yaml":
             return self.lazy_format_yaml(data)
         else:
             di_diag = dict(
-                data=str(data)[:100],
-                datatype=type(data),
-                extension=extension,
-                )
+                data=str(data)[:100], datatype=type(data), extension=extension
+            )
 
-            raise NotImplementedError("%s.lazy_format_data(%s)" % (self, di_diag ))
+            raise NotImplementedError("%s.lazy_format_data(%s)" % (self, di_diag))
             return self.lazy_format_string(data).strip()
 
     def _lazy_get_fnp_root(self, subject, control=None):
@@ -587,8 +592,8 @@ class LazyMixin(object):
         _lib = [fill_template(t_, subber) for t_ in _litb]
         basename = ".".join([i_ for i_ in _lib if i_])
 
-        basename = basename.replace(" ","_")
-        basename = basename.replace("/","_")
+        basename = basename.replace(" ", "_")
+        basename = basename.replace("/", "_")
 
         return os.path.join(dirname, basename)
 
@@ -633,7 +638,15 @@ class LazyMixin(object):
                 env.clear()
                 env.acquire()
 
-            control = _Control(self, env, onIOError, **{"nest_testfilename": nest_testfilename, "lazy_filename" : self.lazy_filename})
+            control = _Control(
+                self,
+                env,
+                onIOError,
+                **{
+                    "nest_testfilename": nest_testfilename,
+                    "lazy_filename": self.lazy_filename,
+                }
+            )
 
             smsg = "%s.assertLazy:" % (self)
 
@@ -651,7 +664,6 @@ class LazyMixin(object):
 
             # is there a filter for the extension?
             filter_ = filter_ or getattr(self, "lazy_filter_%s" % (extension), None)
-
 
             formatter = formatter or self.lazy_format_data
             if got:
@@ -675,13 +687,12 @@ class LazyMixin(object):
             )
             self._lazy_write(fnp_got, formatted_data)
 
-            #the caller requested not to check exp == got.  this can be done, for example
-            #to use the parsing and formatting mechanisms without actually comparing.
+            # the caller requested not to check exp == got.  this can be done, for example
+            # to use the parsing and formatting mechanisms without actually comparing.
             if no_assert:
                 if self.verbose:
                     logger.info("%s no_assert:%1.  returning" % (smsg, no_assert))
                 return self.lazytemp
-
 
             try:
                 if self.verbose:
@@ -691,7 +702,7 @@ class LazyMixin(object):
                     exp = fi.read().strip()
             except (IOError,) as e:
                 return control.handler_io_error(fnp_exp, formatted_data, message, exc=e)
-            except (Exception,) as e: # pragma : no cover
+            except (Exception,) as e:  # pragma : no cover
                 pdb.set_trace()
                 raise
 
@@ -705,7 +716,7 @@ class LazyMixin(object):
             if self.lazy_message_formatter and not message:
                 if exp != formatted_data:
                     # pdb.set_trace()
-                    if not control.baseline:                
+                    if not control.baseline:
                         message = self.lazy_message_formatter.format(
                             exp, formatted_data, window=5
                         )
@@ -722,8 +733,8 @@ class LazyMixin(object):
 
             if control.baseline:
                 try:
-                    #don't try a comparison, because those that often runs too long
-                    #and you're not learning that much anyway on baseline
+                    # don't try a comparison, because those that often runs too long
+                    # and you're not learning that much anyway on baseline
                     self.assertTrue(exp == formatted_data, message)
                     # self.assertEqual(exp, formatted_data, message)
                 except (AssertionError,) as e:
@@ -736,15 +747,14 @@ class LazyMixin(object):
             if isinstance(formatted_data, basestring_):
                 formatted_data = formatted_data.strip()
             self.assertEqual(exp, formatted_data, message)
-            
 
             return self.lazytemp
 
         except (IOError, AssertionError) as e:
             e.lazytemp = self.lazytemp
             raise
-        except (Exception,) as e: # pragma : no cover
-            e.lazytemp = getattr(self,"lazytemp",None)
+        except (Exception,) as e:  # pragma : no cover
+            e.lazytemp = getattr(self, "lazytemp", None)
 
             if cpdb():
                 pdb.set_trace()
@@ -815,11 +825,11 @@ def lazy_pass_missing(*classes):
             cls_.lazy_environ[env_directive] = OnAssertionError.pass_missing
         sys.argv.remove(SYSARG_PASS_MISSING)
 
+
 def lazy_nodiff(*classes):
     # if "-h" in sys.argv:
     #     output_help()
     # pdb.set_trace()
-
 
     if SYSARG_NODIFF in sys.argv:
 

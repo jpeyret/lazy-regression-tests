@@ -1,20 +1,17 @@
-from lazy_regression_tests._baseutils import (
-    set_cpdb,
-    set_rpdb,
-    ppp,
-    debugObject,
-)
+from lazy_regression_tests._baseutils import set_cpdb, set_rpdb, ppp, debugObject
 
 import pdb
 from bemyerp.lib.utils import set_cpdb, set_rpdb
 
-def cpdb(**kwds) -> bool:   # pragma : no cover
-    if cpdb.enabled == "once":
-        cpdb.enabled = False # type : ignore
-        return True
-    return cpdb.enabled # type : ignore
-cpdb.enabled = False # type : ignore
 
+def cpdb(**kwds) -> bool:  # pragma : no cover
+    if cpdb.enabled == "once":
+        cpdb.enabled = False  # type : ignore
+        return True
+    return cpdb.enabled  # type : ignore
+
+
+cpdb.enabled = False  # type : ignore
 
 
 from lazy_regression_tests.utils import (
@@ -28,15 +25,16 @@ from lazy_regression_tests.utils import (
     NamesMatchTemp,
 )
 
+
 class FormatterRemoveFilter(DataMatcher):
     raw_format_filter = True
 
-class CSSRemoveFilter(FormatterRemoveFilter):
 
+class CSSRemoveFilter(FormatterRemoveFilter):
     def __init__(self, css, *args, **kwds):
         self.css = css
         self.verbose = kwds.get("verbose")
-        self.hitname = kwds.get("hitname")    
+        self.hitname = kwds.get("hitname")
         self.temp = NamesMatchTemp()
 
     def format(self, soup, lazytemp, **kwds):
@@ -50,8 +48,9 @@ class CSSRemoveFilter(FormatterRemoveFilter):
                 hit.decompose()
 
             return soup
-        except (Exception,) as e: # pragma : no cover
-            if cpdb(): pdb.set_trace()
+        except (Exception,) as e:  # pragma : no cover
+            if cpdb():
+                pdb.set_trace()
             raise
 
     __call__ = format

@@ -27,12 +27,14 @@ def cpdb():
     return cpdb.enabled
 
 
-cpdb.enabled = False #type: ignore
-def rpdb(): # pragma : no cover
+cpdb.enabled = False  # type: ignore
+
+
+def rpdb():  # pragma : no cover
     return rpdb.enabled
 
 
-rpdb.enabled = False #type: ignore
+rpdb.enabled = False  # type: ignore
 if __name__ == "__main__":
     set_cpdb(cpdb, remove=True)
     set_rpdb(rpdb, remove=True)
@@ -62,7 +64,7 @@ class MainManager(object):
             logging.info(msg)
             print(msg)
 
-        except (Exception,) as e: # pragma : no cover
+        except (Exception,) as e:  # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -79,7 +81,7 @@ class MainManager(object):
                 raise NotImplementedError(
                     "need to implement output_dir on input dir.  for now only write-in-place is supported"
                 )
-        except (Exception,) as e: # pragma : no cover
+        except (Exception,) as e:  # pragma : no cover
             print("\n\nli (first 5):")
             for fnp in li[0:5]:
                 print(fnp)
@@ -97,7 +99,7 @@ class MainManager(object):
                 self.process_input_directory(self.options.input_)
             else:
                 raise NotImplementedError()
-        except (Exception,) as e: # pragma : no cover
+        except (Exception,) as e:  # pragma : no cover
             ppp(self, self)
             ppp(self.options, "options")
             if cpdb():
@@ -138,7 +140,7 @@ class MainManager(object):
             with codecs.open(fnp_o, encoding="utf-8", errors="ignore", mode="w") as fo:
                 fo.write(refiltered)
 
-        except (Exception,) as e: # pragma : no cover
+        except (Exception,) as e:  # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -212,7 +214,7 @@ def import_string(dotted_path):
             )
             raise ImportError
 
-    except (Exception,) as e: # pragma : no cover
+    except (Exception,) as e:  # pragma : no cover
 
         if cpdb():
             ppp(locals(), "\nlocals")
