@@ -111,7 +111,7 @@ def cpdb():
 
 
 cpdb.enabled = False #type: ignore
-def rpdb():
+def rpdb(): # pragma : no cover
     return rpdb.enabled
 
 
@@ -292,7 +292,7 @@ class LazyTemp(object):
                 li = self.filterhits.setdefault(hitname, [])
                 li.append(found)
 
-        except (Exception,) as e:
+        except (Exception,) as e: # pragma : no cover
             if cpdb(): pdb.set_trace()
             raise
 
@@ -332,7 +332,7 @@ def yaml_to_dict(data, track_type=False):
         res = yload(safe_yaml)
 
         return res
-    except (Exception,) as e:
+    except (Exception,) as e: # pragma : no cover
         if cpdb(): 
             pdb.set_trace()
         raise
@@ -435,10 +435,10 @@ class LazyMixin(object):
             self._lazy_write(fnp, formatted_data)
             self.assertEqual(str(IOError(fnp)), formatted_data, message)
         except (AssertionError,) as e:
-            if rpdb():
+            if rpdb(): # pragma : no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e:
+        except (Exception,) as e: # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -447,7 +447,7 @@ class LazyMixin(object):
         try:
             logger.warning("%s.suppressed IOError:%s" % (self,exc))
             self._lazy_write(fnp, formatted_data)
-        except (Exception,) as e:
+        except (Exception,) as e: # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -458,10 +458,10 @@ class LazyMixin(object):
             self.fail(str(exc))
             # raise exc
         except (IOError,) as e:
-            if rpdb():
+            if rpdb(): # pragma : no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e:
+        except (Exception,) as e: # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -503,7 +503,7 @@ class LazyMixin(object):
         try:
             di = yaml_to_dict(data)
             return self.lazy_format_dict2yaml(di)
-        except (Exception,) as e:
+        except (Exception,) as e: # pragma : no cover
             if cpdb(): pdb.set_trace()
             raise
 
@@ -691,7 +691,7 @@ class LazyMixin(object):
                     exp = fi.read().strip()
             except (IOError,) as e:
                 return control.handler_io_error(fnp_exp, formatted_data, message, exc=e)
-            except (Exception,) as e:
+            except (Exception,) as e: # pragma : no cover
                 pdb.set_trace()
                 raise
 
@@ -743,7 +743,7 @@ class LazyMixin(object):
         except (IOError, AssertionError) as e:
             e.lazytemp = self.lazytemp
             raise
-        except (Exception,) as e:
+        except (Exception,) as e: # pragma : no cover
             e.lazytemp = getattr(self,"lazytemp",None)
 
             if cpdb():

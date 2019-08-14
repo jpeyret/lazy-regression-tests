@@ -50,7 +50,7 @@ class CSSRemoveFilter(FormatterRemoveFilter):
                 hit.decompose()
 
             return soup
-        except (Exception,) as e:
+        except (Exception,) as e: # pragma : no cover
             if cpdb(): pdb.set_trace()
             raise
 
