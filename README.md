@@ -22,9 +22,9 @@ Now, I haven't the test since yesterday, when it passed
 But let's say that I navigate to a directory indicated by environment variable 
 `$lzrt_template_dirname_exp`, whatever I've set that to.
 
-Now I open file `test_urls_security_psroledefn.Test_Detail.test_404.html`
+Now I open file `test_urls_security_psroledefn.Test_Detail.test_404.html`.  I don't have to at this point, I am not going to modify anything, this is just to introduce the notion of **expectations**.
 
-This is my last recorded and approved **expectation** file.  That's what my test expects the prettified html returned by Django for this url to look like.
+This is my last recorded and approved **expectation** file.  That's what my test expects the prettified html returned by Django for this test's url to look like (**each bit of data you want to regression-test gets its own file**).
 
 
 **test_urls_security_psroledefn.Test_Detail.test_404.html**:
@@ -51,7 +51,7 @@ FAILED test_urls_security_psroledefn.py::Test_Detail::test_404 - AssertionError:
 
 Now, guess what, there is a flip dictory `$lzrt_template_dirname_got` that holds received test output.
 
-And I find **test_urls_security_psroledefn.Test_Detail.test_404.html** in that directory and diff both files visually, I see the reason for the failure.
+And when I find **test_urls_security_psroledefn.Test_Detail.test_404.html** in that directory and diff both files visually, I see the reason for the failure.
 
 ![](./docs/screenshots/001.diff_Rolez.png)
 
@@ -65,6 +65,8 @@ And re-run the test, via `pytest test_urls_security_psroledefn.py::Test_Detail::
 PASSED test_urls_security_psroledefn.py::Test_Detail::test_404
 ========================================================== 1 passed in 3.95 seconds ===========================================================
 ````
+
+The **exp** file matched the **got** (received) file and so the lazy tester is happy.
 
 
 ### And how complicated is actual test code?
@@ -122,11 +124,17 @@ This strips out both contents that for some reason I don't want to diff from run
 
 The CSSRemoverFilter has an optional `hitname` variable, which is where BeautifulSoup's CSS selector will deposit what it found, before snipping it out of the response.  You can write your own validation code for that element.
 
-OK, what about SQL that gets generated somewhere?  Yup, looks like `self.lazychecks_sql(got)`.
+### SQL Data:
 
-JSON? : `self.lazychecks_json(di_received)`  In this case, di_received is actually a `dict`.
+OK, what about SQL that gets generated somewhere, perhaps your ORM?  Yup, looks like `self.lazychecks_sql(got)`.
 
-Both those types have their custom filters and formatters.  `format_sql` may look like:
+### JSON:
+
+`self.lazychecks_json(di_received)`  In this case, di_received is actually a `dict` since json data is pretty much dict as far as Python cares.
+
+### Formatters and filters:
+
+Both those types have their custom filters and formatters, looking like:
 
 ````
 def format_sql(sql: str, *args, **kwds) -> str:
@@ -142,4 +150,10 @@ def format_json(dict_, filter=None):
         json.dumps(dict_, sort_keys=True, indent=4, separators=(",", ":"))
     ).strip()
 ````
+
+This is a really, really, hastily written up README, but that's the basic idea.  The one big caveat is that it does not mean you can skip deeper tests.  The reason I have `self.assertEqual(404, response.status_code)` in addition is that lazycheck will accept what you tell it are the expectations.
+
+If the 404 URL you are testing suddenly finds some random data and returns it with a 200 status, you could, by mistake, tell lazy to expect that from now on.  Now, your actual program is expecting a 404, but if you weren't performing your own checks you'd never hear a peep from lazy checking, it's now happy with the random data.
+
+At least until it changes.  lazy checking will flag any changes to any received data that is not filtered out.  That's its only purpose.
 
