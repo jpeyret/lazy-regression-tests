@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-with open("README.rst") as readme_file:
+with open("README.md") as readme_file:
     readme = readme_file.read()
 
 with open("HISTORY.rst") as history_file:
@@ -25,14 +25,14 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
+        # "Programming Language :: Python :: 2",      could come back, but working on mypy in v3 for now
+        # "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
     ],
-    description="LazyMixin.assertLazy - validates that data matches the last time the test was run.",
+    description="a very lazy way to regression test almost anything that has consistent structured text output",
     install_requires=requirements,
     license="MIT license",
     long_description=readme + "\n\n" + history,
