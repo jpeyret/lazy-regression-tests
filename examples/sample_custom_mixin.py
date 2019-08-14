@@ -1,7 +1,7 @@
 #######################################################
 # This is an extract of the actual usage of LazyMixin
 # for a given user application.
-# Sample is incomplete as it is extracted out of the 
+# Sample is incomplete as it is extracted out of the
 # main codeline
 # but it should give an idea
 #######################################################
@@ -647,17 +647,17 @@ read CONT
             with open(self.fnp_difflast, "w") as fo:
                 fo.write(fill_template(tmpl_difflast, vars_))
 
+
 #######################################################
 # The template below is used to write a `difflast.sh` script on each
-# failing test, via `lazyinfo()`.  the intent is to get 
+# failing test, via `lazyinfo()`.  the intent is to get
 # a sample of quick commands:
 #   `difflast`       - displays the difference using your diff utility
 #   `difflast -cp`   - copies the got/received file to the exp file.
-#   `difflast -url`  - if there's a url associated, will launch your browser at 
+#   `difflast -url`  - if there's a url associated, will launch your browser at
 #   `difflast -edit` - tries to open the text editor at the reported error line.
 #   etc...
 #######################################################
-
 
 
 tmpl_difflast = """#!/usr/bin/env bash
@@ -793,8 +793,6 @@ if [[ "$1" == "-got" ]]; then
 fi
 
 #echo "difflast.9"
-
-
 if [[ "$1" == "-cp" ]]; then
     echo "this would copy"
     echo "cp "
