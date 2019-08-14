@@ -395,7 +395,7 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
 
     data = formatted_by = handled_by = None
 
-    def lazy_write_assertionerror(self, fnp, formatted_data, message):
+    def lazy_write_assertionerror(self, fnp, formatted_data, message, exc):
         try:
             self.handled_by = LazyIOErrorCodes.assertion
             self.assertEqual("IOError(%s)" % (fnp), formatted_data)
@@ -406,7 +406,7 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
                 pdb.set_trace()
             raise
 
-    def lazy_write_ioerror(self, fnp, formatted_data, message):
+    def lazy_write_ioerror(self, fnp, formatted_data, message, exc):
         self.handled_by = "lazy_write_ioerror"
         raise IOError()
 
