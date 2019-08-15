@@ -44,7 +44,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,
-    url="https://github.com/jpeyret/lazy_regression_tests",
+    url="https://github.com/jpeyret/lazy-regression-tests",
     version="0.2.0",
     zip_safe=False,
 )

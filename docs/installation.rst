@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/jpeyret/lazy_regression_tests
+    $ git clone git://github.com/jpeyret/lazy-regression-tests
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/jpeyret/lazy_regression_tests/tarball/master
+    $ curl  -OL https://github.com/jpeyret/lazy-regression-tests/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/jpeyret/lazy_regression_tests
-.. _tarball: https://github.com/jpeyret/lazy_regression_tests/tarball/master
+.. _Github repo: https://github.com/jpeyret/lazy-regression-tests
+.. _tarball: https://github.com/jpeyret/lazy-regression-tests/tarball/master

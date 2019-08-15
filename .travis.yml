@@ -26,5 +26,5 @@ deploy:
     secure: PLEASE_REPLACE_ME
   on:
     tags: true
-    repo: jpeyret/lazy_regression_tests
+    repo: jpeyret/lazy-regression-tests
     python: 3.6
