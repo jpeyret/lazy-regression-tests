@@ -12,3 +12,9 @@ History
 ------------------
 
 * First release on PyPI.
+  
+
+0.2.1 (2019-08-15)
+------------------
+
+*  fixed the bad urls from lazy_regression_tests to lazy-regression-tests.  Github link should work now

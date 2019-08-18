@@ -217,7 +217,7 @@ def yaml_formatter(got, *args, **kwds):
         raise
 
 
-class GenericLazyMixin(LazyMixin, Defaults):
+class CustomGenericLazyMixin(LazyMixin, Defaults):
     @classmethod
     def get_basename(cls, name_, file_, module_):
 
@@ -493,7 +493,7 @@ class GenericLazyMixin(LazyMixin, Defaults):
     diffcommand = "ksdiff"
 
     #!!!TODO!!!p1 - ./51.hosting/01.fixed.p1.remove_hardcoded_paths
-    fnp_difflast = "/Users/jluc/kds2/wk/bin/difflast"
+    fnp_difflast = "/<somepath>/bin/difflast"
 
     #!!!TODO!!!p1 - ./51.hosting/01.fixed.p1.remove_hardcoded_paths
     editor = "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl"
