@@ -557,8 +557,6 @@ class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
             raise
 
 
-# di = dict(lzrt_template_dirname="/Users/jluc/kds2/out/tests/LazyMixin/%(subject)s")
-
 livetests_dir = os.environ.get("lzrt_livetests_dir", "")
 
 has_directory_to_write_to = os.path.isdir(livetests_dir)

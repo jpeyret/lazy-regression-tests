@@ -25,7 +25,7 @@
        3.  then `assertEqual` them.
 
 
-/Users/jluc/kds2/wk/issues/nfb022.utils/issues/013.utmixin/temp/tmp
+/
 ├── exp
 │   ├── db1
 │   │   └── test_uthelper_mixin.TestLive.test_rdbname_in_directory
