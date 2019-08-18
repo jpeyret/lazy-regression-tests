@@ -18,3 +18,8 @@ History
 ------------------
 
 *  fixed the bad urls from lazy_regression_tests to lazy-regression-tests.  Github link should work now
+   
+0.2.3 (2019-08-18)
+------------------
+
+*  updated README.md
