@@ -30,6 +30,10 @@ class FormatterRemoveFilter(DataMatcher):
     raw_format_filter = True
 
 
+def debugitem(value, msg=""):
+    print("%s=>%s id=%s %s" % (msg, type(value), id(value), str(value)))
+
+
 class CSSRemoveFilter(FormatterRemoveFilter):
     def __init__(self, css, *args, **kwds):
         self.css = css
@@ -43,7 +47,7 @@ class CSSRemoveFilter(FormatterRemoveFilter):
             for hit in soup.select(self.css):
 
                 if self.hitname:
-                    lazytemp.notify(repr(hit), self)
+                    lazytemp.notify(hit, self)
 
                 hit.decompose()
 
