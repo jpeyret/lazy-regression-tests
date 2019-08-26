@@ -60,6 +60,7 @@ import codecs
 
 import re
 import shutil
+from collections import namedtuple
 
 
 ###################################################################
@@ -75,7 +76,11 @@ except (ImportError,) as e:
 
 import logging
 
+# Feature.049.lazy.018.timeout
+from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
 
+
+# !!!TODO!!!" - remove as per 049.lazy.019.p2.yaml_outta_core"
 from yaml import dump as ydump, safe_load as yload
 
 
@@ -83,24 +88,23 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp
 
-try:
-    from lazy_regression_tests.utils import (
-        DiffFormatter,
-        replace,
-        MediatedEnvironDict,
-        Found,
-        basestring_,
-        unicode_,
-        debugObject,
-        fill_template,
-        Subber,
-        RescueDict,
-        ppp,
-    )
-except (ImportError,) as e:
-    # not sure if needed
-    # from .utils import DiffFormatter
-    raise
+from lazy_regression_tests.utils import (
+    DiffFormatter,
+    replace,
+    MediatedEnvironDict,
+    Found,
+    basestring_,
+    unicode_,
+    debugObject,
+    fill_template,
+    Subber,
+    RescueDict,
+    ppp,
+)
+
+#######################################################
+# debugging-related
+#######################################################
 
 import pdb
 
@@ -117,9 +121,10 @@ def rpdb():  # pragma : no cover
 
 
 rpdb.enabled = False  # type: ignore
-###################
-# configuration
-#####################
+
+############################################
+# configuration and constants
+############################################
 
 MISSING_ENV_T_DIRNAME = """
 ******************************************************************************
@@ -135,12 +140,18 @@ This needs to point to a user-writeable directory of your choice.
 #########################
 # environment variable names
 #######################
-env_directive = "lzrt_directive"
-env_t_dirname = "lzrt_template_dirname"
-env_t_basename = "lzrt_template_basename"
+ENV_PREFIX = "lzrt"
 
 
-from collections import namedtuple
+env_directive = "%s_directive" % (ENV_PREFIX)
+env_t_dirname = "%s_template_dirname" % (ENV_PREFIX)
+env_t_basename = "%s_template_basename" % (ENV_PREFIX)
+
+
+# Issue.049.lazy.018.timeout
+# maximum time for the timeout on assertEqual calls
+TIMEOUT_MAXTIME_TO_ALLOW = 5
+
 
 Choice = namedtuple("Choice", "code help")
 
@@ -278,7 +289,14 @@ class _Control(object):
             )
 
 
+def debugitem(value, msg=""):
+    print("%s=>%s id=%s %s" % (msg, type(value), id(value), str(value)))
+
+
 class LazyTemp(object):
+    def __repr__(self):
+        return "LazyTemp[id=%s]" % (id(self))
+
     def __init__(self, control, env):
         self.fnp_exp = self.fnp_got = None
         self.env = env.copy()
@@ -295,15 +313,18 @@ class LazyTemp(object):
 
             if hitname:
                 li = self.filterhits.setdefault(hitname, [])
+
+                # you want to clone bs4.element.Tag because altering the overall document
+                # will mangle them
+                if hasattr(found, "__copy__"):
+                    found = found.__copy__()
+
                 li.append(found)
 
         except (Exception,) as e:  # pragma : no cover
             if cpdb():
                 pdb.set_trace()
             raise
-
-
-ENV_PREFIX = "lzrt_"
 
 
 PATRE_YAML_OBJECTSPEC = re.compile("!!python/.+$")
@@ -436,6 +457,7 @@ class LazyMixin(object):
     def lazy_write_assertionerror(self, fnp, formatted_data, message, exc=None):
         try:
             self._lazy_write(fnp, formatted_data)
+            # ❌ this seems wrong .  why not just use self.fail(str(IOError))?
             self.assertEqual(str(IOError(fnp)), formatted_data, message)
         except (AssertionError,) as e:
             if rpdb():  # pragma : no cover
@@ -736,7 +758,6 @@ class LazyMixin(object):
                     # don't try a comparison, because those that often runs too long
                     # and you're not learning that much anyway on baseline
                     self.assertTrue(exp == formatted_data, message)
-                    # self.assertEqual(exp, formatted_data, message)
                 except (AssertionError,) as e:
                     e.lazytemp = self.lazytemp
                     self._lazy_write(fnp_exp, formatted_data)
@@ -746,7 +767,16 @@ class LazyMixin(object):
 
             if isinstance(formatted_data, basestring_):
                 formatted_data = formatted_data.strip()
-            self.assertEqual(exp, formatted_data, message)
+
+            # Issue.049.lazy.018.timeout
+            try:
+                self.assertEqualTimed(exp, formatted_data, message)
+            except (CustomTimeoutError,) as e:  # pragma: no cover
+                if not message:
+                    message = "not Equal and time out after %s" % (
+                        TIMEOUT_MAXTIME_TO_ALLOW
+                    )
+                self.fail(message)
 
             return self.lazytemp
 
@@ -759,6 +789,11 @@ class LazyMixin(object):
             if cpdb():
                 pdb.set_trace()
             raise
+
+    @timeout(TIMEOUT_MAXTIME_TO_ALLOW)
+    def assertEqualTimed(self, exp, got, message):
+        # Issue.049.lazy.018.timeout
+        self.assertEqual(exp, got, message)
 
     def lazy_debug(self):
         if self.lazytemp:
