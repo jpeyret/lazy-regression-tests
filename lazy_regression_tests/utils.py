@@ -448,6 +448,7 @@ class KeepTextFilter(object):
 
     KEEP = True
 
+    # default class for string regexes
     dflt_cls = RegexMatcher
 
     def __init__(self, regexes=[], f_notify=None):
@@ -481,14 +482,15 @@ class KeepTextFilter(object):
             raise
 
     def copy(self):
-        """return a duplicate, but with a copy of the regexes..."""
+        """return a duplicate, but with a copy of the regexes and formatters"""
 
         newinst = self.__class__(regexes=[], f_notify=self.f_notify)
         newinst.regexes = self.regexes[:]
+        newinst.formatters = self.formatters[:]
         return newinst
 
     def add_regex(self, regex):
-        if not isinstance(regex, self.dflt_cls):
+        if not isinstance(regex, DataMatcher):
             regex = self.dflt_cls(re.compile(regex))
         self.regexes.append(regex)
 
