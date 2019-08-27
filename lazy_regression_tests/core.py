@@ -289,10 +289,6 @@ class _Control(object):
             )
 
 
-def debugitem(value, msg=""):
-    print("%s=>%s id=%s %s" % (msg, type(value), id(value), str(value)))
-
-
 class LazyTemp(object):
     def __repr__(self):
         return "LazyTemp[id=%s]" % (id(self))
@@ -509,7 +505,7 @@ class LazyMixin(object):
 
         data = self.lazy_format_string(data)
         if bs is None:
-            logger.warning("BeautifulSoup is unavaiable")
+            logger.warning("BeautifulSoup is unavailable")
             return data
         soup = bs(data)  # make BeautifulSoup
 
