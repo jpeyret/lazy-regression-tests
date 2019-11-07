@@ -1,0 +1,9 @@
+#use this to limit assertEqual time
+timeout_decorator
+
+#for black and git
+pre-commit
+
+#really only needed on html: find a way to isolate it
+beautifulsoup4
+

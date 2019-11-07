@@ -77,7 +77,7 @@ def set_rpdb(rpdb, remove=False, recurse=True):
                     # this checks if it's likely to be cpdb, not something w same name
                     _ = module.rpdb.enabled
                     module.rpdb = rpdb
-                except AttributeError:
+                except AttributeError:  # pragma: no cover
                     pass
 
         if remove:
@@ -112,7 +112,7 @@ def set_cpdb(cpdb, remove=False, recurse=True, boolvalue=None):
                     # this checks if it's likely to be cpdb, not something w same name
                     _ = module.cpdb.enabled
                     module.cpdb = cpdb
-                except AttributeError:
+                except AttributeError:  # pragma: no cover
                     pass
     # import pdb
     # pdb.set_trace()
@@ -196,7 +196,7 @@ def debugObject(
                 continue
             try:
                 attrval = di[attrname] = getattr(obj, attrname, "???")
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 attrval = "exception:%s" % (e)
 
             if type(attrval) in li_skiptype:
@@ -234,7 +234,7 @@ def debugDict(
 
     try:
         li = list(dict.items())
-    except AttributeError:
+    except AttributeError:  # pragma: no cover
         return str(type(dict))
 
     try:
@@ -273,7 +273,7 @@ def debugDict(
 
         except UnicodeEncodeError:
             pass
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             buf.write("%s=%s%s" % (k, "?", sep))
         except Exception:
             pass
@@ -284,7 +284,7 @@ def debugDict(
 def fill_template(tmpl, *args):
     try:
         return tmpl % Subber(*args)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.debug("tmpl:%s,args:%s" % (tmpl, args))
         raise
 
@@ -295,7 +295,7 @@ def sub_template(tmpl, *args):
 
     try:
         return tmpl.substitute(Subber(*args))
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.debug("tmpl:%s,args:%s" % (tmpl, args))
         raise
 
@@ -353,7 +353,7 @@ class Subber(object):
                     # try getattr
                     got = getattr(arg, key)
                     return got
-                except AttributeError:
+                except AttributeError:  # pragma: no cover
                     continue
 
             except (AttributeError, TypeError):
@@ -361,19 +361,19 @@ class Subber(object):
                 try:
                     got = getattr(arg, key)
                     return got
-                except AttributeError:
+                except AttributeError:  # pragma: no cover
                     continue
 
         try:
             raise KeyError(key)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             raise
 
     def get(self, key, default=None):
         try:
             res = self._get_from_args(key)
             return res
-        except KeyError:
+        except KeyError:  # pragma: nocover
             return default
 
     def __getitem__(self, keyname):

@@ -44,7 +44,7 @@ def cpdb():
 cpdb.enabled = False  # type: ignore
 
 
-def rpdb():  # pragma : no cover
+def rpdb():  # pragma: no cover
     return rpdb.enabled
 
 
@@ -211,7 +211,7 @@ def yaml_formatter(got, *args, **kwds):
 
         result = ydump([got])
         return result
-    except (Exception,) as e:  # pragma : no cover
+    except (Exception,) as e:  # pragma: no cover
         if cpdb():
             pdb.set_trace()
         raise
@@ -261,7 +261,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
             with open(fnp, "w") as fo:
                 fo.write(ydump(obj))
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -303,7 +303,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
 
             return self._di_setting
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
 
             if cpdb():
                 pdb.set_trace()
@@ -355,7 +355,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
                 logger.info("fnp_got:%s" % (self.lazytemp.fnp_got))
             raise
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -400,7 +400,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
 
             try:
                 test = json.dumps(data, sort_keys=True, indent=4, separators=(",", ":"))
-            except (Exception,) as e:  # pragma : no cover
+            except (Exception,) as e:  # pragma: no cover
                 for k, v in data.items():
                     logger.info("dumping %s" % (k))
                     json.dumps(dict(k=v))
@@ -423,7 +423,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
                 logger.info("fnp_got:%s" % (fnp_got))
             raise
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -435,7 +435,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
         try:
             formatter = formatter or yaml_formatter
             return self.assertLazy(data, "yaml", suffix=suffix, formatter=formatter)
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -443,7 +443,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
     def lazycheck_dump(self, data, suffix=None):
         try:
             return self.assertLazy(data, "txt", suffix=suffix)
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -454,7 +454,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
             try:
                 # bit of a hack
                 self.assertTrue("json" in response.content_type)
-            except (AttributeError,) as e:
+            except (AttributeError,) as e:  # pragma: nocover
                 pass
 
             response = getattr(response, "response_content", None) or response
@@ -467,11 +467,11 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
                 try:
                     logger.info("fnp_exp:%s" % (self.lazytemp.fnp_exp))
                     logger.info("fnp_got:%s" % (self.lazytemp.fnp_got))
-                except (Exception,) as e:  # pragma : no cover
+                except (Exception,) as e:  # pragma: no cover
                     pass
             raise
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -483,7 +483,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
                 sql = format_sql(sql_ori)
                 self.lazychecks_sql(sql, suffix=suffix)
                 self.lazyinfo(sql, noerror=True)
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             type_, ex, tb = sys.exc_info()
             self.lazyinfo(sql, exception=e, tb=tb)
             if cpdb():
@@ -570,7 +570,7 @@ class CustomGenericLazyMixin(LazyMixin, Defaults):
                     conn = mdb.fast_fail_connect()
                     conn.close()
                     db_message = "\necho connected to Database.%s." % (rdbname)
-                except (Exception,) as e:  # pragma : no cover
+                except (Exception,) as e:  # pragma: no cover
                     db_message = (
                         "\necho '!!! no connection to Database.%s: exception:%s!!!'"
                         % (rdbname, e)
@@ -618,7 +618,7 @@ read CONT
                 if _basename.startswith("test_") and funcname.startswith("test_"):
                     scriptname = _scriptname
 
-                    # if rpdb(): # pragma : no cover
+                    # if rpdb(): # pragma: no cover
                     #     pdb.set_trace()
 
                     break

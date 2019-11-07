@@ -116,7 +116,7 @@ def cpdb():
 cpdb.enabled = False  # type: ignore
 
 
-def rpdb():  # pragma : no cover
+def rpdb():  # pragma: no cover
     return rpdb.enabled
 
 
@@ -148,7 +148,7 @@ env_t_dirname = "%s_template_dirname" % (ENV_PREFIX)
 env_t_basename = "%s_template_basename" % (ENV_PREFIX)
 
 
-# Issue.049.lazy.018.timeout
+# Issue.049.lazy.014.timeout
 # maximum time for the timeout on assertEqual calls
 TIMEOUT_MAXTIME_TO_ALLOW = 5
 
@@ -317,7 +317,7 @@ class LazyTemp(object):
 
                 li.append(found)
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -353,7 +353,7 @@ def yaml_to_dict(data, track_type=False):
         res = yload(safe_yaml)
 
         return res
-    except (Exception,) as e:  # pragma : no cover
+    except (Exception,) as e:  # pragma: no cover
         if cpdb():
             pdb.set_trace()
         raise
@@ -382,8 +382,12 @@ class LazyMixin(object):
     def lazy_filter_notify(self, found):
         self.lazytemp.notify(found)
 
-    @classmethod
-    def lazy_format_dict(cls, dict_, filter=None):
+    # @classmethod
+    def lazy_format_dict(self, dict_, filter=None):
+
+        if filter:
+            dict_ = filter.format(dict_, lazytemp=self.lazytemp)
+
         return unicode_(
             json.dumps(dict_, sort_keys=True, indent=4, separators=(",", ":"))
         ).strip()
@@ -456,10 +460,10 @@ class LazyMixin(object):
             # ❌ this seems wrong .  why not just use self.fail(str(IOError))?
             self.assertEqual(str(IOError(fnp)), formatted_data, message)
         except (AssertionError,) as e:
-            if rpdb():  # pragma : no cover
+            if rpdb():  # pragma: no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -468,7 +472,7 @@ class LazyMixin(object):
         try:
             logger.warning("%s.suppressed IOError:%s" % (self, exc))
             self._lazy_write(fnp, formatted_data)
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -479,10 +483,10 @@ class LazyMixin(object):
             self.fail(str(exc))
             # raise exc
         except (IOError,) as e:
-            if rpdb():  # pragma : no cover
+            if rpdb():  # pragma: no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -518,14 +522,15 @@ class LazyMixin(object):
         return soup.prettify()  # prettify the html
 
     def lazy_format_json(self, data, filter=None):
-        di = json.loads(data)
-        return self.lazy_format_dict(di)
+        if not isinstance(data, dict):
+            data = json.loads(data)
+        return self.lazy_format_dict(data, filter=filter)
 
     def lazy_format_yaml(self, data, filter=None):
         try:
             di = yaml_to_dict(data)
             return self.lazy_format_dict2yaml(di)
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -683,9 +688,15 @@ class LazyMixin(object):
             # is there a filter for the extension?
             filter_ = filter_ or getattr(self, "lazy_filter_%s" % (extension), None)
 
-            formatter = formatter or self.lazy_format_data
+            # pdb.set_trace()
+            # lazy_format_json(self, data, filter=None):
+            formatter = (
+                formatter
+                or getattr(self, "lazy_format_%s" % extension, None)
+                or self.lazy_format_data
+            )
             if got:
-                formatted_data = formatter(got, extension, filter=filter_)
+                formatted_data = formatter(got, filter=filter_)
             else:
                 formatted_data = ""
 
@@ -720,7 +731,7 @@ class LazyMixin(object):
                     exp = fi.read().strip()
             except (IOError,) as e:
                 return control.handler_io_error(fnp_exp, formatted_data, message, exc=e)
-            except (Exception,) as e:  # pragma : no cover
+            except (Exception,) as e:  # pragma: no cover
                 pdb.set_trace()
                 raise
 
@@ -779,7 +790,7 @@ class LazyMixin(object):
         except (IOError, AssertionError) as e:
             e.lazytemp = self.lazytemp
             raise
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             e.lazytemp = getattr(self, "lazytemp", None)
 
             if cpdb():

@@ -30,7 +30,7 @@ def cpdb():
 cpdb.enabled = False  # type: ignore
 
 
-def rpdb():  # pragma : no cover
+def rpdb():  # pragma: no cover
     return rpdb.enabled
 
 
@@ -64,7 +64,7 @@ class MainManager(object):
             logging.info(msg)
             print(msg)
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -81,7 +81,7 @@ class MainManager(object):
                 raise NotImplementedError(
                     "need to implement output_dir on input dir.  for now only write-in-place is supported"
                 )
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             print("\n\nli (first 5):")
             for fnp in li[0:5]:
                 print(fnp)
@@ -99,7 +99,7 @@ class MainManager(object):
                 self.process_input_directory(self.options.input_)
             else:
                 raise NotImplementedError()
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             ppp(self, self)
             ppp(self.options, "options")
             if cpdb():
@@ -140,7 +140,7 @@ class MainManager(object):
             with codecs.open(fnp_o, encoding="utf-8", errors="ignore", mode="w") as fo:
                 fo.write(refiltered)
 
-        except (Exception,) as e:  # pragma : no cover
+        except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
             raise
@@ -207,14 +207,14 @@ def import_string(dotted_path):
 
         try:
             return getattr(module, class_name)
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             msg = 'Module "%s" does not define a "%s" attribute/class' % (
                 module_path,
                 class_name,
             )
             raise ImportError
 
-    except (Exception,) as e:  # pragma : no cover
+    except (Exception,) as e:  # pragma: no cover
 
         if cpdb():
             ppp(locals(), "\nlocals")
