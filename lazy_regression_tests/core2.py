@@ -1,0 +1,444 @@
+# -*- coding: utf-8 -*-
+
+
+#######################################################
+# Typing
+#######################################################
+from typing import (
+    Optional,
+    # TYPE_CHECKING,
+    Any,
+    cast,
+    Union,
+)
+from bemyerp.pssystem.typing_ import T_options
+
+# if TYPE_CHECKING:
+#    from bemyerp.xxx import yyy
+
+#######################################################
+
+
+###################################################################
+
+import sys
+import os
+import unittest
+import json
+import codecs
+
+import re
+import shutil
+from collections import namedtuple
+
+
+###################################################################
+
+import pdb
+from bemyerp.lib.utils import set_cpdb, set_rpdb
+
+from traceback import print_exc as xp
+
+
+def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
+    return True
+    if cpdb.enabled == "once":
+        cpdb.enabled = False  # type : ignore
+        return True
+    return cpdb.enabled  # type : ignore
+
+
+cpdb.enabled = False  # type : ignore
+
+
+def rpdb() -> bool:  # pragma: no cover
+    try:
+        from django.core.cache import cache
+    except (Exception,) as e:
+        cache = {}
+    import sys
+
+    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
+    if in_celery:
+        return False
+    return bool(cache.get("rpdb_enabled") or getattr("rpdb", "enabled", False))
+
+
+rpdb.enabled = False  # type : ignore
+
+
+import logging
+
+try:
+    from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
+
+    TIMEOUT_MAXTIME_TO_ALLOW = 5
+except (ImportError,) as e:  # pragma: no cover
+    timeout = None
+    TIMEOUT_MAXTIME_TO_ALLOW = 0
+
+    class CustomTimeoutError(Exception):
+        """we'll never see this """
+
+        passs
+
+
+from lazy_regression_tests.utils import (
+    MediatedEnvironDict,
+    undefined,
+    Subber,
+    ppp,
+    fill_template,
+)
+
+
+class MediatedEnvironDict(dict):
+    def __init__(self, acquired=False, **kwds):
+        """
+        """
+        self.acquired = acquired
+        super(MediatedEnvironDict, self).__init__(**kwds)
+
+    def acquire(self, rootname):
+        if self.acquired:
+            return
+
+        len_root = len(rootname)
+
+        for k, value in os.environ.items():
+            if k.startswith(rootname):
+                k2 = k[len_root:]
+                self[k2] = value
+
+
+class FilterMgr:
+    @classmethod
+    def factory(cls, filters):
+        if isinstance(filters, cls):
+            return filters
+        elif not (filters):
+            # do-nothing filter...
+            return FilterMgr()
+        else:
+            return cls(filters)
+
+    def filter(self, tmp, data):
+        return data
+
+
+class RawFilter:
+    pass
+
+
+class RawFilterMgr(FilterMgr):
+    def __init__(self, filters):
+
+        self.di_filters = {}
+        self.li_filters = []
+
+        if not filters:
+            return
+
+        if not isinstance(filters, (list, dict)):
+            filters = [filters]
+
+        if all([isinstance(filter_, RawFilter) for filter_ in filters]):
+
+            self.filters = filters.copy()
+
+            for filter_ in filters:
+                self.di_filters[filter.key] = filter_
+
+        self.filters = []
+
+    def filter(self, tmp, data):
+        for filter_ in self.filters:
+            data = filter_(self, data)
+        return data
+
+
+class TextFilter:
+    pass
+
+
+class TextFilterMgr(FilterMgr):
+    def filter(self, tmp, data):
+        for filter_ in self.filters:
+            data = filter_(self, data)
+        return data
+
+
+class LazyCheckerOptions:
+    def __init__(
+        self,
+        extension: str,
+        write_exp_on_ioerror: bool = True,
+        raw_filters=None,
+        text_filters=None,
+    ):
+        self.extension = extension
+        self.write_exp_on_ioerror = write_exp_on_ioerror
+        self.rawfiltermgr = RawFilterMgr.factory(raw_filters)
+        self.textfiltermgr = TextFilterMgr.factory(text_filters)
+
+    def filter_raw(self, tmp, data):
+        return self.rawfiltermgr.filter(tmp, data)
+
+    def filter_text(self, tmp, data):
+        return self.textfiltermgr.filter(tmp, data)
+
+    def prep(self, tmp, data):
+        return data
+
+    def to_text(self, tmp, data):
+        return str(data)
+
+    def format(self, tmp, data):
+        data = self.prep(tmp, data)
+        data = self.filter_raw(tmp, data)
+        str_data = self.to_text(tmp, data)
+        str_data = self.filter_text(tmp, str_data)
+        return str_data
+
+
+OPT_DIRECTIVE_SKIP = "skip"
+OPT_DIRECTIVE_BASELINE = "baseline"
+OPT_DIRECTIVE_NODIFF = "nodiff"
+
+
+class _Control(object):
+    """unifies environment and function arguments
+       to determine handlers for IOError and AssertionError
+       save in the LazyTemp results object as well.
+    """
+
+    def __init__(
+        self, lazy: "LazyMixin", env: MediatedEnvironDict, options: LazyCheckerOptions
+    ):
+
+        self.lazy = lazy
+        self.env = env
+        self.options = options
+
+    def write_exp_on_ioerror(self):
+        return getattr(options, "write_exp_on_ioerror", True)
+
+    _directive = undefined
+
+    @property
+    def directive(self) -> str:
+        """ note that  """
+        if self._directive is undefined:
+            res = self._directive = self.env.get("directive", "").strip().lower()
+            assert res in (
+                OPT_DIRECTIVE_SKIP,
+                OPT_DIRECTIVE_BASELINE,
+                OPT_DIRECTIVE_NODIFF,
+                "",
+            )
+        return self._directive
+
+    def skip(self):
+        return self.directive == OPT_DIRECTIVE_SKIP
+
+    def baseline(self):
+        return self.directive == OPT_DIRECTIVE_BASELINE
+
+    def nodiff(self):
+        return self.directive == OPT_DIRECTIVE_NODIFF
+
+
+class LazyTemp(object):
+    def __repr__(self):
+        return "LazyTemp[id=%s]" % (id(self))
+
+    def __init__(self, control, env):
+        self.control = control
+        self.fnp_exp = self.fnp_got = None
+        self.env = env.copy()
+        self.message = ""
+        self.filterhits = {}
+
+
+class LazyMixin(object):
+
+    ENVIRONMENT_VARNAME_ROOT = "lzrt_"
+
+    lazy_basename_extras = ""
+
+    T_FILENAME = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
+
+    # this normally resolves to os.environ, but can be preset for testing
+    lazy_environ = MediatedEnvironDict()
+
+    @classmethod
+    def get_basename(cls, name_, file_, module_):
+        lazy_filename = os.path.splitext(os.path.basename(file_))[0]
+        return lazy_filename
+
+    def _lazy_get_t_dirname(self, exp_got, subber):
+
+        env_name = dict(exp="template_dirname_exp", got="template_dirname_got")[exp_got]
+        dirname = self.control.env[env_name]
+
+        dirname2 = os.path.join(dirname, subber.get("classname"))
+
+        return dirname2
+
+    def _get_fnp_save(
+        self,
+        exp_got: Union["got", "exp"],
+        options: LazyCheckerOptions,
+        suffix: Optional[str],
+    ):
+        """get the save path"""
+
+        try:
+
+            subber = Subber(
+                self,
+                options,
+                {
+                    "filename": self.lazy_filename,
+                    "suffix": suffix,
+                    "classname": self.__class__.__name__,
+                    "exp_got": exp_got,
+                },
+            )
+
+            # pdb.set_trace()
+
+            # calculating the directory path
+            t_dirname = self._lazy_get_t_dirname(exp_got, subber)
+            _litd = t_dirname.split(os.path.sep)
+
+            dirname_extras = getattr(self, "lazy_dirname_extras", "")
+            if dirname_extras:
+                # expand something like "foo, bar" into [..."%(foo)s", "%(bar)s"...]
+                li_replace = [
+                    "%%(%s)s" % (attrname) for attrname in dirname_extras.split()
+                ]
+
+                if "%(lazy_dirname_extras)s" in _litd:
+                    _litd = replace(_litd, "%(lazy_dirname_extras)s", li_replace)
+                else:
+                    _litd.extend(li_replace)
+
+            _lid = ["/"] + [fill_template(t_, subber) for t_ in _litd]
+
+            dirname = os.path.join(*_lid)
+
+            # calculating the filename
+            t_basename = self.T_FILENAME
+            _litb = t_basename.split()
+            _lib = [fill_template(t_, subber) for t_ in _litb]
+            basename = ".".join([i_ for i_ in _lib if i_])
+
+            basename = basename.replace(" ", "_")
+            basename = basename.replace("/", "_")
+
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+
+            return os.path.join(dirname, basename)
+
+        except (Exception,) as e:  # pragma: no cover
+            pdb.set_trace()
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def assert_exp(
+        self, got: Any, options: Optional[LazyCheckerOptions], suffix: str = ""
+    ):
+
+        try:
+            env = self.lazy_environ
+            if not self.lazy_environ.acquired:
+                env.clear()
+                env.acquire(self.ENVIRONMENT_VARNAME_ROOT)
+
+            self.control = control = _Control(self, env, options)
+
+            tmp = LazyTemp(control, env)
+
+            # the environment requests that no diffing or writing take place
+            # typically indicated by setting environment variable `lzrt_directive=skip`
+            if control.skip():
+                return
+
+            # calculate the path of the expectatation and received files
+            tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
+            tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
+
+            formatted_got = options.format(tmp, got)
+
+            # at this point, we want to write the received, formatted, data regardless
+            with open(fnp_got, "w") as fo:
+                fo.write(formatted_got)
+
+            # the newly received data is to be taken as our expectations
+            # typically indicated by setting environment variable `lzrt_directive=baseline`
+            if control.baseline():
+                with open(fnp_exp, "w") as fo:
+                    fo.write(formatted_got)
+                return
+
+            try:
+                with open(fnp_exp) as fi:
+                    exp = fi.read()
+            except (IOError,) as e:
+                # by default we just want to write the received data as our expectation
+                if control.write_exp_on_ioerror():
+                    tmp.message = message = "no check because IOError on %s" % (fnp_exp)
+                    logger.warning(message)
+                    with open(fnp_exp, "w") as fo:
+                        fo.write(formatted_got)
+                    return
+                else:
+                    raise
+
+            # the environment requests only equality is checked, without trying to show details
+            # typically indicated by setting environment variable `lzrt_directive=nodiff`
+            # this may be desired if the differences could cause timeouts with `assertEqual`
+            if control.nodiff():
+                tmp.message = message = "exp and got are not equal but diffing disabled"
+                if exp != formatted_got:
+                    raise self.Fail(message)
+
+            try:
+                # supports a timeout, mechanism if the module is available
+                #
+                self.assertEqualTimed(exp, formatted_got)
+            except (AssertionError,) as e:  # pragma: no cover
+                raise
+            except (CustomTimeoutError,) as e:  # pragma: no cover
+                tmp.message = message = (
+                    "exp and got are not equal but comparison timed out after %s"
+                    % (TIMEOUT_MAXTIME_TO_ALLOW)
+                )
+                self.Fail(message)
+
+            return self.lazytemp
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    #######################################################
+    # Note the conditional method definition and the fallback to
+    # basic assertEqual
+    #######################################################
+    if timeout:
+
+        @timeout(TIMEOUT_MAXTIME_TO_ALLOW)
+        def assertEqualTimed(self, exp, got, message=None):
+            """ comparisons will automatically times out after %s seconds""" % (
+                TIMEOUT_MAXTIME_TO_ALLOW
+            )
+            self.assertEqual(exp, got, message)
+
+    else:
+        #
+        assertEqualTimed = assertEqual

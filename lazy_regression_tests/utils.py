@@ -24,6 +24,8 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+undefined = object()
+
 
 ###################################################################
 # Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.
