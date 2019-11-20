@@ -87,6 +87,7 @@ from lazy_regression_tests.utils import (
     MediatedEnvironDict,
     undefined,
     Subber,
+    RegexRemoveSaver as RegexRemoveSaver1,
     ppp,
     fill_template,
 )
@@ -112,6 +113,13 @@ class MediatedEnvironDict(dict):
 
 
 class FilterMgr:
+    def __repr__(self):
+        return "%s[id=%s filters=%s]" % (
+            self.__class__.__name__,
+            id(self),
+            self.filters,
+        )
+
     @classmethod
     def factory(cls, filters):
         if isinstance(filters, cls):
@@ -122,8 +130,37 @@ class FilterMgr:
         else:
             return cls(filters)
 
+    def __init__(self):
+
+        self.di_filter = {}
+        self.filters = []
+
+    def __iadd__(self, filter_):
+        try:
+            if not isinstance(filter_, self.filter_cls):
+                filter_ = self.filter_cls.factory(filter_)
+            li = self.di_filter.setdefault(filter_.name, [])
+            li.append(filter_)
+            self.filters.append(filter_)
+            return self
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
     def filter(self, tmp, data):
+        for filter_ in self.filters:
+            data = filter_(tmp, data)
         return data
+
+
+class DataMatcher(object):
+    def __repr__(self):
+        return "%s.%s:%s" % (self.__module__, self.__class__.__name__, self.name)
+
+    name = None
+    scalar = False
 
 
 class RawFilter:
@@ -131,61 +168,79 @@ class RawFilter:
 
 
 class RawFilterMgr(FilterMgr):
-    def __init__(self, filters):
-
-        self.di_filters = {}
-        self.li_filters = []
-
-        if not filters:
-            return
-
-        if not isinstance(filters, (list, dict)):
-            filters = [filters]
-
-        if all([isinstance(filter_, RawFilter) for filter_ in filters]):
-
-            self.filters = filters.copy()
-
-            for filter_ in filters:
-                self.di_filters[filter.key] = filter_
-
-        self.filters = []
-
-    def filter(self, tmp, data):
-        for filter_ in self.filters:
-            data = filter_(self, data)
-        return data
+    filter_cls = RawFilter
 
 
 class TextFilter:
     pass
 
 
-class TextFilterMgr(FilterMgr):
+class RegexMatcher(TextFilter, DataMatcher):
+    def __init__(self, pattern, name, scalar=False, *args):
+        self.patre = re.compile(pattern, *args)
+        self.name = name
+
+    def search(self, *args, **kwds):
+        return self.patre.search(*args, **kwds)
+
+    def __getattr__(self, attrname):
+        return getattr(self.patre, attrname)
+
+
+class RegexRemoveSaver(RegexMatcher):
+    """this will remove the matching line but also save it"""
+
     def filter(self, tmp, data):
-        for filter_ in self.filters:
-            data = filter_(self, data)
-        return data
+        try:
+            line_out = []
+            for line in data.split("\n"):
+                hit = self.patre.search(line)
+                if hit:
+                    if self.scalar:
+                        tmp.filterhits[self.name] = line
+                    else:
+                        li = tmp.filterhits.setdefault(self.name, [])
+                        li.append(line)
+                else:
+                    line_out.append(line)
+
+            return "\n".join(line_out)
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    __call__ = filter
+
+
+class TextFilterMgr(FilterMgr):
+    filter_cls = TextFilter
 
 
 class LazyCheckerOptions:
+    def __repr__(self):
+        return "%s[id=%s]" % (self.__class__.__name__, id(self))
+
     def __init__(
         self,
         extension: str,
         write_exp_on_ioerror: bool = True,
-        raw_filters=None,
-        text_filters=None,
+        rawfiltermgr=None,
+        textfiltermgr=None,
     ):
         self.extension = extension
         self.write_exp_on_ioerror = write_exp_on_ioerror
-        self.rawfiltermgr = RawFilterMgr.factory(raw_filters)
-        self.textfiltermgr = TextFilterMgr.factory(text_filters)
+        self.rawfiltermgr = rawfiltermgr or RawFilterMgr()
+        self.textfiltermgr = textfiltermgr or TextFilterMgr()
+        ppp(self, self)
+
+        self.filterhash = None
 
     def filter_raw(self, tmp, data):
         return self.rawfiltermgr.filter(tmp, data)
 
     def filter_text(self, tmp, data):
-        return self.textfiltermgr.filter(tmp, data)
+        return self.textfiltermgr.filter(tmp, data).strip()
 
     def prep(self, tmp, data):
         return data
@@ -194,11 +249,28 @@ class LazyCheckerOptions:
         return str(data)
 
     def format(self, tmp, data):
-        data = self.prep(tmp, data)
-        data = self.filter_raw(tmp, data)
-        str_data = self.to_text(tmp, data)
-        str_data = self.filter_text(tmp, str_data)
-        return str_data
+        try:
+            # used to only format once
+            if (
+                isinstance(data, str)
+                and self.filterhash
+                and self.filterhash == hash(data)
+            ):
+                return data
+
+            data = self.prep(tmp, data)
+            data = self.filter_raw(tmp, data)
+            str_data = self.to_text(tmp, data)
+            str_data = self.filter_text(tmp, str_data)
+
+            self.filterhash = hash(str_data)
+
+            return str_data
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                ppp(self, self)
+                pdb.set_trace()
+            raise
 
 
 OPT_DIRECTIVE_SKIP = "skip"
@@ -271,6 +343,8 @@ class LazyMixin(object):
     # this normally resolves to os.environ, but can be preset for testing
     lazy_environ = MediatedEnvironDict()
 
+    lazytemp = None
+
     @classmethod
     def get_basename(cls, name_, file_, module_):
         lazy_filename = os.path.splitext(os.path.basename(file_))[0]
@@ -305,8 +379,6 @@ class LazyMixin(object):
                     "exp_got": exp_got,
                 },
             )
-
-            # pdb.set_trace()
 
             # calculating the directory path
             t_dirname = self._lazy_get_t_dirname(exp_got, subber)
@@ -360,14 +432,15 @@ class LazyMixin(object):
 
             self.control = control = _Control(self, env, options)
 
-            tmp = LazyTemp(control, env)
+            # only create the lazy temp the first time.
+            tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env)
 
             # the environment requests that no diffing or writing take place
             # typically indicated by setting environment variable `lzrt_directive=skip`
             if control.skip():
                 return
 
-            # calculate the path of the expectatation and received files
+            # calculate the paths of the exp/got files
             tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
             tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
 
@@ -421,6 +494,20 @@ class LazyMixin(object):
 
             return self.lazytemp
 
+        except (AssertionError,) as e:  # pragma: no cover
+            if rpdb():  # pragma: no cover
+                pdb.set_trace()
+
+                dn = "/Users/jluc/kds2/issues2/049.lazy/021.p4.v2"
+                fnp = os.path.join(dn, "exp.%s.txt" % (self.__class__.__name__))
+                with open(fnp, "w") as fo:
+                    fo.write(exp)
+
+                fnp = os.path.join(dn, "got.%s.txt" % (self.__class__.__name__))
+                with open(fnp, "w") as fo:
+                    fo.write(formatted_got)
+
+            raise
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
