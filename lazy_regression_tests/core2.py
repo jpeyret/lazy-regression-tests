@@ -324,12 +324,13 @@ class LazyTemp(object):
     def __repr__(self):
         return "LazyTemp[id=%s]" % (id(self))
 
-    def __init__(self, control, env):
+    def __init__(self, control, env, testee):
         self.control = control
         self.fnp_exp = self.fnp_got = None
         self.env = env.copy()
         self.message = ""
         self.filterhits = {}
+        self.testee = testee
 
 
 class LazyMixin(object):
@@ -420,6 +421,25 @@ class LazyMixin(object):
                 pdb.set_trace()
             raise
 
+    def preformat(self, data, options: LazyCheckerOptions):
+
+        try:
+
+            env = self.lazy_environ
+            if not self.lazy_environ.acquired:
+                env.clear()
+                env.acquire(self.ENVIRONMENT_VARNAME_ROOT)
+
+            self.control = control = _Control(self, env, options)
+
+            tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env, self)
+            return options.format(tmp, data)
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
     def assert_exp(
         self, got: Any, options: Optional[LazyCheckerOptions], suffix: str = ""
     ):
@@ -433,7 +453,7 @@ class LazyMixin(object):
             self.control = control = _Control(self, env, options)
 
             # only create the lazy temp the first time.
-            tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env)
+            tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env, self)
 
             # the environment requests that no diffing or writing take place
             # typically indicated by setting environment variable `lzrt_directive=skip`
