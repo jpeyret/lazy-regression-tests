@@ -35,7 +35,7 @@ from collections import namedtuple
 ###################################################################
 
 import pdb
-from bemyerp.lib.utils import set_cpdb, set_rpdb
+from bemyerp.lib.utils import ppp
 
 from traceback import print_exc as xp
 
@@ -138,7 +138,9 @@ class LazyCheckerOptions:
 
         self.filterhash = None
 
-    def activate_textfilter(self, name, filter_=None):
+        self.reg_callbacks = {}
+
+    def activate_textfilter(self, name, filter_=None, callback=None):
 
         if filter_ is None:
             di = self.candidate_textfilters
@@ -154,10 +156,13 @@ class LazyCheckerOptions:
             filter_.name = name
             self.textfiltermgr += filter_
 
+        if callback:
+            self.reg_callbacks[name] = callback
+
     def remove_textfilter(self, name):
         self.textfiltermgr.pop(name)
 
-    def activate_rawfilter(self, name, filter_=None):
+    def activate_rawfilter(self, name, filter_=None, callback=None):
 
         if filter_ is None:
             di = self.candidate_rawfilters
@@ -173,14 +178,17 @@ class LazyCheckerOptions:
             filter_.name = name
             self.rawfiltermgr += filter_
 
+        if callback:
+            self.reg_callbacks[name] = callback
+
     def remove_rawfilter(self, name):
         self.rawfiltermgr.pop(name)
 
     def filter_raw(self, tmp, data):
-        return self.rawfiltermgr.filter(tmp, data)
+        return self.rawfiltermgr.filter(self, tmp, data)
 
     def filter_text(self, tmp, data):
-        return self.textfiltermgr.filter(tmp, data).strip()
+        return self.textfiltermgr.filter(self, tmp, data).strip()
 
     def prep(self, tmp, data):
         return data

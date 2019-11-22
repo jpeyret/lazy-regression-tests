@@ -6,6 +6,8 @@ from typing import Optional, Any
 #######################################################
 
 
+from traceback import print_exc as xp
+
 ###################################################################
 
 #######################################################
@@ -21,6 +23,35 @@ except (ImportError,) as e:
         bs = None
 
 #######################################################
+
+import pdb
+from bemyerp.lib.utils import ppp
+
+
+def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
+    if cpdb.enabled == "once":
+        cpdb.enabled = False  # type : ignore
+        return True
+    return cpdb.enabled  # type : ignore
+
+
+cpdb.enabled = False  # type : ignore
+
+
+def rpdb() -> bool:  # pragma: no cover
+    try:
+        from django.core.cache import cache
+    except (Exception,) as e:
+        cache = {}
+    import sys
+
+    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
+    if in_celery:
+        return False
+    return bool(cache.get("rpdb_enabled") or getattr("rpdb", "enabled", False))
+
+
+rpdb.enabled = False  # type : ignore
 
 
 import re
@@ -66,9 +97,10 @@ class FilterMgr:
                 pdb.set_trace()
             raise
 
-    def filter(self, tmp, data):
+    def filter(self, options, tmp, data):
         for filter_ in self.filters:
-            data = filter_(tmp, data)
+            callback = options.reg_callbacks.get(filter_.name)
+            data = filter_(options, tmp, data, callback)
         return data
 
     def pop(self, name: str):
@@ -79,8 +111,19 @@ class DataMatcher(object):
     def __repr__(self):
         return "%s.%s:%s" % (self.__module__, self.__class__.__name__, self.name)
 
+    def __init__(self, selector, name):
+        self.selector = selector
+        self.name = name
+
     name = None
     scalar = False
+
+    def add_to_filter_hit(self, tmp, value):
+        if self.scalar:
+            tmp.filterhits[self.name] = value
+        else:
+            li = tmp.filterhits.setdefault(self.name, [])
+            li.append(value)
 
 
 class RawFilter:
@@ -114,19 +157,23 @@ class RegexMatcher(TextFilter, DataMatcher):
 class RegexRemoveSaver(RegexMatcher):
     """this will remove the matching line but also save it"""
 
-    def filter(self, tmp, data):
+    def filter(self, options, tmp, data, callback):
+
+        li = []
+
         try:
             line_out = []
             for line in data.split("\n"):
                 hit = self.patre.search(line)
                 if hit:
-                    if self.scalar:
-                        tmp.filterhits[self.name] = line
-                    else:
-                        li = tmp.filterhits.setdefault(self.name, [])
-                        li.append(line)
+                    li.append(line)
+                    self.add_to_filter_hit(tmp, line)
+
                 else:
                     line_out.append(line)
+
+            if callback:
+                callback(self.name, data, li)
 
             return "\n".join(line_out)
         except (Exception,) as e:  # pragma: no cover
@@ -144,9 +191,31 @@ class TextFilterMgr(FilterMgr):
 class CSSRemoveFilter(RawFilter, DataMatcher):
     pass
 
-    def filter(self, tmp, data):
+    def __init__(self, pattern, name, scalar=False, *args):
+        self.selector = pattern
+        self.name = name
+        self.scalar = scalar
+
+    def filter(self, options, tmp, data, callback):
         try:
-            raise NotImplementedError("%s.filter(%s)" % (self, ""))
+            # hit = data.select(self.selector)
+
+            li = []
+
+            for hit in data.select(self.selector):
+
+                s_hit = str(hit)
+                self.add_to_filter_hit(tmp, hit)
+                li.append(hit)
+
+            if callback:
+                callback(self.name, data, li)
+
+            for hit in li:
+                hit.decompose()
+
+            return data
+            # raise NotImplementedError("%s.filter(%s)" % (self, ""))
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
@@ -155,12 +224,45 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
     __call__ = filter
 
 
+def nested_dict_pop(dict_: dict, lookup: str):
+    try:
+
+        lookups = lookup.split(".")
+
+        li_approach = lookups[:-1]
+        final = lookups[-1]
+
+        di = dict_
+        for key in li_approach:
+            di = di.get(key)
+            if di is None:
+                return
+
+        res = di.pop(final)
+
+        return res
+
+    except (Exception,) as e:  # pragma: no cover
+        if cpdb():
+            pdb.set_trace()
+        raise
+
+
 class DictKeyRemoveFilter(RawFilter, DataMatcher):
     pass
 
-    def filter(self, tmp, data):
+    def filter(self, options, tmp, data, callback):
+
         try:
-            raise NotImplementedError("%s.filter(%s)" % (self, ""))
+
+            value = nested_dict_pop(data, self.selector)
+            self.add_to_filter_hit(tmp, value)
+
+            if callback:
+                callback(self.name, data, value)
+
+            return data
+
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
