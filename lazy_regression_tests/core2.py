@@ -116,6 +116,10 @@ class MediatedEnvironDict(dict):
 
 
 class LazyCheckerOptions:
+
+    candidate_textfilters = {}
+    candidate_rawfilters = {}
+
     def __repr__(self):
         return "%s[id=%s]" % (self.__class__.__name__, id(self))
 
@@ -133,6 +137,44 @@ class LazyCheckerOptions:
         ppp(self, self)
 
         self.filterhash = None
+
+    def activate_textfilter(self, name, filter_=None):
+
+        if filter_ is None:
+            di = self.candidate_textfilters
+            filter_ = di.get(name)
+            if not filter_:
+                possibles = ",".join(list(di.keys()))
+
+                msg = f"unknown textfilter `{name}`.  known textfilters are `{possibles}` on `{self}.candidate_textfilters`"
+                raise ValueError(msg)
+
+            self.textfiltermgr += di[name]
+        else:
+            filter_.name = name
+            self.textfiltermgr += filter_
+
+    def remove_textfilter(self, name):
+        self.textfiltermgr.pop(name)
+
+    def activate_rawfilter(self, name, filter_=None):
+
+        if filter_ is None:
+            di = self.candidate_rawfilters
+            filter_ = di.get(name)
+            if not filter_:
+                possibles = ",".join(list(di.keys()))
+
+                msg = f"unknown rawfilter `{name}`.  known rawfilters are `{possibles}` on `{self}.candidate_rawfilters`"
+                raise ValueError(msg)
+
+            self.rawfiltermgr += di[name]
+        else:
+            filter_.name = name
+            self.rawfiltermgr += filter_
+
+    def remove_rawfilter(self, name):
+        self.rawfiltermgr.pop(name)
 
     def filter_raw(self, tmp, data):
         return self.rawfiltermgr.filter(tmp, data)
@@ -362,7 +404,8 @@ class LazyMixin(object):
             tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
             tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
 
-            formatted_got = options.format(tmp, got)
+            # linefeeds have a tendency to creep in sometimes
+            formatted_got = options.format(tmp, got).rstrip()
 
             # at this point, we want to write the received, formatted, data regardless
             with open(fnp_got, "w") as fo:
@@ -377,7 +420,8 @@ class LazyMixin(object):
 
             try:
                 with open(fnp_exp) as fi:
-                    exp = fi.read()
+                    # linefeeds have a tendency to creep in sometimes
+                    exp = fi.read().rstrip()
             except (IOError,) as e:
                 # by default we just want to write the received data as our expectation
                 if control.write_exp_on_ioerror():
@@ -394,7 +438,7 @@ class LazyMixin(object):
             # this may be desired if the differences could cause timeouts with `assertEqual`
             if control.nodiff():
                 tmp.message = message = "exp and got are not equal but diffing disabled"
-                if exp != formatted_got:
+                if exp != formatted_got():
                     raise self.Fail(message)
 
             try:
