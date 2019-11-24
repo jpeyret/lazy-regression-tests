@@ -9,6 +9,9 @@ from functools import partial, wraps
 
 logger = logging.getLogger(__name__)
 
+undefined = Ellipsis
+
+from typing import List, Any, Tuple, Iterable
 
 try:
     from cStringIO import StringIO  # 223ed
@@ -16,7 +19,7 @@ except (ImportError,) as e:
     from io import StringIO  # 223ed
 
 try:
-    basestring_ = basestring
+    basestring_ = basestring  # type: ignore
 except (NameError,) as e:
     basestring_ = str
 
@@ -67,7 +70,7 @@ def _pseudo_decor(fn, attrname):
 cast_contentbytes2str = partial(_pseudo_decor, attrname="content")
 
 
-def set_rpdb(rpdb, remove=False, recurse=True):
+def set_rpdb(rpdb, remove=True, recurse=True):
     if "--rpdb" in sys.argv:
         rpdb.enabled = True
         # howto- set cpdb on modules...
@@ -86,7 +89,7 @@ def set_rpdb(rpdb, remove=False, recurse=True):
     return False
 
 
-def set_cpdb(cpdb, remove=False, recurse=True, boolvalue=None):
+def set_cpdb(cpdb, remove=True, recurse=True, boolvalue=None):
 
     # !!!TODO!!!p4 - stop handling --pdb and consider it reserved
 
@@ -139,6 +142,13 @@ def ppp(o, header=None):
 
     msg = debugObject(o, header)
     print(msg)
+
+
+def stripdict(di, *args):
+    di = di.copy()
+    for name in ["self"] + list(args):
+        _ = di.pop(name, None)
+    return di
 
 
 def debugObject(
@@ -281,30 +291,54 @@ def debugDict(
     return buf.getvalue()
 
 
-def fill_template(tmpl, *args):
-    try:
-        return tmpl % Subber(*args)
-    except Exception as e:  # pragma: no cover
-        logger.debug("tmpl:%s,args:%s" % (tmpl, args))
-        raise
+def fill_template(tmpl: str, *args: Any) -> str:
+    return tmpl % Subber(*args)
 
 
-def sub_template(tmpl, *args):
-    if isinstance(tmpl, basestring_):
-        tmpl = Template(tmpl)
+def sub_template(tmpl: str, *args: Any) -> str:
+    tmp = Template(tmpl)
+    return tmp.substitute(Subber(*args))  # type: ignore
 
-    try:
-        return tmpl.substitute(Subber(*args))
-    except Exception as e:  # pragma: no cover
-        logger.debug("tmpl:%s,args:%s" % (tmpl, args))
-        raise
+
+def first(li, empty_value=None):
+    if not li:
+        return empty_value
+
+    if isinstance(li, list):
+        return li[0]
+
+    if isinstance(li, dict):
+        return li.values()[0]
+
+    raise NotImplementedError("first.  unknown type for %s[%s]" % (li, type(li)))
 
 
 class Subber(object):
-    def __init__(self, *args):
+    """ implement a first found getter for lookup keys
+        each obj in li_arg is asked, via getattr & get, whether
+        it holds a key.  if found it is returned immediately
+        Else 
+    """
+
+    def __init__(self, *args: Any):
         self.li_arg = list(args)
         # raise NotImplementedError, "li_arg:%s" % (self.li_arg)
         self.di_res = {}
+        self.verbose = False
+
+    def removed(self, *remove_args: Any) -> "Subber":
+        """return a new Subber without some args
+           a common use would be not have `self` as a subber on property
+           lookups
+        """
+        args2 = [arg for arg in self.li_arg if not arg in remove_args]
+        return Subber(*args2)
+
+    def append(self, obj: Any):
+        self.li_arg.append(obj)
+
+    def insert(self, pos, obj: Any):
+        self.li_arg.insert(pos, obj)
 
     def __repr__(self):
         def fmt(arg, maxlen=20):
@@ -345,26 +379,40 @@ class Subber(object):
         """generic way to look for a key in the arg list"""
 
         for arg in self.li_arg:
+
             try:
                 got = arg[key]
+                if self.verbose:
+                    print("got:%s from %s.return" % (key, arg))
                 return got
             except (KeyError):
                 try:
                     # try getattr
                     got = getattr(arg, key)
+                    if self.verbose:
+                        print("got:%s from %s.return" % (key, arg))
                     return got
                 except AttributeError:  # pragma: no cover
+                    if self.verbose:
+                        print("no luck:%s from %s.continue" % (key, arg))
+
                     continue
 
             except (AttributeError, TypeError):
                 # no __getitem__, try getattr
                 try:
                     got = getattr(arg, key)
+                    if self.verbose:
+                        print("got:%s from %s.return" % (key, arg))
                     return got
                 except AttributeError:  # pragma: no cover
+                    if self.verbose:
+                        print("no luck:%s from %s.continue" % (key, arg))
                     continue
 
         try:
+            if self.verbose:
+                print("no luck:%s .  KeyError using subber: %s" % (key, self))
             raise KeyError(key)
         except Exception as e:  # pragma: no cover
             raise
@@ -391,15 +439,94 @@ class Subber(object):
 
 
 class RescueDict(object):
-    """fall through in case a fillTemplate does not find a key
+    """fall through in case a fill_template does not find a key
        use sparingly as it covers up exceptions
     """
+
+    # ???TODO??? - consider adding a **kwds to default capability
+    # that would NOT count as a Rescue.
+    # i.e. `RescueDict(notes="")` would return "" for Notes if nothing else in the Subber
+    # had `notes` set.
 
     def __init__(self, placeholder="?", template="%(key)s=%(placeholder)s"):
         self.placeholder = placeholder
         self.li_used = []
+        self.s_asked = set()
         self.template = template
+        self.hit = False
+
+    def reset_hit(self):
+        self.hit = False
 
     def __getitem__(self, key):
+
         self.li_used.append(key)
+        self.s_asked.add(key)
+        self.hit = True
+        if not self.template:
+            return self.placeholder
+
         return self.template % dict(key=key, placeholder=self.placeholder)
+
+
+class RescueDictValue(object):
+    def __init__(self, value):
+        self.value = value
+
+    def __getitem__(self, key):
+        return self.value
+
+
+def nested_dict_get(dict_: dict, lookup: str, default=None):
+    try:
+
+        lookups = lookup.split(".")
+
+        li_approach = lookups[:-1]
+        final = lookups[-1]
+
+        di = dict_
+        for key in li_approach:
+            try:
+                di = di[key]
+            except (KeyError,) as e:  # pragma: no cover
+                return default
+
+        res = di.get(final, default)
+
+        return res
+
+    except (Exception,) as e:  # pragma: no cover
+        if cpdb():
+            pdb.set_trace()
+        raise
+
+
+def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
+    try:
+
+        lookups = lookup.split(".")
+
+        li_approach = lookups[:-1]
+        final = lookups[-1]
+
+        di = dict_
+        for key in li_approach:
+            di = di.get(key)
+            if di is None:
+                if value is undefined:
+                    raise KeyError(key)
+                else:
+                    return value
+
+        if value is not undefined:
+            res = di.pop(final, value)
+            return res
+        else:
+            # will do a KeyError
+            return di.pop(final)
+
+    except (Exception,) as e:  # pragma: no cover
+        if cpdb():
+            pdb.set_trace()
+        raise

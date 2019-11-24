@@ -1,4 +1,4 @@
-#######################################################
+######################################################
 # Typing
 #######################################################
 from typing import Optional, Any
@@ -25,7 +25,18 @@ except (ImportError,) as e:
 #######################################################
 
 import pdb
-from bemyerp.lib.utils import ppp
+
+
+from lazy_regression_tests.utils import (
+    nested_dict_get,
+    nested_dict_pop,
+    set_cpdb,
+    set_rpdb,
+    first,
+    fill_template,
+    ppp,
+    undefined,
+)
 
 
 def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
@@ -222,30 +233,6 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
             raise
 
     __call__ = filter
-
-
-def nested_dict_pop(dict_: dict, lookup: str):
-    try:
-
-        lookups = lookup.split(".")
-
-        li_approach = lookups[:-1]
-        final = lookups[-1]
-
-        di = dict_
-        for key in li_approach:
-            di = di.get(key)
-            if di is None:
-                return
-
-        res = di.pop(final)
-
-        return res
-
-    except (Exception,) as e:  # pragma: no cover
-        if cpdb():
-            pdb.set_trace()
-        raise
 
 
 class DictKeyRemoveFilter(RawFilter, DataMatcher):

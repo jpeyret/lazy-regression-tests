@@ -15,6 +15,9 @@ from lazy_regression_tests._baseutils import (
     fill_template,
     Subber,
     RescueDict,
+    nested_dict_get,
+    nested_dict_pop,
+    first,
 )
 
 from traceback import print_exc as xp
@@ -24,8 +27,7 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-undefined = object()
-
+undefined = Ellipsis
 
 ###################################################################
 # Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.

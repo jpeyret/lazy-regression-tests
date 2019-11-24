@@ -241,7 +241,7 @@ class _Control(object):
         self.options = options
 
     def write_exp_on_ioerror(self):
-        return getattr(options, "write_exp_on_ioerror", True)
+        return getattr(self.options, "write_exp_on_ioerror", True)
 
     _directive = undefined
 
@@ -434,7 +434,7 @@ class LazyMixin(object):
                 # by default we just want to write the received data as our expectation
                 if control.write_exp_on_ioerror():
                     tmp.message = message = "no check because IOError on %s" % (fnp_exp)
-                    logger.warning(message)
+                    # logger.warning(message)
                     with open(fnp_exp, "w") as fo:
                         fo.write(formatted_got)
                     return
