@@ -242,7 +242,7 @@ class DictKeyRemoveFilter(RawFilter, DataMatcher):
 
         try:
 
-            value = nested_dict_pop(data, self.selector)
+            value = nested_dict_pop(data, self.selector, None)
             self.add_to_filter_hit(tmp, value)
 
             if callback:

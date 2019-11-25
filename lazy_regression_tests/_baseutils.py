@@ -24,6 +24,36 @@ except (NameError,) as e:
     basestring_ = str
 
 
+import pdb
+from bemyerp.lib.utils import set_cpdb, set_rpdb
+
+
+def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
+    if cpdb.enabled == "once":
+        cpdb.enabled = False  # type : ignore
+        return True
+    return cpdb.enabled  # type : ignore
+
+
+cpdb.enabled = False  # type : ignore
+
+
+def rpdb() -> bool:  # pragma: no cover
+    try:
+        from django.core.cache import cache
+    except (Exception,) as e:
+        cache = {}
+    import sys
+
+    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
+    if in_celery:
+        return False
+    return bool(cache.get("rpdb_enabled") or getattr("rpdb", "enabled", False))
+
+
+rpdb.enabled = False  # type : ignore
+
+
 #################################
 # Python 3 bytes=>str support
 #################################

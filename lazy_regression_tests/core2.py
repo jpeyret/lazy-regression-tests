@@ -41,7 +41,7 @@ from traceback import print_exc as xp
 
 
 def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
-    return True
+    # return True
     if cpdb.enabled == "once":
         cpdb.enabled = False  # type : ignore
         return True
