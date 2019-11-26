@@ -507,7 +507,7 @@ class RescueDictValue(object):
         return self.value
 
 
-def nested_dict_get(dict_: dict, lookup: str, default=None):
+def nested_dict_get(dict_: dict, lookup: str, default=undefined):
     try:
 
         lookups = lookup.split(".")
@@ -520,9 +520,12 @@ def nested_dict_get(dict_: dict, lookup: str, default=None):
             try:
                 di = di[key]
             except (KeyError,) as e:  # pragma: no cover
-                return default
+                raise
 
-        res = di.get(final, default)
+        if default is not undefined:
+            res = di.get(final, default)
+        else:
+            return di[final]
 
         return res
 
