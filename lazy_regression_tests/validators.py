@@ -10,6 +10,9 @@ from typing import (
 
 from operator import attrgetter
 import sys
+import re
+
+from traceback import print_exc as xp
 
 import logging
 
@@ -22,6 +25,14 @@ logger = logging.getLogger(__name__)
 undefined = Ellipsis
 
 verbose = "-v" in sys.argv
+
+# just to track regexes
+tmp = re.compile("")
+regex_class = tmp.__class__
+
+
+def breakpoints(*args, **kwargs):
+    return False
 
 
 import pdb
@@ -117,7 +128,10 @@ class Validator:
                 fill_template(t_message, locals(), testee, self) if t_message else None
             )
 
-            if not callable(exp):
+            if isinstance(exp, regex_class):
+                self.test_regex(testee, exp, got, message)
+
+            elif not callable(exp):
                 if "-v" in sys.argv:
                     print("\n\nvalidator.%s.checking(exp=%s,got=%s)" % (self, exp, got))
                 self.test(testee, exp, got, message)
@@ -127,6 +141,25 @@ class Validator:
                 return got
         except (AssertionError,) as e:  # pragma: no cover
             raise
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_regex(self, testee, exp, got, message):
+        try:
+
+            if message is None:
+                message = fill_template(
+                    "%(name)s pattern:%(pattern)s:does not match:%(got)s:got",
+                    locals(),
+                    exp,
+                    self,
+                    {"name": self},
+                )
+
+            testee.assertTrue(exp.search(str(got)), message)
+
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
@@ -143,7 +176,7 @@ class Validator:
                     "%(name)s exp:%(exp)s<>%(got)s:got", locals(), self, {"name": self}
                 )
 
-            # correcting for unwanted scalars
+            # correcting for unspecified scalars
             if not isinstance(exp, list) and isinstance(got, list) and len(got) == 1:
                 got = first(got)
 
@@ -164,11 +197,10 @@ class FullyQualifiedNamesValidator(Validator):
 
 class MixinExpInGot:
     def test(self, testee, exp, got, message):
+
+        if exp is undefined:
+            raise ValueError("exp is undefined")
         try:
-
-            if exp is undefined:
-                raise ValueError("exp is undefined")
-
             testee.assertTrue(str(exp) in str(got), message)
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
@@ -196,9 +228,17 @@ class AttributeValidator(Validator):
 class NamedTesteeAttributeValidator(AttributeValidator):
     sourcename = None
 
-    def __init__(self):
+    def __init__(self, selector=None):
+
+        selector = selector or getattr(self, "selector", None)
+        if selector is None:
+            raise ValueError(
+                "selector was not passed in and is not pre-set on class %s"
+                % (self.__class__.__name__)
+            )
+
         super(NamedTesteeAttributeValidator, self).__init__(
-            self.selector, sourcename=self.sourcename
+            selector, sourcename=self.sourcename
         )
 
 
@@ -209,6 +249,8 @@ class StatusCodeValidator(NamedTesteeAttributeValidator):
 class CSSValidator(Validator):
 
     sourcename = "soup"
+
+    to_text = False
 
     def __init__(self, selector, scalar=None, to_text=True):
 
@@ -238,6 +280,8 @@ class CSSValidator(Validator):
 class TitleCSSValidator(FullyQualifiedNamesValidator, CSSValidator):
     selector = "title"
     scalar = True
+
+    to_text = True
 
 
 class DictValidator(Validator):
@@ -298,7 +342,8 @@ class ValidationManager:
         for validatormgr in validator_managers:
 
             if isinstance(validatormgr, ValidationDirective):
-                self._add_baseline(validatormgr)
+                # remember, you need to copy shared directives because set_expectations modifies them
+                self._add_baseline(validatormgr.copy())
             elif isinstance(validatormgr, ValidationManager):
                 self.inject(validatormgr)
 
@@ -316,7 +361,7 @@ class ValidationManager:
 
                         directive.active = (
                             override.active
-                            if override is not None
+                            if override.active is not None
                             else directive.active
                         )
                         directive.exp = (
@@ -329,9 +374,10 @@ class ValidationManager:
                             logger.info("validator.post:%s" % (directive))
 
                     else:
-                        raise NotImplementedError(
-                            "%s.prep_validation(%s) with validator" % (self, locals())
-                        )
+                        self._add_baseline(override, name)
+                        # raise NotImplementedError(
+                        #     "%s.prep_validation(%s) with validator" % (self, locals())
+                        # )
 
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
@@ -347,14 +393,26 @@ class ValidationManager:
                 ppp(self, "check_expectations")
 
             for name, directive in self.validators.items():
+
+                if breakpoints(
+                    "check_expectations", {"name": directive.name}
+                ):  # pragma: no cover
+                    pdb.set_trace()
+
                 if not directive.active or directive.active is undefined:
                     logger.info("inactive %s" % (directive))
                     continue
 
-                if directive.exp is undefined:
+                exp = directive.exp
+
+                if exp is undefined:
+                    # let's see if we can get it
+                    exp = getattr(testee, directive.name, undefined)
+
+                if exp is undefined:
                     raise ValueError("%s has undefined exp" % (directive))
 
-                directive.validator.check(testee, directive.exp)
+                directive.validator.check(testee, exp)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -366,7 +424,8 @@ class ValidationManager:
     def inject(self, validatormgr):
 
         for name, directive in validatormgr.validators.items():
-            self._add_baseline(directive)
+            # remember, you need to copy shared directives because set_expectations modifies them
+            self._add_baseline(directive.copy())
 
     def _add_baseline(self, directive, name=None):
         name = name or directive.name
@@ -404,6 +463,17 @@ class ValidationManager:
         name = name or directive.name
         self.overrides[name] = directive
 
+    def remove_expectation(self, name):
+        try:
+            self.set_expectation(name, active=False)
+        except (KeyError,) as e:  # pragma: no cover
+            logger.warning(e)
+            pass
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
     def set_expectation(self, name, exp=undefined, validator=None, active=None):
 
         try:
@@ -414,11 +484,22 @@ class ValidationManager:
                     possibles = ",".join(list(self.validators.keys()))
 
                     msg = f"unknown check `{name}`.  known checks are `{possibles}` on `{self}.validators`"
-                    raise ValueError(msg)
+                    raise KeyError(msg)
                 else:
                     self._add_override(
                         ValidationDirective(name, validator, exp, active)
                     )
+
+            else:
+
+                # pdb.set_trace()
+
+                if active is None:
+                    active = not (exp is undefined)
+
+                self._add_override(ValidationDirective(name, validator, exp, active))
+
+                # raise NotImplementedError("%s.set_expectation.withValidator(%s)" % (self, locals()))
 
             if verbose:
                 ppp(self, "after set_expectation")
@@ -446,7 +527,8 @@ class ValidationManager:
                 exp = undefined
 
             if isinstance(name, ValidationManager):
-                for directive in name.validator_directives:
+                for name, directive in name.validators.items():
+                    # remember, you need to copy shared directives because set_expectations modifies them
                     self._add_baseline(directive.copy())
                 return
 
@@ -474,7 +556,7 @@ class ValidationDirective:
             self.__class__.__name__,
             self.name,
             self.active,
-            self.exp,
+            (str(self.exp) if self.exp is not undefined else "undefined"),
             self.validator,
         )
 
@@ -492,3 +574,51 @@ class ValidationDirective:
 
     def copy(self):
         return self.__class__(self.name, self.validator, self.exp, self.active)
+
+
+class ValidatorMixin:
+
+    _validationmgr = undefined
+
+    @property
+    def validationmgr(self):
+        if self._validationmgr is undefined:
+
+            if breakpoints("validationmgr", {"any": True}):  # pragma: no cover
+                pdb.set_trace()
+            res = self._validationmgr = ValidationManager(
+                self, *getattr(self, "validatormgrs", [])
+            )
+
+            # and now add extra validators if found...
+            for attrname, value in vars(self.__class__).items():
+                if attrname.startswith("validator") and isinstance(
+                    value, ValidationManager
+                ):
+                    res.add_directive(value)
+
+        return self._validationmgr
+
+    def remove_expectation(self, name):
+        self.validationmgr.remove_expectation(name)
+
+    def set_expectation(self, *args, **kwargs):
+        _ = self.validationmgr
+
+        name = args[0]
+        if breakpoints("set_expectation", {"name": name}):  # pragma: no cover
+            pdb.set_trace()
+
+            # put this in your breakpoints.json
+
+        self.validationmgr.set_expectation(*args, **kwargs)
+
+    def check_expectations(self):
+        try:
+
+            self.validationmgr.check_expectations(self)
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
