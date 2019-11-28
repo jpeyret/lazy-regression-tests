@@ -584,13 +584,49 @@ class ValidatorMixin:
     def validationmgr(self):
         if self._validationmgr is undefined:
 
+            # first... is anything set on the instance?
+            res = None
+
+            self._validationmgr = res = ValidationManager(self)
+
+            items_ = vars(self).items()
+
+            # pdb.set_trace()
+
+            found = False
+
+            for attrname, value in items_:
+
+                if value == res:
+                    continue
+
+                if attrname.startswith("validator"):
+                    if not isinstance(value, list):
+                        value = [value]
+
+                    val1 = first(value)
+                    if isinstance(val1, ValidationManager):
+                        # ok, we can work with this
+                        if verbose:
+                            logger.info(
+                                "validationmgr.setting from instance validator:%s"
+                                % (attrname)
+                            )
+                        res = self._validationmgr = res or ValidationManager(self)
+                        for valmgr in value:
+                            found = True
+                            res.add_directive(valmgr)
+
+            if found:
+                return res
+
             if breakpoints("validationmgr", {"any": True}):  # pragma: no cover
                 pdb.set_trace()
-            res = self._validationmgr = ValidationManager(
-                self, *getattr(self, "validatormgrs", [])
-            )
 
-            # and now add extra validators if found...
+            for valmgr in getattr(self, "validatormgrs", []):
+                res.add_directive(valmgr)
+
+            # and now add extra class-level validators if found...
             for attrname, value in vars(self.__class__).items():
                 if attrname.startswith("validator") and isinstance(
                     value, ValidationManager
@@ -603,7 +639,7 @@ class ValidatorMixin:
         self.validationmgr.remove_expectation(name)
 
     def set_expectation(self, *args, **kwargs):
-        _ = self.validationmgr
+        validationmgr = self.validationmgr
 
         name = args[0]
         if breakpoints("set_expectation", {"name": name}):  # pragma: no cover
@@ -611,7 +647,7 @@ class ValidatorMixin:
 
             # put this in your breakpoints.json
 
-        self.validationmgr.set_expectation(*args, **kwargs)
+        validationmgr.set_expectation(*args, **kwargs)
 
     def check_expectations(self):
         try:
