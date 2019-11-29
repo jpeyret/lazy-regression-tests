@@ -480,6 +480,10 @@ class ValidationManager:
 
             if validator is None:
                 existing = self.validators.get(name)
+
+                if active is None:
+                    active = exp is not undefined
+
                 if existing is None:
                     possibles = ",".join(list(self.validators.keys()))
 
@@ -552,7 +556,7 @@ class ValidationManager:
 
 class ValidationDirective:
     def __repr__(self):
-        return "%s:%s active:%s exp=%s with %s" % (
+        return "%s:%s active:%s exp=%s with %s\n" % (
             self.__class__.__name__,
             self.name,
             self.active,
