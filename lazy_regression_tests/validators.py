@@ -14,9 +14,12 @@ import re
 
 from traceback import print_exc as xp
 
-import logging
+try:
+    from loguru import logger
+except (ImportErrro,) as e:  # pragma: no cover
+    import logging
 
-logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
 
 #######################################################
@@ -130,14 +133,20 @@ class Validator:
 
             if isinstance(exp, regex_class):
                 self.test_regex(testee, exp, got, message)
+                if verbose:
+                    logger.info("%s checked %s" % (testee, self))
 
             elif not callable(exp):
                 if "-v" in sys.argv:
                     print("\n\nvalidator.%s.checking(exp=%s,got=%s)" % (self, exp, got))
                 self.test(testee, exp, got, message)
+                if verbose:
+                    logger.info("%s checked %s" % (testee, self))
                 return got
             else:
                 exp(testee=testee, got=got, validator=self)
+                if verbose:
+                    logger.info("%s checked %s" % (testee, self))
                 return got
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -202,6 +211,8 @@ class MixinExpInGot:
             raise ValueError("exp is undefined")
         try:
             testee.assertTrue(str(exp) in str(got), message)
+            if verbose:
+                logger.info("%s checked %s" % (testee, self))
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
@@ -248,7 +259,7 @@ class StatusCodeValidator(NamedTesteeAttributeValidator):
 
 class CSSValidator(Validator):
 
-    sourcename = "soup"
+    sourcename = "selectable"
 
     to_text = False
 

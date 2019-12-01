@@ -207,9 +207,20 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
         self.name = name
         self.scalar = scalar
 
+    def pre_format(self, data):
+        try:
+            data = bs(data)
+            return data
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
     def filter(self, options, tmp, data, callback):
         try:
-            # hit = data.select(self.selector)
+
+            if isinstance(data, str):
+                data = self.pre_format(data)
 
             li = []
 

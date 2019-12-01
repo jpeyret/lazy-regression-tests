@@ -307,7 +307,7 @@ def debugDict(
 
         try:
             if truncate:
-                buf.write("%s=%s%s" % (k, repr(v), sep))
+                buf.write("%s=%s%s" % (k, repr(v)[0:truncate], sep))
             else:
                 buf.write("%s=%s%s" % (k, str(v), sep))
 
