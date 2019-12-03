@@ -120,6 +120,8 @@ class MediatedEnvironDict(dict):
                 k2 = k[len_root:]
                 self[k2] = value
 
+        self.acquired = True
+
 
 class LazyCheckerOptions:
 
@@ -440,7 +442,6 @@ class LazyMixin(object):
                 # by default we just want to write the received data as our expectation
                 if control.write_exp_on_ioerror():
                     tmp.message = message = "no check because IOError on %s" % (fnp_exp)
-                    # logger.warning(message)
                     with open(fnp_exp, "w") as fo:
                         fo.write(formatted_got)
                     return
@@ -456,8 +457,7 @@ class LazyMixin(object):
                     raise self.Fail(message)
 
             try:
-                # supports a timeout, mechanism if the module is available
-                #
+                # supports a timeout mechanism, if the module is available
                 self.assertEqualTimed(exp, formatted_got)
             except (AssertionError,) as e:  # pragma: no cover
                 raise
@@ -544,7 +544,6 @@ class LazyCheckerOptions2(FilterMgr2, LazyCheckerOptions):
                     rawfiltermgr.set_filter(directive)
                 elif isinstance(filter_, TextFilter):
                     textfiltermgr.set_filter(directive)
-
                 else:
                     raise ValueError(
                         "Directive.%s uses an unknown FilterType.  Filters need be either RawFilter or TextFilter subclasses"
@@ -566,10 +565,12 @@ class LazyMixin2(LazyMixin):
     @property
     def filters(self):
         """ 
-        filters are configured at the class level, but need to be deep-copied so that
+        filters are typically configured at the class level, via `cls_filters`, but need to be deep-copied so that
         each test function can modify them independently.
         Warning:  before Python 3.7 regexes can't be deep-copied so Filters based on 
-        Regexes are in fact shallow-copied.
+        Regexes are in fact shallow-copied as the Filters themselves don't get mutated,
+        instead relying on the FilterDirective + FilterMgr mechanism for configuration
+        and adjustment.
         """
 
         if self._filters is None:
@@ -602,7 +603,6 @@ class LazyMixin2(LazyMixin):
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
-
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()

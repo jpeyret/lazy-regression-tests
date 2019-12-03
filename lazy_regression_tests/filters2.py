@@ -164,10 +164,6 @@ class RegexMatcher(TextFilter, DataMatcher):
     def __getattr__(self, attrname):
         return getattr(self.patre, attrname)
 
-    # pdb.set_trace()
-    # version_info = sys.version_info
-    # print("version_info:%s" % (version_info))
-
     if sys.version_info <= (3, 7):
 
         def __deepcopy__(self, *args, **kwargs):
@@ -177,9 +173,6 @@ class RegexMatcher(TextFilter, DataMatcher):
             """
 
             return self
-
-
-# need to add support for CSS filters #👈!!!TODO!!! 049.lazy.021.p4.v2 🧨 these should be CSS rawfilters
 
 
 class RegexRemoveSaver(RegexMatcher):
