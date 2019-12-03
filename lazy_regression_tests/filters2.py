@@ -70,6 +70,8 @@ import re
 
 
 class FilterMgr:
+    """deprecated FilterMgr, using the FilterMgr2 and LazyMixin2 from now"""
+
     def __repr__(self):
         return "%s[id=%s filters=%s]" % (
             self.__class__.__name__,

@@ -18,6 +18,9 @@ try:
 except (ImportError,) as e:
     from io import StringIO  # 223ed
 
+import json
+import copy
+
 try:
     basestring_ = basestring  # type: ignore
 except (NameError,) as e:
@@ -563,3 +566,55 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
         if cpdb():
             pdb.set_trace()
         raise
+
+
+class Dummy(object):
+    """because you can't set attributes on type object"""
+
+    def __repr__(self):
+        return "class.%s" % (self.__class__.__name__)
+
+    __str__ = __repr__
+
+    def setdefault(self, attrname, value):
+        try:
+            return getattr(self, attrname)
+        except (AttributeError,) as e:  # pragma: nocover
+            setattr(self, attrname, value)
+            return value
+
+    def debug(self):
+        ppp(self.__dict__)
+
+    def to_json(self):
+        return self.__dict__
+
+    def deepcopy(self):
+        return copy.deepcopy(self)
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+    def update(self, **kwargs):
+        self.__dict__.update(kwargs)
+        return self
+
+    def json_dumps(self):
+        di = self.__dict__.copy()
+        for k, v in di.items():
+            if isinstance(v, datetime):
+                di[k] = str(v)
+
+        return json.dumps(di)
+
+    def get(self, key, value=None):
+        return self.__dict__.get(key, value)
+
+    def __setitem__(self, attrname, value):
+        setattr(self, attrname, value)
+
+    def __getitem__(self, attrname):
+        try:
+            return getattr(self, attrname)
+        except AttributeError as attrname:
+            raise KeyError(attrname)

@@ -31,11 +31,13 @@ import re
 import shutil
 from collections import namedtuple
 
+from copy import deepcopy
 
 ###################################################################
 
 import pdb
-from bemyerp.lib.utils import ppp
+
+from lazy_regression_tests._baseutils import debugObject, ppp, Dummy
 
 from traceback import print_exc as xp
 
@@ -552,6 +554,56 @@ class LazyCheckerOptions2(FilterMgr2, LazyCheckerOptions):
                     )
 
             return rawfiltermgr, textfiltermgr
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class LazyMixin2(LazyMixin):
+
+    _filters = None
+
+    @property
+    def filters(self):
+        """ 
+        filters are configured at the class level, but need to be deep-copied so that
+        each test function can modify them independently.
+        Warning:  before Python 3.7 regexes can't be deep-copied so Filters based on 
+        Regexes are in fact shallow-copied.
+        """
+
+        if self._filters is None:
+            res = self._filters = Dummy()
+
+            for name, mgr in getattr(self, "cls_filters", {}).items():
+                setattr(res, name, deepcopy(mgr))
+
+        return self._filters
+
+    def assert_exp(self, got: Any, extension: str, suffix: str = ""):
+        try:
+
+            checker = self.filters[extension]
+
+            rawfiltermgr, textfiltermgr = checker.get_raw_text_filters()
+
+            core_checker = LazyCheckerOptions(
+                extension=extension,
+                rawfiltermgr=rawfiltermgr,
+                textfiltermgr=textfiltermgr,
+            )
+
+            if hasattr(checker, "to_text"):
+                core_checker.to_text = checker.to_text
+            if hasattr(checker, "prep"):
+                core_checker.prep = checker.prep
+
+            return LazyMixin.assert_exp(self, got, core_checker, suffix)
+
+        except (AssertionError,) as e:  # pragma: no cover
+            raise
 
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
