@@ -93,7 +93,13 @@ from lazy_regression_tests.utils import (
 )
 
 
-from lazy_regression_tests.filters2 import RawFilterMgr, TextFilterMgr
+from lazy_regression_tests.filters2 import (
+    RawFilterMgr,
+    TextFilterMgr,
+    FilterMgr2,
+    RawFilter,
+    TextFilter,
+)
 
 
 class MediatedEnvironDict(dict):
@@ -499,3 +505,55 @@ class LazyMixin(object):
     else:
         #
         assertEqualTimed = assertEqual
+
+
+class LazyCheckerOptions2(FilterMgr2, LazyCheckerOptions):
+    def __init__(self, *filters_in, write_exp_on_ioerror: bool = True):
+        self.write_exp_on_ioerror = write_exp_on_ioerror
+        self.filters = {}
+
+        self.filterhash = None
+        self.reg_callbacks = {}
+
+        for filter_ in filters_in:
+            self.set_filter(filter_)
+
+    def get_raw_text_filters(self):
+        """ 
+        takes all the active and valid FilterDirectives and assign them to a RawFilterMgr or a TextFilterMgr
+        this allows the use of set_filter without worrying about whether a filter is a Raw or TextFilter.
+
+        """
+
+        try:
+
+            rawfiltermgr = FilterMgr2()
+            textfiltermgr = FilterMgr2()
+            for name, directive in self.filters.items():
+                if directive.active is not True:
+                    continue
+
+                filter_ = directive.filter
+
+                if filter_ is None:
+                    raise ValueError(
+                        "Directive.%s is active. without a filter" % (directive)
+                    )
+
+                if isinstance(filter_, RawFilter):
+                    rawfiltermgr.set_filter(directive)
+                elif isinstance(filter_, TextFilter):
+                    textfiltermgr.set_filter(directive)
+
+                else:
+                    raise ValueError(
+                        "Directive.%s uses an unknown FilterType.  Filters need be either RawFilter or TextFilter subclasses"
+                        % (directive)
+                    )
+
+            return rawfiltermgr, textfiltermgr
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
