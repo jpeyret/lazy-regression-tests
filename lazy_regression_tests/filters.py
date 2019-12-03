@@ -1,7 +1,6 @@
 from lazy_regression_tests._baseutils import set_cpdb, set_rpdb, ppp, debugObject
 
 import pdb
-from bemyerp.lib.utils import set_cpdb, set_rpdb
 
 from traceback import print_exc as xp
 

@@ -28,7 +28,6 @@ except (NameError,) as e:
 
 
 import pdb
-from bemyerp.lib.utils import set_cpdb, set_rpdb
 
 
 def cpdb(**kwds: "Any") -> bool:  # pragma: no cover

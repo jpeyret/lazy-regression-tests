@@ -11,10 +11,8 @@ from typing import (
     cast,
     Union,
 )
-from bemyerp.pssystem.typing_ import T_options
 
 # if TYPE_CHECKING:
-#    from bemyerp.xxx import yyy
 
 #######################################################
 
