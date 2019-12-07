@@ -584,6 +584,11 @@ class LazyMixin2(LazyMixin):
     def assert_exp(self, got: Any, extension: str, suffix: str = ""):
         try:
 
+            assert isinstance(extension, str), (
+                "need string extension parameter for LazyMixin2 %s.assert_exp(extension=%s)"
+                % (self, extension)
+            )
+
             checker = self.filters[extension]
 
             rawfiltermgr, textfiltermgr = checker.get_raw_text_filters()

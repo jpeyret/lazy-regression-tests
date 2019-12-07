@@ -255,6 +255,36 @@ class NamedTesteeAttributeValidator(AttributeValidator):
 class StatusCodeValidator(NamedTesteeAttributeValidator):
     selector = "status_code"
 
+    def test(self, testee, exp, got, message):
+        try:
+
+            if exp is undefined:
+                raise ValueError("exp is undefined")
+
+            if message is None:
+                message = fill_template(
+                    "%(name)s exp:%(exp)s<>%(got)s:got", locals(), self, {"name": self}
+                )
+
+            if isinstance(exp, (int, str)):
+                exp = [exp]
+
+            exp = [int(exp) for exp in exp]
+            got = int(got)
+
+            testee.assertTrue(
+                got in exp, "%s , not in expected status_code to %s" % (got, exp)
+            )
+
+            # testee.assertEqual(exp, got, message)
+        except (AssertionError,) as e:  # pragma: no cover
+            raise
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
 
 class CSSValidator(Validator):
 
@@ -414,6 +444,10 @@ class ValidationManager:
                     continue
 
                 exp = directive.exp
+
+                # maybe it's built into the validator?
+                if exp is undefined:
+                    exp = getattr(directive.validator, "exp", undefined)
 
                 if exp is undefined:
                     # let's see if we can get it

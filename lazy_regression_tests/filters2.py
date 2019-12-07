@@ -27,6 +27,7 @@ except (ImportError,) as e:
 
 import pdb
 
+verbose = "-v" in sys.argv
 
 from lazy_regression_tests.utils import (
     nested_dict_get,
@@ -37,6 +38,7 @@ from lazy_regression_tests.utils import (
     fill_template,
     ppp,
     undefined,
+    RescueDict,
 )
 
 
@@ -396,6 +398,8 @@ class FilterMgr2:
                     name=name, filter_=filter_, active=active, callback=callback
                 )
                 self += directive
+
+            return self
 
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
