@@ -80,6 +80,7 @@ class Validator:
     pass
 
     attrname: str
+    sourcename: str
 
     def __repr__(self):
         return "%s[selector=%s]" % (
@@ -105,7 +106,7 @@ class Validator:
         if source is None:
             raise ValueError(
                 "you need to either pass in a dict in `source` or %s needs to have `%s` set"
-                % (testee, self.attrname)
+                % (testee, self.sourcename)
             )
         return source
 

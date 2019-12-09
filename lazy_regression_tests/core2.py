@@ -372,7 +372,6 @@ class LazyMixin(object):
             return os.path.join(dirname, basename)
 
         except (Exception,) as e:  # pragma: no cover
-            pdb.set_trace()
             if cpdb():
                 pdb.set_trace()
             raise
