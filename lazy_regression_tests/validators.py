@@ -640,8 +640,6 @@ class ValidatorMixin:
 
             items_ = vars(self).items()
 
-            # pdb.set_trace()
-
             found = False
 
             for attrname, value in items_:
@@ -656,6 +654,7 @@ class ValidatorMixin:
                     val1 = first(value)
                     if isinstance(val1, ValidationManager):
                         # ok, we can work with this
+
                         if verbose:
                             logger.info(
                                 "validationmgr.setting from instance validator:%s"
@@ -672,7 +671,9 @@ class ValidatorMixin:
             if breakpoints("validationmgr", {"any": True}):  # pragma: no cover
                 pdb.set_trace()
 
-            for valmgr in getattr(self, "validatormgrs", []):
+            validatormgrs = getattr(self, "validatormgrs", []) or []
+
+            for valmgr in validatormgrs:
                 res.add_directive(valmgr)
 
             # and now add extra class-level validators if found...

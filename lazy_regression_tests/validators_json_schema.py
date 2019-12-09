@@ -1,4 +1,4 @@
-#######################################################
+i  ######################################################
 # Typing
 #######################################################
 from typing import (
@@ -107,6 +107,7 @@ class JsonSchemaValidator(JsonValidator):
     ):
         try:
 
+            igot = None
             source_ = source_ or self.get_source(testee)
             got = self.get_value(source_)
 
@@ -120,7 +121,6 @@ class JsonSchemaValidator(JsonValidator):
             if cpdb():
                 ppp(self.schema, "schema")
                 ppp(igot, "igot")
-                print(e)
 
                 pdb.set_trace()
             raise
