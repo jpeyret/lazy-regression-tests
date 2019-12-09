@@ -702,7 +702,8 @@ class ValidatorMixin:
     def check_expectations(self):
         try:
 
-            self.validationmgr.check_expectations(self)
+            validationmgr = self.validationmgr
+            validationmgr.check_expectations(self)
 
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
