@@ -1,4 +1,4 @@
-i  ######################################################
+######################################################
 # Typing
 #######################################################
 from typing import (
@@ -78,25 +78,35 @@ from lazy_regression_tests.validators import (
 class JsonSchemaValidator(JsonValidator):
     sourcename = "json"
 
-    def __init__(self, selector, schema, scalar=False):
+    def __init__(self, selector, scalar=False):
         try:
             super(JsonSchemaValidator, self).__init__(selector)
 
-            if isinstance(schema, dict):
-                self.schema = schema
-            elif isinstance(schema, str):
-                if ":" in schema:
+            # self.exp = self.schema
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def load_schema(self, exp):
+        try:
+
+            if isinstance(exp, dict):
+                self.schema = exp
+            elif isinstance(exp, str):
+                if ":" in exp:
                     try:
-                        self.schema = json.loads(schema)
+                        self.schema = json.loads(exp)
                     except (ValueError,) as e:  # pragma: no cover
                         if cpdb():
                             pdb.set_trace()
                         raise
                 else:
-                    with open(schema) as fi:
+                    with open(exp) as fi:
                         self.schema = json.load(fi)
 
-            self.exp = self.schema
+            return self.schema
+
         except (Exception,) as e:  # pragma: no cover
             if cpdb():
                 pdb.set_trace()
@@ -114,8 +124,10 @@ class JsonSchemaValidator(JsonValidator):
             if not isinstance(got, list):
                 got = [got]
 
+            schema = self.load_schema(exp)
+
             for igot in got:
-                validate(instance=igot, schema=self.schema)
+                validate(instance=igot, schema=schema)
 
         except (Exception,) as e:  # pragma: no cover
             if cpdb():

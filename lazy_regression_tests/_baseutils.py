@@ -1,6 +1,20 @@
 import sys
 import types
 
+
+#######################################################
+# Typing
+#######################################################
+from typing import (
+    Optional,
+    # TYPE_CHECKING,
+    Any,
+    cast,
+)
+
+#######################################################
+
+
 import logging
 
 from string import Template
@@ -509,8 +523,12 @@ class RescueDictValue(object):
         return self.value
 
 
-def nested_dict_get(dict_: dict, lookup: str, default=undefined):
+def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
     try:
+
+        # top-level
+        if lookup is None:
+            return dict_
 
         lookups = lookup.split(".")
 
