@@ -19,6 +19,7 @@ from typing import (
 
 ###################################################################
 
+import pdb
 import sys
 import os
 import unittest
@@ -70,17 +71,23 @@ rpdb.enabled = False  # type : ignore
 import logging
 
 try:
-    from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
+
+    from timeout_decorator import timeout
+
+    import timeout_decorator
+
+    CustomTimeoutError = timeout_decorator.timeout_decorator.TimeoutError
 
     TIMEOUT_MAXTIME_TO_ALLOW = 5
 except (ImportError,) as e:  # pragma: no cover
+    # pdb.set_trace()
     timeout = None
     TIMEOUT_MAXTIME_TO_ALLOW = 0
 
     class CustomTimeoutError(Exception):
         """we'll never see this """
 
-        passs
+        pass
 
 
 from lazy_regression_tests.utils import (
@@ -455,17 +462,24 @@ class LazyMixin(object):
                 if exp != formatted_got():
                     raise self.Fail(message)
 
+            # pdb.set_trace()
             try:
                 # supports a timeout mechanism, if the module is available
                 self.assertEqualTimed(exp, formatted_got)
-            except (AssertionError,) as e:  # pragma: no cover
-                raise
             except (CustomTimeoutError,) as e:  # pragma: no cover
                 tmp.message = message = (
-                    "exp and got are not equal but comparison timed out after %s"
+                    "exp and got are not equal but comparison timed out after %s seconds"
                     % (TIMEOUT_MAXTIME_TO_ALLOW)
                 )
-                self.Fail(message)
+                self.fail(message)
+            except (AssertionError,) as e:  # pragma: no cover
+                # pdb.set_trace()
+                raise
+            # timeout_decorator.timeout_decorator.TimeoutError
+            except (Exception,) as e:  # pragma: no cover
+                if cpdb():
+                    pdb.set_trace()
+                raise
 
             return self.lazytemp
 
@@ -503,7 +517,8 @@ class LazyMixin(object):
 
     else:
         #
-        assertEqualTimed = assertEqual
+        def assertEqualTimed(self, exp, got, message=None):
+            self.assertEqual(exp, got, message)
 
 
 class LazyCheckerOptions2(FilterMgr2, LazyCheckerOptions):
