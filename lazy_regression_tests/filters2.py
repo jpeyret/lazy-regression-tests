@@ -25,6 +25,11 @@ except (ImportError,) as e:
 
 #######################################################
 
+
+def breakpoints(*args, **kwargs):
+    return False
+
+
 import pdb
 
 verbose = "-v" in sys.argv
@@ -115,6 +120,11 @@ class FilterMgr:
 
     def filter(self, options, tmp, data):
         for filter_ in self.filters:
+            print("filter:%s" % (filter_.name))
+
+            if breakpoints("filter", {"name": filter_.name}):  # pragma: no cover
+                pdb.set_trace()
+
             callback = options.reg_callbacks.get(filter_.name)
             data = filter_(options, tmp, data, callback)
         return data
@@ -135,11 +145,19 @@ class DataMatcher(object):
     scalar = False
 
     def add_to_filter_hit(self, tmp, value):
-        if self.scalar:
-            tmp.filterhits[self.name] = value
-        else:
-            li = tmp.filterhits.setdefault(self.name, [])
-            li.append(value)
+        try:
+            if self.scalar:
+                tmp.filterhits[self.name] = value
+            else:
+                li = tmp.filterhits.setdefault(self.name, [])
+                if not isinstance(li, list):
+                    return
+
+                li.append(value)
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
 
 
 class RawFilter:
@@ -171,10 +189,48 @@ class RegexMatcher(TextFilter, DataMatcher):
         def __deepcopy__(self, *args, **kwargs):
             """ bit of a cheat here, because before Python 3.7 regex can't be deepcopied
                 shouldn't be too much of a problem as the RegexMatchers aren't meant to be modified once
-                created, but it still means that that are the same across all filters
+                created, but it still means that instances are the same across all copied Regex-based filters
             """
 
             return self
+
+
+class RegexFilter(RegexMatcher):
+    def process_line(self, hit, line):
+        try:
+            raise NotImplementedError(
+                "%s.process_line(%s).  need to implement on subclass" % (self, locals())
+            )
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def filter(self, options, tmp, data, callback):
+
+        li = []
+
+        try:
+            line_out = []
+            for line in data.split("\n"):
+                hit = self.patre.search(line)
+                if hit:
+                    line2 = self.process_line(hit, line)
+                    line_out.append(line2)
+                    self.add_to_filter_hit(tmp, line)
+                else:
+                    line_out.append(line)
+
+            if callback:
+                callback(self.name, data, li)
+
+            return "\n".join(line_out)
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    __call__ = filter
 
 
 class RegexRemoveSaver(RegexMatcher):
@@ -205,6 +261,71 @@ class RegexRemoveSaver(RegexMatcher):
             raise
 
     __call__ = filter
+
+
+class RegexSubstitHardcoded(RegexFilter):
+    """allows for replacement of the line with different contents
+
+       can't use a re.sub directly because the Filter won't know if 
+       it's just a match filter or a match & substitution
+    """
+
+    def process_line(self, hit, line):
+        try:
+
+            for from_, to_ in self.subs:
+                if isinstance(from_, str):
+                    line = line.replace(from_, to_)
+                elif hasattr(from_, "sub"):
+                    line = from_.sub(to_, line)
+                else:
+                    raise NotImplementedError(
+                        f"{self}.process_line(from_:{from_}, to_:{to_})"
+                    )
+
+            return line
+
+        except (Exception,) as e:  # pragma: no cover
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def __init__(self, pattern, name, subs, scalar=False, *args):
+        super(RegexSubstitHardcoded, self).__init__(pattern, name, scalar)
+        self.subs = subs
+
+    # def filter(self, options, tmp, data, callback):
+    #     try:
+    #         raise NotImplementedError("%s.filter(...)" % (self,))
+    #     except (Exception,) as e: #pragma: no cover
+    #         if cpdb(): pdb.set_trace()
+    #         raise
+
+    # __call__ = filter
+
+    # def __repr__(self):
+
+    #     subinfo = None
+
+    #     try:
+
+    #         if callable(self.substitution):
+    #             if isinstance(self.substitution, partial):
+    #                 subinfo = "partial:%s" % self.substitution.func.__name__
+    #             else:
+    #                 subinfo = "func.%s" % self.substitution.__name__
+    #         else:
+    #             subinfo = str(self.substitution)
+    #     except (Exception,) as e:  # pragma: no cover
+    #         if cpdb():
+    #             pdb.set_trace()
+    #         raise
+
+    #     return "%s.(pattern=%s, substitution=%s" % (
+    #         self.__class__.__name__,
+    #         self.pattern,
+    #         subinfo,
+    #     )
 
 
 class TextFilterMgr(FilterMgr):
