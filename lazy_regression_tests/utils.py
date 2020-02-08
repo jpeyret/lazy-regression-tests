@@ -20,7 +20,7 @@ from lazy_regression_tests._baseutils import (
     first,
 )
 
-from traceback import print_exc as xp
+from traceback import print_exc as xp  # pylint: disable=unused-import
 
 import logging
 
@@ -43,14 +43,8 @@ except (NameError,) as e:
     unicode_ = str
 
 
-def cpdb(**kwds):  # pragma: no cover
-    if cpdb.enabled == "once":
-        cpdb.enabled = False  # type: ignore
-        return True
-    return cpdb.enabled
-
-
-cpdb.enabled = False  # type: ignore
+def cpdb(*args, **kwargs):
+    "disabled"
 
 
 def rpdb():  # pragma: no cover
@@ -114,7 +108,9 @@ class DiffFormatter(object):
                     # requires it in context.
                     dq.append(line)
             return res
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             raise
 
     def format(self, exp, got, window=None):
@@ -141,7 +137,9 @@ class DiffFormatter(object):
                 msg = "  %s" % (msg)
             return msg
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             raise
 
 
@@ -165,7 +163,9 @@ def replace(list_, item=None, with_=[]):
         res[pos] = with_
         return res
 
-    except (Exception,) as e:  # pragma: no cover
+    except (
+        Exception,
+    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
             pdb.set_trace()
         raise
@@ -211,7 +211,9 @@ class MediatedEnvironDict(dict):
             self.acquired = True
             # pdb.set_trace()
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -238,7 +240,9 @@ class Finder(object):
 
             if names[0] == self.target:
                 notify(Found(names, self))
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             ppp(self, "%s.is_match" % (self))
             logger.info("names:%s" % names)
             if cpdb():
@@ -291,7 +295,9 @@ class RemoveWorkerNamesMatch(WorkerNamesMatch):
                 key = found.found[0]
                 di[key] = target.pop(key)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -398,7 +404,9 @@ class RegexSubstitHardcoded(RegexMatcher):
                     subinfo = "func.%s" % self.substitution.__name__
             else:
                 subinfo = str(self.substitution)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -442,7 +450,9 @@ class RegexSubstitFilter(RegexSubstitHardcoded):
                 logger.info("\n  %s\n  :%s:\n  =>\n  :%s:" % (self, line, res))
             return res
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -480,7 +490,9 @@ class KeepTextFilter(object):
             self.regexes = regexes_
             self.f_notify = f_notify
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -524,7 +536,9 @@ class KeepTextFilter(object):
 
                     return True, line
             return False, line
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -556,7 +570,9 @@ class KeepTextFilter(object):
             return data
 
             # raise NotImplementedError("format(%s)" % (locals()))
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -641,7 +657,9 @@ def simple_subber(match, *args, **kwds):
             res = match.string[match.start() : match.end()].replace(
                 match.groups(0)[0], replacement
             )
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             return "!lazy_regression_tests:bad substitution:!"
@@ -654,7 +672,9 @@ def simple_subber(match, *args, **kwds):
         # raise NotImplementedError()
         return res
 
-    except (Exception,) as e:  # pragma: no cover
+    except (
+        Exception,
+    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
             pdb.set_trace()
         raise

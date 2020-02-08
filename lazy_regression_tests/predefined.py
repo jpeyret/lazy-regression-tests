@@ -2,14 +2,8 @@ import json
 import pdb
 
 
-def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
-    if cpdb.enabled == "once":
-        cpdb.enabled = False  # type : ignore
-        return True
-    return cpdb.enabled  # type : ignore
-
-
-cpdb.enabled = False  # type : ignore
+def cpdb(*args, **kwargs):
+    "disabled"
 
 
 def rpdb() -> bool:  # pragma: no cover
@@ -37,7 +31,9 @@ class DefaultJsonLazyCheckerOptions(LazyCheckerOptions):
             if not isinstance(data, dict):
                 data = json.loads(data)
             return data
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -45,7 +41,9 @@ class DefaultJsonLazyCheckerOptions(LazyCheckerOptions):
     def to_text(self, tmp, data):
         try:
             return json.dumps(data, sort_keys=True, indent=4)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise

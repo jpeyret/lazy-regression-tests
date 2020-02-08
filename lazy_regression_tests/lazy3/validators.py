@@ -1,3 +1,11 @@
+import pdb
+import sys
+import re
+
+from operator import attrgetter
+
+from traceback import print_exc as xp
+
 #######################################################
 # Typing
 #######################################################
@@ -8,58 +16,6 @@ from typing import (
     cast,
 )
 
-from operator import attrgetter
-import sys
-import re
-
-from traceback import print_exc as xp  # pylint: disable=unused-import
-
-try:
-    from loguru import logger
-except (ImportErrro,) as e:  # pragma: no cover
-    import logging
-
-    logger = logging.getLogger(__name__)
-
-
-#######################################################
-# constants
-#######################################################
-undefined = Ellipsis
-
-verbose = "-v" in sys.argv
-
-# just to track regexes
-tmp = re.compile("")
-regex_class = tmp.__class__
-
-
-def breakpoints(*args, **kwargs):
-    return False
-
-
-import pdb
-
-
-def cpdb(*args, **kwargs):
-    "disabled"
-
-
-def rpdb() -> bool:  # pragma: no cover
-    try:
-        from django.core.cache import cache
-    except (Exception,) as e:
-        cache = {}
-    import sys
-
-    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
-    if in_celery:
-        return False
-    return bool(cache.get("rpdb_enabled") or getattr("rpdb", "enabled", False))
-
-
-rpdb.enabled = False  # type : ignore
-
 
 from lazy_regression_tests.utils import (
     nested_dict_get,
@@ -68,6 +24,27 @@ from lazy_regression_tests.utils import (
     fill_template,
     ppp,
 )
+
+
+verbose = "-v" in sys.argv
+
+undefined = NotImplemented
+
+# https://stackoverflow.com/questions/6102019/type-of-compiled-regex-object-in-python
+# yeah, it is what it is, so be it...
+type_regex_hack = re.compile("").__class__
+
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
+
+
+#######################################################
+# Validators
+#######################################################
 
 
 class Validator:
@@ -96,8 +73,35 @@ class Validator:
                 pdb.set_trace()
             raise
 
-    def get_source(self, testee):
-        source = testee if self.sourcename is None else getattr(testee, self.sourcename)
+    def get_source(self, testee, **sources):
+
+        # pdb.set_trace()
+
+        if self.sourcename is None:
+
+            source = (
+                testee
+            )  # if self.sourcename is None else getattr(testee, self.sourcename)
+
+        else:
+
+            sourcenames = self.sourcename.split(".", 1)
+            sourcename = sourcenames[0]
+
+            source0 = sources.get(sourcename) or getattr(testee, sourcename)
+            if len(sourcenames) > 1:
+                path = sourcenames[1]
+                if isinstance(source0, dict):
+                    # allow for nesteds?
+                    source = source0[path]
+
+                else:
+                    # use nested operators
+                    f_getter = attrgetter(path)
+                    source = f_getter(source0)
+
+            else:
+                source = source0
 
         if source is None:
             raise ValueError(
@@ -113,7 +117,12 @@ class Validator:
         return res
 
     def check(
-        self, testee: "LazyMixin", exp: Any, t_message: str = None, source_: Any = None
+        self,
+        testee: "LazyMixin",
+        exp: Any,
+        sources: dict,
+        t_message: str = None,
+        source_: Any = None,
     ):
         """
 
@@ -121,13 +130,13 @@ class Validator:
 
         try:
 
-            source_ = source_ or self.get_source(testee)
+            source_ = source_ or self.get_source(testee, **sources)
             got = self.get_value(source_)
             message = (
                 fill_template(t_message, locals(), testee, self) if t_message else None
             )
 
-            if isinstance(exp, regex_class):
+            if isinstance(exp, type_regex_hack):
                 self.test_regex(testee, exp, got, message)
                 if verbose:
                     logger.info("%s checked %s" % (testee, self))
@@ -201,9 +210,55 @@ class Validator:
             raise
 
 
+class AttributeValidator(Validator):
+    def __init__(self, selector, sourcename):
+        super(AttributeValidator, self).__init__(selector, self.sourcename)
+        self.f_getter = attrgetter(selector)
+
+    def get_value(self, source_):
+        try:
+            res = self.f_getter(source_)
+            if rpdb() and res is None:  # pragma: no cover
+                pdb.set_trace()
+            return res
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
 class FullyQualifiedNamesValidator(Validator):
     def __init__(self):
         Validator.__init__(self, self.selector, self.sourcename)
+
+
+class DictValidator(Validator):
+    def get_value(self, source):
+        """ get the value from  """
+        try:
+            res = nested_dict_get(source, self.selector)
+            return res
+        except (KeyError,) as e:  # pragma: no cover
+            raise
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class AttrNamedDictValidator(DictValidator):
+    def __init__(self, selector):
+        super(AttrNamedDictValidator, self).__init__(
+            selector, scalar=True, sourcename=self.sourcename
+        )
+
+
+class HeadersValidator(AttrNamedDictValidator):
+    sourcename = "response.headers"
 
 
 class MixinExpInGot:
@@ -215,25 +270,6 @@ class MixinExpInGot:
             testee.assertTrue(str(exp) in str(got), message)
             if verbose:
                 logger.info("%s checked %s" % (testee, self))
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-
-class AttributeValidator(Validator):
-    def __init__(self, selector, sourcename):
-        super(AttributeValidator, self).__init__(selector, self.sourcename)
-        self.f_getter = attrgetter(selector)
-
-    def get_value(self, source):
-        try:
-            res = self.f_getter(source)
-            if rpdb() and res is None:  # pragma: no cover
-                pdb.set_trace()
-            return res
         except (
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
@@ -259,45 +295,9 @@ class NamedTesteeAttributeValidator(AttributeValidator):
         )
 
 
-class StatusCodeValidator(NamedTesteeAttributeValidator):
-    selector = "status_code"
-
-    def test(self, testee, exp, got, message):
-        try:
-
-            if exp is undefined:
-                raise ValueError("exp is undefined")
-
-            if message is None:
-                message = fill_template(
-                    "%(name)s exp:%(exp)s<>%(got)s:got", locals(), self, {"name": self}
-                )
-
-            if isinstance(exp, (int, str)):
-                exp = [exp]
-
-            exp = [int(exp) for exp in exp]
-            got = int(got)
-
-            testee.assertTrue(
-                got in exp, "%s , not in expected status_code to %s" % (got, exp)
-            )
-
-            # testee.assertEqual(exp, got, message)
-        except (AssertionError,) as e:  # pragma: no cover
-            raise
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-
 class CSSValidator(Validator):
 
-    sourcename = "selectable"
+    sourcename = "response.selectable"
 
     to_text = False
 
@@ -332,14 +332,28 @@ class TitleCSSValidator(FullyQualifiedNamesValidator, CSSValidator):
     to_text = True
 
 
-class DictValidator(Validator):
-    def get_value(self, source):
-        """ get the value from  """
+#######################################################
+# Managers
+#######################################################
+
+
+class ValidationDirective:
+    def __repr__(self):
+        return "%s:%s active:%s exp=%s with %s\n" % (
+            self.__class__.__name__,
+            self.name,
+            self.active,
+            (str(self.exp) if self.exp is not undefined else "undefined"),
+            self.validator,
+        )
+
+    def __init__(self, name, validator, exp, active):
         try:
-            res = nested_dict_get(source, self.selector)
-            return res
-        except (KeyError,) as e:  # pragma: no cover
-            raise
+            self.name = name
+            self.validator = validator
+            self.exp = exp
+            self.active = active
+
         except (
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
@@ -347,26 +361,8 @@ class DictValidator(Validator):
                 pdb.set_trace()
             raise
 
-
-class AttrNamedDictValidator(DictValidator):
-    def __init__(self, selector):
-        super(AttrNamedDictValidator, self).__init__(
-            selector, scalar=True, sourcename=self.sourcename
-        )
-
-
-class JsonValidator(AttrNamedDictValidator):
-    sourcename = "json"
-
-
-class HeadersValidator(AttrNamedDictValidator):
-    sourcename = "headers"
-
-
-class ContentTypeValidator(
-    FullyQualifiedNamesValidator, MixinExpInGot, HeadersValidator
-):
-    selector = "content-type"
+    def copy(self):
+        return self.__class__(self.name, self.validator, self.exp, self.active)
 
 
 class ValidationManager:
@@ -436,7 +432,7 @@ class ValidationManager:
                 pdb.set_trace()
             raise
 
-    def check_expectations(self, testee):
+    def check_expectations(self, testee, **sources):
         try:
 
             self.prep_validation()
@@ -468,7 +464,7 @@ class ValidationManager:
                 if exp is undefined:
                     raise ValueError("%s has undefined exp" % (directive))
 
-                directive.validator.check(testee, exp)
+                directive.validator.check(testee, exp, sources)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -616,121 +612,5 @@ class ValidationManager:
             if rpdb() or cpdb():
                 ppp(locals())
 
-                pdb.set_trace()
-            raise
-
-
-class ValidationDirective:
-    def __repr__(self):
-        return "%s:%s active:%s exp=%s with %s\n" % (
-            self.__class__.__name__,
-            self.name,
-            self.active,
-            (str(self.exp) if self.exp is not undefined else "undefined"),
-            self.validator,
-        )
-
-    def __init__(self, name, validator, exp, active):
-        try:
-            self.name = name
-            self.validator = validator
-            self.exp = exp
-            self.active = active
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-    def copy(self):
-        return self.__class__(self.name, self.validator, self.exp, self.active)
-
-
-class ValidatorMixin:
-
-    _validationmgr = undefined
-
-    @property
-    def validationmgr(self):
-        if self._validationmgr is undefined:
-
-            # first... is anything set on the instance?
-            res = None
-
-            self._validationmgr = res = ValidationManager(self)
-
-            items_ = vars(self).items()
-
-            found = False
-
-            for attrname, value in items_:
-
-                if value == res:
-                    continue
-
-                if attrname.startswith("validator"):
-                    if not isinstance(value, list):
-                        value = [value]
-
-                    val1 = first(value)
-                    if isinstance(val1, ValidationManager):
-                        # ok, we can work with this
-
-                        if verbose:
-                            logger.info(
-                                "validationmgr.setting from instance validator:%s"
-                                % (attrname)
-                            )
-                        res = self._validationmgr = res or ValidationManager(self)
-                        for valmgr in value:
-                            found = True
-                            res.add_directive(valmgr)
-
-            if found:
-                return res
-
-            if breakpoints("validationmgr", {"any": True}):  # pragma: no cover
-                pdb.set_trace()
-
-            validatormgrs = getattr(self, "validatormgrs", []) or []
-
-            for valmgr in validatormgrs:
-                res.add_directive(valmgr)
-
-            # and now add extra class-level validators if found...
-            for attrname, value in vars(self.__class__).items():
-                if attrname.startswith("validator") and isinstance(
-                    value, ValidationManager
-                ):
-                    res.add_directive(value)
-
-        return self._validationmgr
-
-    def remove_expectation(self, name):
-        self.validationmgr.remove_expectation(name)
-
-    def set_expectation(self, *args, **kwargs):
-        validationmgr = self.validationmgr
-
-        name = args[0]
-        if breakpoints("set_expectation", {"name": name}):  # pragma: no cover
-            pdb.set_trace()
-
-            # put this in your breakpoints.json
-
-        validationmgr.set_expectation(*args, **kwargs)
-
-    def check_expectations(self):
-        try:
-
-            validationmgr = self.validationmgr
-            validationmgr.check_expectations(self)
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
                 pdb.set_trace()
             raise

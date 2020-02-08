@@ -35,7 +35,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
-from traceback import print_exc as xp
+from traceback import print_exc as xp  # pylint: disable=unused-import
 
 # from lib.utils import set_cpdb, set_rpdb, ppp, debugObject
 # from lib.utils import fill_template, Subber, RescueDict
@@ -186,7 +186,9 @@ class Test_001_Configuration(LazyMixinBasic, unittest.TestCase):
             finally:
                 os.environ = ante
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -209,7 +211,9 @@ class Test_Basics(LazyMixinBasic, unittest.TestCase):
 
             got3 = self._lazy_add_extension(fnp_root)
             self.assertEqual(fnp_root, got3)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -249,7 +253,9 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
             with mock.patch(funcpath_open, mock.mock_open(read_data=exp)):
                 self.assertLazy(got, ".txt")
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -322,7 +328,9 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
             bad.sort()
             bad and self.fail("naming convention:%s" % "\n  ".join(bad))
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -342,7 +350,9 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
             msg = "\nexp:%s\n<>\ngot:%s" % (exp, got)
             self.assertEqual(exp, got, msg)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             ppp(os.environ, "os.environ")
             ppp(dict(exp=exp, got=got, lazy_filename=self.lazy_filename))
 
@@ -365,7 +375,9 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
             msg = "\nexp:%s\n<>\ngot:%s" % (exp, got)
             self.assertEqual(exp, got, msg)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             ppp(os.environ, "os.environ")
             ppp(dict(exp=exp, got=got))
             if cpdb():
@@ -401,7 +413,9 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
             self.assertEqual("IOError(%s)" % (fnp), formatted_data)
         except (AssertionError,) as e:
             raise
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -430,7 +444,9 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
                     self.assertLazy(got)
                 except (AssertionError,) as e:
                     self.assertEqual(self.handled_by, LazyIOErrorCodes.assertion)
-                except (Exception,) as e:  # pragma: no cover
+                except (
+                    Exception,
+                ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
                     # pdb.set_trace()
                     if rpdb():  # pragma: no cover
                         pdb.set_trace()
@@ -469,7 +485,9 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
                     else:
                         raise
 
-                except (Exception,) as e:  # pragma: no cover
+                except (
+                    Exception,
+                ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
                     raise
                 else:
                     self.fail("should have IOError")
@@ -477,7 +495,9 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
         except (AssertionError, IOError) as e:
             raise
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -520,7 +540,9 @@ class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
             msg = "\nexp:%s\n<>\ngot:%s" % (exp, got)
             self.assertEqual(exp, got, msg)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             ppp(os.environ, "os.environ")
             debug_expgot(exp, got)
 
@@ -548,7 +570,9 @@ class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
             if self.verbose:
                 debug_expgot(exp, got, self)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             ppp(os.environ, "os.environ")
             debug_expgot(exp, got)
 
@@ -623,7 +647,9 @@ class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
 
             self.format_exp()
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -640,7 +666,9 @@ class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
                 if rpdb():  # pragma: no cover
                     pdb.set_trace()
                 self.assertLazy(self.data, extension="html")
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -704,7 +732,9 @@ class TestLive(LazyMixin, unittest.TestCase):
         except (AssertionError,) as e:
             self.assertTrue(got in str(e))
             self.assertTrue(got2 in str(e))
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             self.fail("should have gotten %s<>%s AssertionError" % (got, got2))
 
     @mock.patch.dict(os.environ, di_livetest)
@@ -786,7 +816,9 @@ class TestLive(LazyMixin, unittest.TestCase):
         except (IOError,) as e:
             logger.info("got my IOError")
             self.assertTrue(db2 in str(e))
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             self.fail("should have gotten %s<>%s AssertionError" % (got, got2))
 
         # now this should work
@@ -818,7 +850,9 @@ class TestLive(LazyMixin, unittest.TestCase):
             else:
                 self.fail("should have had an AssertionError")
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -889,7 +923,9 @@ class TestLive(LazyMixin, unittest.TestCase):
             """
 
             self.assertEqual(written.strip(), exp.strip())
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -945,7 +981,9 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
             self.assertFalse("csrf" in written, written)
             self.assertFalse("var settings" in written, written)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -966,7 +1004,9 @@ var csrf_token = 'wTNDVhWQHWzbf0Yb7mWo7PG03SgE9rpWfNXD3ZpbPm9IaZXAs3DuBUbOzI8oFu
             else:
                 self.fail("should have failed")
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -1014,7 +1054,9 @@ class TestFilters(unittest.TestCase):
                     msg = "did not find %s in res.finds:%s" % (key, res.finds)
                     self.assertTrue(found, msg)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             logger.info(msg)
             logger.error(str(e))
             if cpdb():
@@ -1044,7 +1086,9 @@ class TestFilters(unittest.TestCase):
 
             self.assertEqual(exp, self.data)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             logger.info(msg)
             logger.error(str(e))
             if cpdb():

@@ -2,17 +2,11 @@ from lazy_regression_tests._baseutils import set_cpdb, set_rpdb, ppp, debugObjec
 
 import pdb
 
-from traceback import print_exc as xp
+from traceback import print_exc as xp  # pylint: disable=unused-import
 
 
-def cpdb(**kwds) -> bool:  # pragma: no cover
-    if cpdb.enabled == "once":
-        cpdb.enabled = False  # type : ignore
-        return True
-    return cpdb.enabled  # type : ignore
-
-
-cpdb.enabled = False  # type : ignore
+def cpdb(*args, **kwargs):
+    "disabled"
 
 
 from lazy_regression_tests.utils import (
@@ -67,7 +61,9 @@ class DictKeyRemoveFilter(FormatterRemoveFilter):
 
             return dict_
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -105,7 +101,9 @@ class CSSRemoveFilter(FormatterRemoveFilter):
                 hit.decompose()
 
             return soup
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise

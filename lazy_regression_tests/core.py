@@ -86,7 +86,7 @@ from yaml import dump as ydump, safe_load as yload
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
-from traceback import print_exc as xp
+from traceback import print_exc as xp  # pylint: disable=unused-import
 
 from lazy_regression_tests.utils import (
     DiffFormatter,
@@ -109,11 +109,8 @@ from lazy_regression_tests.utils import (
 import pdb
 
 
-def cpdb():
-    return cpdb.enabled
-
-
-cpdb.enabled = False  # type: ignore
+def cpdb(*args, **kwargs):
+    "disabled"
 
 
 def rpdb():  # pragma: no cover
@@ -317,7 +314,9 @@ class LazyTemp(object):
 
                 li.append(found)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -353,7 +352,9 @@ def yaml_to_dict(data, track_type=False):
         res = yload(safe_yaml)
 
         return res
-    except (Exception,) as e:  # pragma: no cover
+    except (
+        Exception,
+    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
             pdb.set_trace()
         raise
@@ -463,7 +464,9 @@ class LazyMixin(object):
             if rpdb():  # pragma: no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -472,7 +475,9 @@ class LazyMixin(object):
         try:
             logger.warning("%s.suppressed IOError:%s" % (self, exc))
             self._lazy_write(fnp, formatted_data)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -486,7 +491,9 @@ class LazyMixin(object):
             if rpdb():  # pragma: no cover
                 pdb.set_trace()
             raise
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -530,7 +537,9 @@ class LazyMixin(object):
         try:
             di = yaml_to_dict(data)
             return self.lazy_format_dict2yaml(di)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -731,7 +740,9 @@ class LazyMixin(object):
                     exp = fi.read().strip()
             except (IOError,) as e:
                 return control.handler_io_error(fnp_exp, formatted_data, message, exc=e)
-            except (Exception,) as e:  # pragma: no cover
+            except (
+                Exception,
+            ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
                 pdb.set_trace()
                 raise
 
@@ -790,7 +801,9 @@ class LazyMixin(object):
         except (IOError, AssertionError) as e:
             e.lazytemp = self.lazytemp
             raise
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             e.lazytemp = getattr(self, "lazytemp", None)
 
             if cpdb():

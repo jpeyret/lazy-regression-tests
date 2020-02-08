@@ -1,5 +1,6 @@
 import sys
 import types
+import re
 
 
 #######################################################
@@ -16,6 +17,7 @@ from typing import (
 
 
 import logging
+import pdb
 
 from string import Template
 
@@ -26,6 +28,8 @@ logger = logging.getLogger(__name__)
 undefined = Ellipsis
 
 from typing import List, Any, Tuple, Iterable
+
+verbose = "-v" in sys.argv
 
 try:
     from cStringIO import StringIO  # 223ed
@@ -39,35 +43,6 @@ try:
     basestring_ = basestring  # type: ignore
 except (NameError,) as e:
     basestring_ = str
-
-
-import pdb
-
-
-def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
-    if cpdb.enabled == "once":
-        cpdb.enabled = False  # type : ignore
-        return True
-    return cpdb.enabled  # type : ignore
-
-
-cpdb.enabled = False  # type : ignore
-
-
-def rpdb() -> bool:  # pragma: no cover
-    try:
-        from django.core.cache import cache
-    except (Exception,) as e:
-        cache = {}
-    import sys
-
-    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
-    if in_celery:
-        return False
-    return bool(cache.get("rpdb_enabled") or getattr("rpdb", "enabled", False))
-
-
-rpdb.enabled = False  # type : ignore
 
 
 #################################
@@ -116,30 +91,95 @@ def _pseudo_decor(fn, attrname):
 cast_contentbytes2str = partial(_pseudo_decor, attrname="content")
 
 
-def set_rpdb(rpdb, remove=True, recurse=True):
+def cpdb(*args, **kwargs):
+    "disabled"
+
+
+def rpdb(*args, **kwargs):
+    "disabled"
+
+
+def real_rpdb() -> bool:  # pragma: no cover
+
+    count = getattr(rpdb, "count", None)
+    if count is not None:
+        rpdb.count -= 1
+        return rpdb.count > 0
+
+    try:
+        from django.core.cache import cache
+    except (Exception,) as e:
+        cache = {}
+    import sys
+
+    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
+    if in_celery:
+        return False
+    res = bool(cache.get("rpdb_enabled"))
+
+    if res and count is None:
+        rpdb.count = 3
+
+    return res
+
+
+def set_rpdb(rpdb_in=None, remove=True, recurse=True):
+
+    rpdb_in = rpdb_in or rpdb
+
     if "--rpdb" in sys.argv:
-        rpdb.enabled = True
-        # howto- set cpdb on modules...
-        if recurse:
-            for module in sys.modules.values():
-                try:
-                    # this checks if it's likely to be cpdb, not something w same name
-                    _ = module.rpdb.enabled
-                    module.rpdb = rpdb
-                except AttributeError:  # pragma: no cover
-                    pass
+        real_rpdb.count = 3
 
-        if remove:
+        try:
+            from django.core.cache import cache
+        except (Exception,) as e:
+            cache.set("rpdb_enabled", 1, 300)
+
+    if recurse:
+        for module in list(sys.modules.values()):
+            try:
+                # this checks if it's likely to be cpdb, not something w same name
+                # _ = module.rpdb.enabled
+                module.rpdb = real_rpdb
+            except AttributeError:  # pragma: no cover
+                pass
+
+    if remove:
+        try:
             sys.argv.remove("--rpdb")
-        return rpdb.enabled
-    return False
+        except (ValueError,) as e:
+            pass
+
+    return real_rpdb
 
 
-def set_cpdb(cpdb, remove=True, recurse=True, boolvalue=None):
+#######################################################
+# cpdb v2
+#######################################################
 
-    # !!!TODO!!!p4 - stop handling --pdb and consider it reserved
+
+def real_cpdb(**kwds):  # pragma: no cover
+    real_cpdb.count -= 1
+    return real_cpdb.count > 0
+
+
+real_cpdb.count = 3
+
+
+def cpdb():
+    "disabled"
+
+
+def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
 
     single_use_flag = "--cpdb"
+
+    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
+    if in_celery:
+        return fake_cpdb
+
+    if cpdb_in is None:
+        cpdb_in = cpdb
 
     flags = set(["--cpdbmany", "--cpdbonce", single_use_flag])
     args = set(sys.argv)
@@ -150,31 +190,49 @@ def set_cpdb(cpdb, remove=True, recurse=True, boolvalue=None):
 
     found = single_use_flag or (args & flags)
 
-    if boolvalue is None:
-        boolvalue = getattr(cpdb, "enabled", False) or found
-
-    if boolvalue:
-        cpdb.enabled = boolvalue
-        if recurse:
-            for module in sys.modules.values():
-                try:
-                    # this checks if it's likely to be cpdb, not something w same name
-                    _ = module.cpdb.enabled
-                    module.cpdb = cpdb
-                except AttributeError:  # pragma: no cover
-                    pass
-    # import pdb
-    # pdb.set_trace()
     if remove:
-        # pdb.set_trace()
         for flag in flags:
             try:
                 sys.argv.remove(flag)
             except (ValueError,) as e:
                 pass
-                # print("couldnt remove:%s:" % (flag) )
-                # print("sys.argv#250", id(sys.argv), sys.argv)
-    # print("sys.argv#29", id(sys.argv), sys.argv, id(sys.argv))
+
+    if boolvalue is None:
+        boolvalue = (
+            bool(found)
+            or getattr(cpdb_in, "enabled", False)
+            or getattr(cpdb_in, "count", 0)
+        )
+
+    if boolvalue:
+        # it was set before or its being set for the first time.
+
+        if recurse:
+            # set cpdbs on modules that have a stub for it
+            for module in list(sys.modules.values()):
+                try:
+                    # pdb.set_trace()
+                    # print(module)
+                    # this checks if it's likely to be cpdb, not something w same name
+                    existing = getattr(module, "cpdb", None)
+                    if existing:
+                        if existing.__doc__ == "disabled":
+                            if verbose:
+                                logger.info("matching cpdb")
+                        else:
+                            # pdb.set_trace()
+                            if verbose:
+                                logger.info("old style cpdb on %s" % (module))
+
+                        module.cpdb = real_cpdb
+                except AttributeError:  # pragma: no cover
+                    pass
+
+        return real_cpdb
+    return cpdb_in
+
+
+#######################################################
 
 
 def ppp(o, header=None):
@@ -206,7 +264,7 @@ def debugObject(
     sep="\n",
     li_skiptype=[types.MethodType],
     linefeed=1,
-    truncate=60,
+    truncate=120,
 ):
 
     if isinstance(obj, dict):
@@ -283,7 +341,7 @@ def debugDict(
     indentlevel=0,
     sep="\n",
     linefeed=1,
-    truncate=60,
+    truncate=120,
 ):
 
     buf = StringIO()
@@ -302,7 +360,11 @@ def debugDict(
     contents = " ={}" * (not li)  # huh?
 
     if truncate:
-        msg = sep * linefeed + "%s%s %s\n" % (" " * indentlevel, header, repr(contents))
+        msg = sep * linefeed + "%s%s %s\n" % (
+            " " * indentlevel,
+            header,
+            repr(contents)[0:truncate],
+        )
     else:
         msg = sep * linefeed + "%s%s %s\n" % (" " * indentlevel, header, str(contents))
 
@@ -549,7 +611,9 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
 
         return res
 
-    except (Exception,) as e:  # pragma: no cover
+    except (
+        Exception,
+    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
             pdb.set_trace()
         raise
@@ -579,7 +643,9 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
             # will do a KeyError
             return di.pop(final)
 
-    except (Exception,) as e:  # pragma: no cover
+    except (
+        Exception,
+    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
             pdb.set_trace()
         raise
@@ -635,3 +701,103 @@ class Dummy(object):
             return getattr(self, attrname)
         except AttributeError as attrname:
             raise KeyError(attrname)
+
+
+class DictFormatter:
+    """ takes an input dictionary, looks for matching items from keys in 
+    the second formatting dictonary and modifies the input dictionary when
+    there is a match
+
+    the formatting dictionary can be keyed by:
+
+    - any acceptable dictionary key, in which case it's a straight key lookup
+    - a regex string, which is then matched against the input dictionary's keys
+
+    what happens when there is a match depends on the di_formatter value:
+
+    - if it's None, the func_default function is called, which defaults to deleting the key
+    - if it's a dict, there is a recursive call with the matched value of the input
+    - if it's a function, the function gets called with the dict, key and value as a parameter
+      and has to return a dict
+
+    """
+
+    def __repr__(self):
+        return "%s[%s]" % (self.__class__.__name__, stuff)
+
+    def del_dict_item(self, di: dict, key: Any, value: Any):
+        di.pop(key, None)
+        return di
+
+    default_processor = del_dict_item
+
+    def __init__(self, di_default_formatter=None):
+        self.di_default_formatter = di_default_formatter
+
+    def process(self, di_in, di_formatter=None, in_place=False, f_default=None):
+        try:
+            di = di_in if in_place else di_in.copy()
+
+            di_formatter = di_formatter or self.di_default_formatter
+
+            assert isinstance(
+                di_formatter, dict
+            ), "%s needs to be called with formatting dictionary or needs to have been initialized with one"
+
+            f_default = f_default or self.default_processor
+
+            li_tu_key_func = list(di_formatter.items())
+
+            di_keys = None
+
+            for key, func_fmt in li_tu_key_func:
+
+                func_fmt = func_fmt or f_default
+
+                if isinstance(key, re._pattern_type):
+                    di_keys = di_keys or list(di.keys())
+                    for di_key in di_keys:
+
+                        if not isinstance(di_key, str):
+                            continue
+
+                        hit = key.search(di_key)
+                        if hit:
+                            v = di.get(di_key, undefined)
+                            if callable(func_fmt):
+                                di = func_fmt(di, di_key, v)
+                            elif isinstance(func_fmt, dict):
+                                di = self(
+                                    di,
+                                    di_formatter=func_fmt,
+                                    f_default=f_default,
+                                    in_place=True,
+                                )
+                            else:
+                                raise NotImplementedError(
+                                    "%s.process(%s)" % (self, locals())
+                                )
+                    continue
+
+                v = di.get(key, undefined)
+                if v is undefined:
+                    continue
+
+                if callable(func_fmt):
+                    di = func_fmt(di, key, v)
+                elif isinstance(func_fmt, dict):
+                    di = self(
+                        di, di_formatter=func_fmt, f_default=f_default, in_place=True
+                    )
+                else:
+                    raise NotImplementedError("%s.process(%s)" % (self, locals()))
+
+            return di
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    __call__ = process

@@ -14,7 +14,7 @@ import re
 import os
 import json
 
-from traceback import print_exc as xp
+from traceback import print_exc as xp  # pylint: disable=unused-import
 
 #######################################################
 # Dependencies
@@ -49,11 +49,8 @@ def breakpoints(*args, **kwargs):
 import pdb
 
 
-def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
-    return cpdb.enabled  # type : ignore
-
-
-cpdb.enabled = False  # type : ignore
+def cpdb(*args, **kwargs):
+    "disabled"
 
 
 def rpdb() -> bool:  # pragma: no cover
@@ -83,7 +80,9 @@ class JsonSchemaValidator(JsonValidator):
             super(JsonSchemaValidator, self).__init__(selector)
 
             # self.exp = self.schema
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -107,7 +106,9 @@ class JsonSchemaValidator(JsonValidator):
 
             return self.schema
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -129,7 +130,9 @@ class JsonSchemaValidator(JsonValidator):
             for igot in got:
                 validate(instance=igot, schema=schema)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 ppp(self.schema, "schema")
                 ppp(igot, "igot")

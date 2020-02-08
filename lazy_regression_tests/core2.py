@@ -38,18 +38,11 @@ import pdb
 
 from lazy_regression_tests._baseutils import debugObject, ppp, Dummy
 
-from traceback import print_exc as xp
+from traceback import print_exc as xp  # pylint: disable=unused-import
 
 
-def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
-    # return True
-    if cpdb.enabled == "once":
-        cpdb.enabled = False  # type : ignore
-        return True
-    return cpdb.enabled  # type : ignore
-
-
-cpdb.enabled = False  # type : ignore
+def cpdb(*args, **kwargs):
+    "disabled"
 
 
 def rpdb() -> bool:  # pragma: no cover
@@ -229,7 +222,9 @@ class LazyCheckerOptions:
             self.filterhash = hash(str_data)
 
             return str_data
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 ppp(self, self)
                 pdb.set_trace()
@@ -378,7 +373,9 @@ class LazyMixin(object):
 
             return os.path.join(dirname, basename)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -397,7 +394,9 @@ class LazyMixin(object):
             tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env, self)
             return options.format(tmp, data)
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -476,7 +475,9 @@ class LazyMixin(object):
                 # pdb.set_trace()
                 raise
             # timeout_decorator.timeout_decorator.TimeoutError
-            except (Exception,) as e:  # pragma: no cover
+            except (
+                Exception,
+            ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
                 if cpdb():
                     pdb.set_trace()
                 raise
@@ -497,7 +498,9 @@ class LazyMixin(object):
                     fo.write(formatted_got)
 
             raise
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -566,7 +569,9 @@ class LazyCheckerOptions2(FilterMgr2, LazyCheckerOptions):
 
             return rawfiltermgr, textfiltermgr
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -622,7 +627,9 @@ class LazyMixin2(LazyMixin):
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise

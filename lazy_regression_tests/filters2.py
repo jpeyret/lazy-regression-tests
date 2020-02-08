@@ -7,7 +7,7 @@ from typing import Optional, Any
 
 import sys
 
-from traceback import print_exc as xp
+from traceback import print_exc as xp  # pylint: disable=unused-import
 
 ###################################################################
 
@@ -47,14 +47,8 @@ from lazy_regression_tests.utils import (
 )
 
 
-def cpdb(**kwds: "Any") -> bool:  # pragma: no cover
-    if cpdb.enabled == "once":
-        cpdb.enabled = False  # type : ignore
-        return True
-    return cpdb.enabled  # type : ignore
-
-
-cpdb.enabled = False  # type : ignore
+def cpdb(*args, **kwargs):
+    "disabled"
 
 
 def rpdb() -> bool:  # pragma: no cover
@@ -113,7 +107,9 @@ class FilterMgr:
             self.filters.append(filter_)
             return self
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -154,7 +150,9 @@ class DataMatcher(object):
                     return
 
                 li.append(value)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -201,7 +199,9 @@ class RegexFilter(RegexMatcher):
             raise NotImplementedError(
                 "%s.process_line(%s).  need to implement on subclass" % (self, locals())
             )
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -225,7 +225,9 @@ class RegexFilter(RegexMatcher):
                 callback(self.name, data, li)
 
             return "\n".join(line_out)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -255,7 +257,9 @@ class RegexRemoveSaver(RegexMatcher):
                 callback(self.name, data, li)
 
             return "\n".join(line_out)
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -285,7 +289,9 @@ class RegexSubstitHardcoded(RegexFilter):
 
             return line
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -316,7 +322,7 @@ class RegexSubstitHardcoded(RegexFilter):
     #                 subinfo = "func.%s" % self.substitution.__name__
     #         else:
     #             subinfo = str(self.substitution)
-    #     except (Exception,) as e:  # pragma: no cover
+    #     except (Exception,) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
     #         if cpdb():
     #             pdb.set_trace()
     #         raise
@@ -344,7 +350,9 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
         try:
             data = bs(data)
             return data
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -371,7 +379,9 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
 
             return data
             # raise NotImplementedError("%s.filter(%s)" % (self, ""))
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -394,7 +404,9 @@ class DictKeyRemoveFilter(RawFilter, DataMatcher):
 
             return data
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -439,7 +451,9 @@ class FilterDirective:
             self.active = active if active in (True, False) else bool(filter_)
             self.callback = callback
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -487,7 +501,9 @@ class FilterMgr2:
                 data = directive.filter(options, tmp, data, callback)
             return data
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -522,7 +538,9 @@ class FilterMgr2:
 
             return self
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
@@ -551,7 +569,9 @@ class FilterMgr2:
 
             return self
 
-        except (Exception,) as e:  # pragma: no cover
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 pdb.set_trace()
             raise
