@@ -4,6 +4,8 @@ import re
 
 from operator import attrgetter
 
+from lazy_regression_tests._baseutils import debugObject, ppp, Dummy, getpath
+
 from traceback import print_exc as xp
 
 #######################################################
@@ -75,40 +77,18 @@ class Validator:
 
     def get_source(self, testee, **sources):
 
-        # pdb.set_trace()
-
         if self.sourcename is None:
-
-            source = (
-                testee
-            )  # if self.sourcename is None else getattr(testee, self.sourcename)
+            source_ = testee
 
         else:
+            source_ = getpath(sources, self.sourcename)
 
-            sourcenames = self.sourcename.split(".", 1)
-            sourcename = sourcenames[0]
-
-            source0 = sources.get(sourcename) or getattr(testee, sourcename)
-            if len(sourcenames) > 1:
-                path = sourcenames[1]
-                if isinstance(source0, dict):
-                    # allow for nesteds?
-                    source = source0[path]
-
-                else:
-                    # use nested operators
-                    f_getter = attrgetter(path)
-                    source = f_getter(source0)
-
-            else:
-                source = source0
-
-        if source is None:
+        if source_ is None:
             raise ValueError(
                 "you need to either pass in a dict in `source` or %s needs to have `%s` set"
                 % (testee, self.sourcename)
             )
-        return source
+        return source_
 
     def get_value(self, source):
         res = source.get(self.selector)

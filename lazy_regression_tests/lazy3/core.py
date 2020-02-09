@@ -1,8 +1,21 @@
 import pdb
+import os
 
 from pathlib import Path
 
 undefined = NotImplemented
+
+
+#######################################################
+# Typing
+#######################################################
+from typing import (
+    Optional,
+    # TYPE_CHECKING,
+    Any,
+)
+
+#######################################################
 
 
 def cpdb(*args, **kwargs):
@@ -16,6 +29,110 @@ from lazy_regression_tests._baseutils import debugObject, ppp, Dummy
 from traceback import print_exc as xp
 
 from .validators import ValidationManager, NamedTesteeAttributeValidator
+
+
+from lazy_regression_tests.utils import (
+    # MediatedEnvironDict,
+    undefined,
+    Subber,
+    RegexRemoveSaver as RegexRemoveSaver1,
+    ppp,
+    fill_template,
+)
+
+#######################################################
+# extract to secondary
+#######################################################
+
+
+class LazyCheckerOptions:
+    pass
+
+
+class LazyTemp(object):
+    def __repr__(self):
+        return "LazyTemp[id=%s]" % (id(self))
+
+    def __init__(self, control, env, testee):
+        self.control = control
+        self.fnp_exp = self.fnp_got = None
+        self.env = env.copy()
+        self.message = ""
+        self.filterhits = {}
+        self.testee = testee
+
+
+class MediatedEnvironDict(dict):
+    def __init__(self, acquired=False, **kwds):
+        """
+        """
+        self.acquired = acquired
+        super(MediatedEnvironDict, self).__init__(**kwds)
+
+    def acquire(self, rootname):
+        if self.acquired:
+            return
+
+        len_root = len(rootname)
+
+        for k, value in os.environ.items():
+            if k.startswith(rootname):
+                k2 = k[len_root:]
+                self[k2] = value
+
+        self.acquired = True
+
+
+OPT_DIRECTIVE_SKIP = "skip"
+OPT_DIRECTIVE_BASELINE = "baseline"
+OPT_DIRECTIVE_NODIFF = "nodiff"
+
+
+class _Control(object):
+    """unifies environment and function arguments
+       to determine handlers for IOError and AssertionError
+       save in the LazyTemp results object as well.
+    """
+
+    def __init__(
+        self, lazy: "LazyMixin", env: MediatedEnvironDict, options: LazyCheckerOptions
+    ):
+
+        self.lazy = lazy
+        self.env = env
+        self.options = options
+
+    def write_exp_on_ioerror(self):
+        return getattr(self.options, "write_exp_on_ioerror", True)
+
+    _directive = undefined
+
+    @property
+    def directive(self) -> str:
+        """ note that  """
+        if self._directive is undefined:
+            res = self._directive = self.env.get("directive", "").strip().lower()
+            assert res in (
+                OPT_DIRECTIVE_SKIP,
+                OPT_DIRECTIVE_BASELINE,
+                OPT_DIRECTIVE_NODIFF,
+                "",
+            )
+        return self._directive
+
+    def skip(self):
+        return self.directive == OPT_DIRECTIVE_SKIP
+
+    def baseline(self):
+        return self.directive == OPT_DIRECTIVE_BASELINE
+
+    def nodiff(self):
+        return self.directive == OPT_DIRECTIVE_NODIFF
+
+
+#######################################################
+#
+#######################################################
 
 
 class _LazyMeta(type):
@@ -79,6 +196,11 @@ class LazyMixin(metaclass=_LazyMeta):
     add_lazy_dirname = []
 
     lazytemp = None
+
+    # this normally resolves to os.environ, but can be preset for testing
+    lazy_environ = MediatedEnvironDict()
+
+    ENVIRONMENT_VARNAME_ROOT = "lzrt_"
 
     @classmethod
     def get_basename(cls, name_, file_, module_):
@@ -150,6 +272,110 @@ class LazyMixin(metaclass=_LazyMeta):
 
         validationmgr.set_expectation(*args, **kwargs)
 
+    #######################################################
+    # diff-related
+    #######################################################
 
-class LazyCheckerOptions:
-    pass
+    def assert_exp(
+        self, got: Any, options: Optional[LazyCheckerOptions], suffix: str = ""
+    ):
+
+        try:
+            env = self.lazy_environ
+            if not self.lazy_environ.acquired:
+                env.clear()
+                env.acquire(self.ENVIRONMENT_VARNAME_ROOT)
+
+            self.control = control = _Control(self, env, options)
+
+            # only create the lazy temp the first time.
+            tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env, self)
+
+            # the environment requests that no diffing or writing take place
+            # typically indicated by setting environment variable `lzrt_directive=skip`
+            if control.skip():
+                return
+
+            # calculate the paths of the exp/got files
+            tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
+            tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
+
+            # linefeeds have a tendency to creep in sometimes
+            formatted_got = options.format(tmp, got).rstrip()
+
+            # at this point, we want to write the received, formatted, data regardless
+            with open(fnp_got, "w") as fo:
+                fo.write(formatted_got)
+
+            # the newly received data is to be taken as our expectations
+            # typically indicated by setting environment variable `lzrt_directive=baseline`
+            if control.baseline():
+                with open(fnp_exp, "w") as fo:
+                    fo.write(formatted_got)
+                return
+
+            try:
+                with open(fnp_exp) as fi:
+                    # linefeeds have a tendency to creep in sometimes
+                    exp = fi.read().rstrip()
+            except (IOError,) as e:
+                # by default we just want to write the received data as our expectation
+                if control.write_exp_on_ioerror():
+                    tmp.message = message = "no check because IOError on %s" % (fnp_exp)
+                    with open(fnp_exp, "w") as fo:
+                        fo.write(formatted_got)
+                    return
+                else:
+                    raise
+
+            # the environment requests only equality is checked, without trying to show details
+            # typically indicated by setting environment variable `lzrt_directive=nodiff`
+            # this may be desired if the differences could cause timeouts with `assertEqual`
+            if control.nodiff():
+                tmp.message = message = "exp and got are not equal but diffing disabled"
+                if exp != formatted_got():
+                    raise self.Fail(message)
+
+            # pdb.set_trace()
+            try:
+                # supports a timeout mechanism, if the module is available
+                self.assertEqualTimed(exp, formatted_got)
+            except (CustomTimeoutError,) as e:  # pragma: no cover
+                tmp.message = message = (
+                    "exp and got are not equal but comparison timed out after %s seconds"
+                    % (TIMEOUT_MAXTIME_TO_ALLOW)
+                )
+                self.fail(message)
+            except (AssertionError,) as e:  # pragma: no cover
+                # pdb.set_trace()
+                raise
+            # timeout_decorator.timeout_decorator.TimeoutError
+            except (
+                Exception,
+            ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+                if cpdb():
+                    pdb.set_trace()
+                raise
+
+            return self.lazytemp
+
+        except (AssertionError,) as e:  # pragma: no cover
+            if rpdb():  # pragma: no cover
+                pdb.set_trace()
+
+                dn = "/Users/jluc/kds2/issues2/049.lazy/021.p4.v2"
+                fnp = os.path.join(dn, "exp.%s.txt" % (self.__class__.__name__))
+                with open(fnp, "w") as fo:
+                    fo.write(exp)
+
+                fnp = os.path.join(dn, "got.%s.txt" % (self.__class__.__name__))
+                with open(fnp, "w") as fo:
+                    fo.write(formatted_got)
+
+            raise
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise

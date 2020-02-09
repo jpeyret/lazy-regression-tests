@@ -703,6 +703,35 @@ class Dummy(object):
             raise KeyError(attrname)
 
 
+def getpath(src, path):
+    """get nested path x.y.z against dictorary or object"""
+    try:
+
+        current = src
+        accessors = path.split(".")
+        for accessor in accessors:
+            if isinstance(current, dict):
+                try:
+                    current = current[accessor]
+                # pragma: no cover pylint: disable=unused-variable
+                except (KeyError,) as e:
+                    raise AttributeError(accessor)
+            else:
+                current = getattr(current, accessor)
+
+        return current
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (AttributeError,) as e:
+        raise
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            pdb.set_trace()
+        raise
+
+
 class DictFormatter:
     """ takes an input dictionary, looks for matching items from keys in 
     the second formatting dictonary and modifies the input dictionary when
