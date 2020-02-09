@@ -13,9 +13,12 @@ from typing import (
     Optional,
     # TYPE_CHECKING,
     Any,
+    Union,
 )
 
 #######################################################
+
+from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
 
 
 def cpdb(*args, **kwargs):
@@ -196,9 +199,12 @@ class LazyMixin(metaclass=_LazyMeta):
     add_lazy_dirname = []
 
     lazytemp = None
+    lazy_basename_extras = ""
 
     # this normally resolves to os.environ, but can be preset for testing
     lazy_environ = MediatedEnvironDict()
+
+    T_FILENAME = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
 
     ENVIRONMENT_VARNAME_ROOT = "lzrt_"
 
@@ -230,6 +236,77 @@ class LazyMixin(metaclass=_LazyMeta):
 
             # 🤔 ahhh, but we need this to BeautifulSoup or do other stuff...
             return options.format(tmp, data)
+
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def _lazy_get_t_dirname(self, exp_got, subber):
+
+        env_name = dict(exp="template_dirname_exp", got="template_dirname_got")[exp_got]
+        dirname = self.control.env[env_name]
+
+        dirname2 = os.path.join(dirname, subber.get("classname"))
+
+        return dirname2
+
+    def _get_fnp_save(
+        self, exp_got: Union["got", "exp"], options: str, suffix: Optional[str]
+    ):
+        """get the save path"""
+
+        try:
+
+            extension = options
+
+            subber = Subber(
+                self,
+                options,
+                {
+                    "filename": self.lazy_filename,
+                    "suffix": suffix,
+                    "classname": self.__class__.__name__,
+                    "exp_got": exp_got,
+                    "extension": extension,
+                },
+            )
+
+            # calculating the directory path
+            t_dirname = self._lazy_get_t_dirname(exp_got, subber)
+            _litd = t_dirname.split(os.path.sep)
+
+            dirname_extras = getattr(self, "lazy_dirname_extras", "")
+            if dirname_extras:
+                # expand something like "foo, bar" into [..."%(foo)s", "%(bar)s"...]
+                li_replace = [
+                    "%%(%s)s" % (attrname) for attrname in dirname_extras.split()
+                ]
+
+                if "%(lazy_dirname_extras)s" in _litd:
+                    _litd = replace(_litd, "%(lazy_dirname_extras)s", li_replace)
+                else:
+                    _litd.extend(li_replace)
+
+            _lid = ["/"] + [fill_template(t_, subber) for t_ in _litd]
+
+            dirname = os.path.join(*_lid)
+
+            # calculating the filename
+            t_basename = self.T_FILENAME
+            _litb = t_basename.split()
+            _lib = [fill_template(t_, subber) for t_ in _litb]
+            basename = ".".join([i_ for i_ in _lib if i_])
+
+            basename = basename.replace(" ", "_")
+            basename = basename.replace("/", "_")
+
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+
+            return os.path.join(dirname, basename)
 
         except (
             Exception,
