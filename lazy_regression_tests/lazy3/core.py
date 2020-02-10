@@ -69,59 +69,23 @@ from lazy_regression_tests.utils import (
 # 🔬LazyCheckerOptions2 in v2
 
 
-class xLazyCheckerOptions:
-    def __init__(self, *filters_in, write_exp_on_ioerror: bool = True):
+class LazyChecker:
+    def __init__(
+        self,
+        extension: str,
+        rawfiltermgr=None,
+        textfiltermgr=None,
+        write_exp_on_ioerror: bool = True,
+    ):
+        self.extension = extension
         self.write_exp_on_ioerror = write_exp_on_ioerror
-        self.filters = {}
+        self.rawfiltermgr = rawfiltermgr
+        self.textfiltermgr = textfiltermgr
+        ppp(self, self)
 
         self.filterhash = None
+
         self.reg_callbacks = {}
-
-        for filter_ in filters_in:
-            self.set_filter(filter_)
-
-    def get_raw_text_filters(self):
-        """ 
-        takes all the active and valid FilterDirectives and assign them to a RawFilterMgr or a TextFilterMgr
-        this allows the use of set_filter without worrying about whether a filter is a Raw or TextFilter.
-
-        """
-
-        try:
-
-            raise NotImplementedError("%s.get_raw_text_filters(%s)" % (self, locals()))
-
-            rawfiltermgr = FilterMgr2()
-            textfiltermgr = FilterMgr2()
-            for name, directive in self.filters.items():
-                if directive.active is not True:
-                    continue
-
-                filter_ = directive.filter
-
-                if filter_ is None:
-                    raise ValueError(
-                        "Directive.%s is active. without a filter" % (directive)
-                    )
-
-                if isinstance(filter_, RawFilter):
-                    rawfiltermgr.set_filter(directive)
-                elif isinstance(filter_, TextFilter):
-                    textfiltermgr.set_filter(directive)
-                else:
-                    raise ValueError(
-                        "Directive.%s uses an unknown FilterType.  Filters need be either RawFilter or TextFilter subclasses"
-                        % (directive)
-                    )
-
-            return rawfiltermgr, textfiltermgr
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
 
 
 class LazyTemp(object):
@@ -469,26 +433,26 @@ class LazyMixin(metaclass=_LazyMeta):
                 % (self, extension)
             )
 
-            checker = self.filters[extension]
+            filter_ = self.filters[extension]
 
-            rawfiltermgr, textfiltermgr = checker.get_raw_text_filters()
+            rawfiltermgr, textfiltermgr = filter_.get_raw_text_filters()
 
             di_debug = {}
 
-            raise NotImplementedError("%s.assert_exp(%s)" % (self, di_debug))
+            # raise NotImplementedError("%s.assert_exp(%s)" % (self, di_debug))
 
-            core_checker = LazyCheckerOptions(
+            checker = LazyChecker(
                 extension=extension,
                 rawfiltermgr=rawfiltermgr,
                 textfiltermgr=textfiltermgr,
             )
 
-            if hasattr(checker, "to_text"):
-                core_checker.to_text = checker.to_text
-            if hasattr(checker, "prep"):
-                core_checker.prep = checker.prep
+            if hasattr(filter_, "to_text"):
+                checker.to_text = filter_.to_text
+            if hasattr(filter_, "prep"):
+                checker.prep = filter_.prep
 
-            return LazyMixin.assert_exp(self, got, core_checker, suffix)
+            return self._check(self, got, checker, suffix)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -499,7 +463,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
-    def _assert_exp(self, got: Any, filter: Any, suffix: str = ""):
+    def _check(self, got: Any, filter: "FilterManager", suffix: str = ""):
 
         try:
             env = self.lazy_environ

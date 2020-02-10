@@ -303,16 +303,41 @@ class FilterManager:
         """docstring"""
         try:
 
-            raws = []
-            texts = []
+            rawfiltermgr = RawFilterManager()
+            textfiltermgr = TextFilterManager()
+            for name, directive in self.filters.items():
+                if directive.active is not True:
+                    continue
 
-            for key, filter_ in self.filters.items():
-                if filter_.raw:
-                    raws.append(filter_)
+                filter_ = directive.filter
+
+                if filter_ is None:
+                    raise ValueError(
+                        "Directive.%s is active. without a filter" % (directive)
+                    )
+
+                if isinstance(filter_, RawFilter):
+                    rawfiltermgr.set_filter(directive)
+                elif isinstance(filter_, TextFilter):
+                    textfiltermgr.set_filter(directive)
                 else:
-                    texts.append(filter_)
+                    raise ValueError(
+                        "Directive.%s uses an unknown FilterType.  Filters need be either RawFilter or TextFilter subclasses"
+                        % (directive)
+                    )
 
-            return (raws, texts)
+            return rawfiltermgr, textfiltermgr
+
+            # raws = []
+            # texts = []
+
+            # for key, filter_ in self.filters.items():
+            #     if filter_.raw:
+            #         raws.append(filter_)
+            #     else:
+            #         texts.append(filter_)
+
+            # return (raws, texts)
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
