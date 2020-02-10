@@ -405,6 +405,8 @@ class LazyMixin(object):
         self, got: Any, options: Optional[LazyCheckerOptions], suffix: str = ""
     ):
 
+        # 🔬 this is not the v2 path
+
         try:
             env = self.lazy_environ
             if not self.lazy_environ.acquired:
@@ -601,6 +603,9 @@ class LazyMixin2(LazyMixin):
         return self._filters
 
     def assert_exp(self, got: Any, extension: str, suffix: str = ""):
+
+        # 🔬 this is the v2 path
+
         try:
 
             assert isinstance(extension, str), (

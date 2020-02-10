@@ -18,7 +18,26 @@ from typing import (
 
 #######################################################
 
-from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
+# from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
+
+try:
+
+    from timeout_decorator import timeout
+
+    import timeout_decorator
+
+    CustomTimeoutError = timeout_decorator.timeout_decorator.TimeoutError
+
+    TIMEOUT_MAXTIME_TO_ALLOW = 5
+except (ImportError,) as e:  # pragma: no cover
+    # pdb.set_trace()
+    timeout = None
+    TIMEOUT_MAXTIME_TO_ALLOW = 0
+
+    class CustomTimeoutError(Exception):
+        """we'll never see this """
+
+        pass
 
 
 def cpdb(*args, **kwargs):
@@ -32,7 +51,7 @@ from lazy_regression_tests._baseutils import debugObject, ppp, Dummy
 from traceback import print_exc as xp
 
 from .validators import ValidationManager, NamedTesteeAttributeValidator
-
+from .filters import build_filters_for_class, FilterManager
 
 from lazy_regression_tests.utils import (
     # MediatedEnvironDict,
@@ -47,9 +66,62 @@ from lazy_regression_tests.utils import (
 # extract to secondary
 #######################################################
 
+# 🔬LazyCheckerOptions2 in v2
 
-class LazyCheckerOptions:
-    pass
+
+class xLazyCheckerOptions:
+    def __init__(self, *filters_in, write_exp_on_ioerror: bool = True):
+        self.write_exp_on_ioerror = write_exp_on_ioerror
+        self.filters = {}
+
+        self.filterhash = None
+        self.reg_callbacks = {}
+
+        for filter_ in filters_in:
+            self.set_filter(filter_)
+
+    def get_raw_text_filters(self):
+        """ 
+        takes all the active and valid FilterDirectives and assign them to a RawFilterMgr or a TextFilterMgr
+        this allows the use of set_filter without worrying about whether a filter is a Raw or TextFilter.
+
+        """
+
+        try:
+
+            raise NotImplementedError("%s.get_raw_text_filters(%s)" % (self, locals()))
+
+            rawfiltermgr = FilterMgr2()
+            textfiltermgr = FilterMgr2()
+            for name, directive in self.filters.items():
+                if directive.active is not True:
+                    continue
+
+                filter_ = directive.filter
+
+                if filter_ is None:
+                    raise ValueError(
+                        "Directive.%s is active. without a filter" % (directive)
+                    )
+
+                if isinstance(filter_, RawFilter):
+                    rawfiltermgr.set_filter(directive)
+                elif isinstance(filter_, TextFilter):
+                    textfiltermgr.set_filter(directive)
+                else:
+                    raise ValueError(
+                        "Directive.%s uses an unknown FilterType.  Filters need be either RawFilter or TextFilter subclasses"
+                        % (directive)
+                    )
+
+            return rawfiltermgr, textfiltermgr
+
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
 
 
 class LazyTemp(object):
@@ -98,7 +170,7 @@ class _Control(object):
     """
 
     def __init__(
-        self, lazy: "LazyMixin", env: MediatedEnvironDict, options: LazyCheckerOptions
+        self, lazy: "LazyMixin", env: MediatedEnvironDict, options: "LazyCheckerOptions"
     ):
 
         self.lazy = lazy
@@ -168,9 +240,16 @@ class _LazyMeta(type):
 
             li_new = []
 
+            li_ancestor_filter = []
+
             # and now add the bases' validators
             for basecls in li_bases2current:
                 validators = getattr(basecls, "cls_validators", [])
+
+                cls_filters = getattr(basecls, "cls_filters", {})
+
+                if cls_filters:
+                    li_ancestor_filter.append(cls_filters)
 
                 if validators:
                     if not isinstance(validators, list):
@@ -181,6 +260,8 @@ class _LazyMeta(type):
 
             #!!!TODO!!! 049.lazy.026.lazy3 👇
             # add same for filters, by extension
+
+            cls.cls_filters = build_filters_for_class(cls, li_ancestor_filter)
 
             #!!!TODO!!! 049.lazy.026.lazy3 👆
 
@@ -212,6 +293,23 @@ class LazyMixin(metaclass=_LazyMeta):
     def get_basename(cls, name_, file_, module_):
         cls.lazy_pa = pa = Path(file_)
         return pa.stem
+
+    def lazy_build_filters(self):
+        try:
+            res = {}
+            for extension, filter_ in self.__class__.cls_filters.items():
+                # if cpdb(): pdb.set_trace()
+                filter_copy = filter_.copy()
+                assert filter_copy, "filter_copy empty"
+                res[extension] = filter_copy
+
+            return res
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
     #######################################################
     # dubious
@@ -319,7 +417,7 @@ class LazyMixin(metaclass=_LazyMeta):
     # validator related
     #######################################################
 
-    _validationmgr = undefined
+    _filters = _validationmgr = undefined
 
     @property
     def validationmgr(self):
@@ -328,6 +426,13 @@ class LazyMixin(metaclass=_LazyMeta):
             self._validationmgr = res = ValidationManager(self, *self.cls_validators)
 
         return self._validationmgr
+
+    @property
+    def filters(self):
+        if self._filters is undefined:
+            self._filters = self.lazy_build_filters()
+
+        return self._filters
 
     def check_expectations(self, **sources):
         try:
@@ -353,9 +458,48 @@ class LazyMixin(metaclass=_LazyMeta):
     # diff-related
     #######################################################
 
-    def assert_exp(
-        self, got: Any, options: Optional[LazyCheckerOptions], suffix: str = ""
-    ):
+    def assert_exp(self, got: Any, extension: str, suffix: str = ""):
+
+        # 🔬 this is the v2 path
+
+        try:
+
+            assert isinstance(extension, str), (
+                "need string extension parameter for LazyMixin2 %s.assert_exp(extension=%s)"
+                % (self, extension)
+            )
+
+            checker = self.filters[extension]
+
+            rawfiltermgr, textfiltermgr = checker.get_raw_text_filters()
+
+            di_debug = {}
+
+            raise NotImplementedError("%s.assert_exp(%s)" % (self, di_debug))
+
+            core_checker = LazyCheckerOptions(
+                extension=extension,
+                rawfiltermgr=rawfiltermgr,
+                textfiltermgr=textfiltermgr,
+            )
+
+            if hasattr(checker, "to_text"):
+                core_checker.to_text = checker.to_text
+            if hasattr(checker, "prep"):
+                core_checker.prep = checker.prep
+
+            return LazyMixin.assert_exp(self, got, core_checker, suffix)
+
+        except (AssertionError,) as e:  # pragma: no cover
+            raise
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def _assert_exp(self, got: Any, filter: Any, suffix: str = ""):
 
         try:
             env = self.lazy_environ
@@ -456,3 +600,26 @@ class LazyMixin(metaclass=_LazyMeta):
             if cpdb():
                 pdb.set_trace()
             raise
+
+    # @timeout(TIMEOUT_MAXTIME_TO_ALLOW)
+    # def assertEqualTimed(self, exp, got, message):
+    #     # Issue.049.lazy.018.timeout
+    #     self.assertEqual(exp, got, message)
+
+    #######################################################
+    # Note the conditional method definition and the fallback to
+    # basic assertEqual
+    #######################################################
+    if timeout:
+
+        @timeout(TIMEOUT_MAXTIME_TO_ALLOW)
+        def assertEqualTimed(self, exp, got, message=None):
+            """ comparisons will automatically times out after %s seconds""" % (
+                TIMEOUT_MAXTIME_TO_ALLOW
+            )
+            self.assertEqual(exp, got, message)
+
+    else:
+        #
+        def assertEqualTimed(self, exp, got, message=None):
+            self.assertEqual(exp, got, message)
