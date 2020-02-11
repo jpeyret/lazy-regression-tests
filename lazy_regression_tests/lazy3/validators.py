@@ -83,9 +83,27 @@ class Validator:
 
         if self.sourcename is None:
             source_ = testee
+            r
 
         else:
-            source_ = getpath(sources, self.sourcename)
+            if "." in self.sourcename:
+                try:
+                    source_ = getpath(sources, self.sourcename)
+                # pragma: no cover pylint: disable=unused-variable
+                except (AttributeError,) as e:
+                    raise ValueError(
+                        "%s expects source:%s: which is not in the provided %s"
+                        % (self, self.sourcename, ",".join(sources.keys()))
+                    )
+            else:
+                try:
+                    source_ = sources[self.sourcename]
+                # pragma: no cover pylint: disable=unused-variable
+                except (KeyError,) as e:
+                    raise ValueError(
+                        "%s expects source:%s: which is not in the provided %s"
+                        % (self, self.sourcename, ",".join(sources.keys()))
+                    )
 
         if source_ is None:
             raise ValueError(

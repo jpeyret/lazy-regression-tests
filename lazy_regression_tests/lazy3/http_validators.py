@@ -6,6 +6,7 @@ from .validators import (
     MixinExpInGot,
     HeadersValidator,
     Validator,
+    AttrNamedDictValidator,
 )
 
 
