@@ -1,10 +1,11 @@
+import pdb
+
 from .validators import (
     ValidationManager,
     ValidationDirective,
     NamedTesteeAttributeValidator,
     FullyQualifiedNamesValidator,
     MixinExpInGot,
-    HeadersValidator,
     Validator,
     AttrNamedDictValidator,
 )
@@ -20,30 +21,36 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests.utils import (
-    nested_dict_get,
-    nested_dict_pop,
-    first,
-    fill_template,
-    ppp,
-)
+from lazy_regression_tests.utils import first, fill_template, ppp
+
+
+class HeadersValidator(AttrNamedDictValidator):
+    """specifies source for HTTP headers """
+
+    sourcename = "response.headers"
 
 
 class ContentTypeValidator(
     FullyQualifiedNamesValidator, MixinExpInGot, HeadersValidator
 ):
+    """ check response headers for content type.   
+        not that `exp` is checked for being within the actual content type, not for equality
+        exp:json matches application/json
+    """
+
     selector = "content-type"
 
 
 class StatusCodeValidator(NamedTesteeAttributeValidator):
+    """ check an http status code .  you can provide 
+        multiple codes in exp, ex: `exp = [200,302, "404"]`
+    """
+
     sourcename = "response"
     selector = "status_code"
 
     def test(self, testee, exp, got, message):
         try:
-
-            if exp is undefined:
-                raise ValueError("exp is undefined")
 
             if message is None:
                 message = fill_template(
@@ -56,11 +63,8 @@ class StatusCodeValidator(NamedTesteeAttributeValidator):
             exp = [int(exp) for exp in exp]
             got = int(got)
 
-            testee.assertTrue(
-                got in exp, "%s , not in expected status_code to %s" % (got, exp)
-            )
+            testee.assertTrue(got in exp, message)
 
-            # testee.assertEqual(exp, got, message)
         except (AssertionError,) as e:  # pragma: no cover
             raise
 
@@ -73,6 +77,19 @@ class StatusCodeValidator(NamedTesteeAttributeValidator):
 
 
 class CSSValidator(Validator):
+    """ responsible for getting DOM data out, typically via Beautifulsoup
+        but anything provising CSS selectors could be used.
+
+        this class expects response to be in sources during check_expectations calls
+        on that it wants a selectable attribute with select on it.
+
+        calling code may look like this.
+
+            response = request.get(url)
+            response.selectable = BeautifulSoup(response.content)
+            self.check_expectations(response=response)
+
+    """
 
     sourcename = "response.selectable"
 
@@ -110,7 +127,7 @@ class TitleCSSValidator(FullyQualifiedNamesValidator, CSSValidator):
 
 
 #######################################################
-#
+# Compose base validations/expectations
 #######################################################
 
 http_validations = ValidationManager("base")
@@ -121,6 +138,11 @@ http_validations.add_directive(
 
 
 class HTTPValidationMixin:
+    """ sets basic expectations 
+        - http is expected to return a status_code, typically 200 (exp can be changed later)
+        - and has a content_type, which changes depending on end points
+    """
+
     cls_validators = http_validations
 
 
@@ -132,8 +154,20 @@ val.add_directive("title", TitleCSSValidator(), active=True)
 
 
 class HTMLValidationMixin(HTTPValidationMixin):
+    """ 
+        - we now our content type now
+        - and we always want to validate titles, by default 
+          but, again, we don't yet know what to expect here.
+
+        add/qualify the expectations on HTTPValidationMixin 
+        mixing and matching validations is done by the metaclass that is connected
+        to LazyMixin
+    """
+
     cls_validators = [html_validations, ValidationDirective("content_type", exp="html")]
 
 
 class JSONValidationMixin(HTTPValidationMixin):
+    """ sets the expected content type to JSON """
+
     cls_validators = [ValidationDirective("content_type", exp="json")]

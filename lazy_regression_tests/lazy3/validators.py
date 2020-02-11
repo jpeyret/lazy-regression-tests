@@ -19,18 +19,14 @@ from typing import (
     Optional,
     # TYPE_CHECKING,
     Any,
-    cast,
 )
 
 
-from lazy_regression_tests.utils import (
-    nested_dict_get,
-    nested_dict_pop,
-    first,
-    fill_template,
-    ppp,
-)
+from lazy_regression_tests.utils import nested_dict_get, first, fill_template, ppp
 
+#######################################################
+# constants
+#######################################################
 
 verbose = "-v" in sys.argv
 
@@ -54,7 +50,11 @@ rpdb = breakpoints = cpdb
 
 
 class Validator:
-    pass
+    """ base validator functionality 
+    - get source during check_expectations, testee is used if sourcename is empty
+    - retrieve got from get_value from the source
+    - call a default assert exp == got
+    """
 
     attrname: str
     sourcename: str
@@ -258,10 +258,6 @@ class AttrNamedDictValidator(DictValidator):
         )
 
 
-class HeadersValidator(AttrNamedDictValidator):
-    sourcename = "response.headers"
-
-
 class MixinExpInGot:
     def test(self, testee, exp, got, message):
 
@@ -414,7 +410,19 @@ class ValidationManager:
                 pdb.set_trace()
             raise
 
-    def check_expectations(self, testee, **sources):
+    def check_expectations(
+        self, testee: "unittest.TestCase", lazy_sourced_only: bool = False, **sources
+    ):
+        """
+        loops through the validation directives and executives them if active
+        errors if exp or validator is missing 
+        :parm sources: a dictionary that provides data for each validator's sourcename
+        note that a validator can leave sourcename empty which means testee is 
+        the source
+        :param lazy_sourced_only: use this if not all sources are ready yet
+
+        """
+
         try:
 
             self.prep_validation()
@@ -423,6 +431,20 @@ class ValidationManager:
                 ppp(self, "check_expectations")
 
             for name, directive in self.validators.items():
+
+                validator = directive.validator
+
+                # sometimes, a test is done in several phases and not all sources are ready
+                if lazy_sourced_only:
+                    # takes into account dotted paths and empty sourcenames which point
+                    # to testee
+                    sourcename = (getattr(validator, "sourcename", "") or "").split(
+                        "."
+                    )[0]
+
+                    if sourcename and not sourcename in sources:
+                        logger.info("unsourced %s" % directive)
+                        continue
 
                 if breakpoints(
                     "check_expectations", {"name": directive.name}
@@ -446,7 +468,7 @@ class ValidationManager:
                 if exp is undefined:
                     raise ValueError("%s has undefined exp" % (directive))
 
-                directive.validator.check(testee, exp, sources)
+                validator.check(testee, exp, sources)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -502,11 +524,11 @@ class ValidationManager:
         self.overrides[name] = directive
 
     def remove_expectation(self, name):
+        """ set an expection's active to False, disabling it """
         try:
             self.set_expectation(name, active=False)
         except (KeyError,) as e:  # pragma: no cover
             logger.warning(e)
-            pass
         except (
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
@@ -514,7 +536,49 @@ class ValidationManager:
                 pdb.set_trace()
             raise
 
-    def set_expectation(self, name, exp=undefined, validator=None, active=None):
+    def set_expectation(
+        self,
+        name,
+        exp=undefined,
+        validator: "Validator" = None,
+        active: Optional[bool] = None,
+    ):
+        """ 
+            note:  set_expectations is the instance-level method, add_directive works at class-level
+
+            besides the name any of the other parameters can be unspecified
+            however, come check_expectations, any `active` directive needs to 
+            have a `validator` and `exp` set.
+
+            :param name: logical name, ex: 'title'  it is used to allow successive
+            adjustments to a given validation
+
+            :param exp:  an expectation, which can pretty anything, a value, a regex to match, a callable...
+
+            :param active: turns the expectation on and off.  left to None, it causes an error if unset
+
+
+            going through the test hierarchy, each class copies expectations 
+            from its mro and then qualifies them as needed.
+
+            a test method has the final say, via `set_expectation`
+
+            for example:
+
+            class SuperClass(LazyMixin):
+            #we want to check the title, but we don't know yet what any request is expected to return
+                cls_validators = ValidationDirective("title", active=True, validator=CSSTitleValidator())
+
+            class Test_1(Superclass):
+                cls_validators = ValidationDirective("title", exp="Always Test1!")
+
+                def test_different_after_all(self):
+                    self.set_expectation("title","different title")
+
+            class Test_DontWannaTestTitle(Superclass):
+                cls_validators = ValidationDirective("title", active=False)
+
+        """
 
         try:
 
@@ -536,14 +600,10 @@ class ValidationManager:
 
             else:
 
-                # pdb.set_trace()
-
                 if active is None:
                     active = not (exp is undefined)
 
                 self._add_override(ValidationDirective(name, validator, exp, active))
-
-                # raise NotImplementedError("%s.set_expectation.withValidator(%s)" % (self, locals()))
 
             if verbose:
                 ppp(self, "after set_expectation")
@@ -564,6 +624,7 @@ class ValidationManager:
         sourcname: str = None,
         selector=None,
     ):
+        """ hmmmm, looks a lot like set_expectations """
 
         try:
 

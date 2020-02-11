@@ -2,11 +2,18 @@ import pdb
 import sys
 import re
 
-from operator import attrgetter
-
+# pylint: disable=unused-import
 from lazy_regression_tests._baseutils import debugObject, ppp, Dummy, getpath
-
 from traceback import print_exc as xp
+
+# pylint: enable=unused-import
+
+
+#######################################################
+# Dependencies
+#######################################################
+
+from bs4 import BeautifulSoup as bs
 
 #######################################################
 # Typing
@@ -250,9 +257,8 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
         try:
             data = bs(data)
             return data
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -278,10 +284,9 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
                 hit.decompose()
 
             return data
-            # raise NotImplementedError("%s.filter(%s)" % (self, ""))
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -305,7 +310,7 @@ class FilterDirective:
             self.name,
             self.filter_,
             self.active,
-            (callback.__name__ if self.callback is not None else None),
+            (self.callback.__name__ if self.callback is not None else None),
         )
 
     def __init__(
@@ -333,9 +338,8 @@ class FilterDirective:
             self.active = active if active in (True, False) else bool(filter_)
             self.callback = callback
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -421,9 +425,8 @@ class FilterManager:
                 data = directive.filter(options, tmp, data, callback)
             return data
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -458,9 +461,8 @@ class FilterManager:
 
             return self
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -489,9 +491,8 @@ class FilterManager:
 
             return self
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
