@@ -5,5 +5,5 @@ from .validators import (
     FullyQualifiedNamesValidator,
     MixinExpInGot,
     HeadersValidator,
-    TitleCSSValidator,
+    ValidationDirective,
 )

@@ -4,6 +4,10 @@ import re
 
 from operator import attrgetter
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from lazy_regression_tests._baseutils import debugObject, ppp, Dummy, getpath
 
 from traceback import print_exc as xp
@@ -247,9 +251,27 @@ class MixinExpInGot:
         if exp is undefined:
             raise ValueError("exp is undefined")
         try:
+
+            if message is None:
+                try:
+                    message = "%s : exp:%s: is not in got:%s:" % (
+                        self,
+                        str(exp),
+                        str(got),
+                    )
+                # pragma: no cover pylint: disable=unused-variable, broad-except
+                except (Exception,) as ignore_:
+                    # well, that didn't work
+                    pass
+
             testee.assertTrue(str(exp) in str(got), message)
             if verbose:
                 logger.info("%s checked %s" % (testee, self))
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (AssertionError,) as e:
+            pdb.set_trace()
+            raise
         except (
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
@@ -275,43 +297,6 @@ class NamedTesteeAttributeValidator(AttributeValidator):
         )
 
 
-class CSSValidator(Validator):
-
-    sourcename = "response.selectable"
-
-    to_text = False
-
-    def __init__(self, selector, scalar=None, to_text=True):
-
-        if scalar is None:
-            scalar = selector.startswith("#")
-
-        super(CSSValidator, self).__init__(
-            selector, scalar=scalar, sourcename=self.sourcename
-        )
-        self.to_text = to_text
-
-    def get_value(self, source):
-
-        found = source.select(self.selector)
-        if self.scalar:
-            found = first(found)
-            if found and self.to_text:
-                return found.text.strip()
-            return found
-        else:
-            if not self.to_text:
-                return found
-            else:
-                return [elem.text.strip() for elem in found]
-
-
-class TitleCSSValidator(FullyQualifiedNamesValidator, CSSValidator):
-    selector = "title"
-    scalar = True
-    to_text = True
-
-
 #######################################################
 # Managers
 #######################################################
@@ -327,7 +312,7 @@ class ValidationDirective:
             self.validator,
         )
 
-    def __init__(self, name, validator, exp, active):
+    def __init__(self, name, validator=None, exp=None, active=None):
         try:
             self.name = name
             self.validator = validator
