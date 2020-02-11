@@ -83,7 +83,6 @@ class Validator:
 
         if self.sourcename is None:
             source_ = testee
-            r
 
         else:
             if "." in self.sourcename:
