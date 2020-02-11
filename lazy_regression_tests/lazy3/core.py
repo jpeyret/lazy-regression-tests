@@ -87,6 +87,44 @@ class LazyChecker:
 
         self.reg_callbacks = {}
 
+    def prep(self, tmp, data):
+        return data
+
+    def to_text(self, tmp, data):
+        return str(data)
+
+    def filter_raw(self, tmp, data):
+        return self.rawfiltermgr.filter(self, tmp, data)
+
+    def filter_text(self, tmp, data):
+        return self.textfiltermgr.filter(self, tmp, data).strip()
+
+    def format(self, tmp, data):
+        try:
+            # used to only format once
+            if (
+                isinstance(data, str)
+                and self.filterhash
+                and self.filterhash == hash(data)
+            ):
+                return data
+
+            data = self.prep(tmp, data)
+            data = self.filter_raw(tmp, data)
+            str_data = self.to_text(tmp, data)
+            str_data = self.filter_text(tmp, str_data)
+
+            self.filterhash = hash(str_data)
+
+            return str_data
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                ppp(self, self)
+                pdb.set_trace()
+            raise
+
 
 class LazyTemp(object):
     def __repr__(self):
@@ -97,8 +135,23 @@ class LazyTemp(object):
         self.fnp_exp = self.fnp_got = None
         self.env = env.copy()
         self.message = ""
-        self.filterhits = {}
+        self.filtered = Dummy()
         self.testee = testee
+
+    def add_filtered(self, name, value, scalar):
+        """ each filter saves what it finds here """
+        try:
+            if scalar:
+                setattr(self.filtered, name, value)
+            else:
+                li = getattr(self.filtered, name, [])
+                li.append(value)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
 
 class MediatedEnvironDict(dict):
@@ -452,7 +505,7 @@ class LazyMixin(metaclass=_LazyMeta):
             if hasattr(filter_, "prep"):
                 checker.prep = filter_.prep
 
-            return self._check(self, got, checker, suffix)
+            return self._check(got, checker, suffix)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -463,7 +516,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
-    def _check(self, got: Any, filter: "FilterManager", suffix: str = ""):
+    def _check(self, got: Any, options: LazyChecker, suffix: str = ""):
 
         try:
             env = self.lazy_environ

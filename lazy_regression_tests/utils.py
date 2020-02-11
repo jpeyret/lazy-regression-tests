@@ -18,6 +18,7 @@ from lazy_regression_tests._baseutils import (
     nested_dict_get,
     nested_dict_pop,
     first,
+    DictFormatter,
 )
 
 from traceback import print_exc as xp  # pylint: disable=unused-import

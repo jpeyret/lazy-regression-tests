@@ -27,6 +27,7 @@ from lazy_regression_tests.utils import (
     ppp,
     RescueDict,
     Subber,
+    DictFormatter,
 )
 
 
@@ -61,16 +62,15 @@ class DataMatcher(object):
     name = None
     scalar = False
 
+    def format_filtered_hook(self, value):
+        return value
+
     def add_to_filter_hit(self, tmp, value):
         try:
-            if self.scalar:
-                tmp.filterhits[self.name] = value
-            else:
-                li = tmp.filterhits.setdefault(self.name, [])
-                if not isinstance(li, list):
-                    return
 
-                li.append(value)
+            value = self.format_filtered_hook(value)
+
+            tmp.add_filtered(self.name, value, self.scalar)
         except (
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
@@ -110,6 +110,26 @@ class RegexMatcher(TextFilter, DataMatcher):
             return self
 
 
+class DictStripper(RawFilter, DataMatcher):
+    def __init__(self, dict_: dict, name: str):
+        self.dict_ = dict_
+        self.name = name
+        self.formatter = DictFormatter(di_default_formatter=dict_)
+
+    def filter(self, options, tmp, data, callback=None):
+        try:
+            keep = {}
+            data = self.formatter.process(data, keep=keep, in_place=False)
+            self.add_to_filter_hit(tmp, keep)
+            return data
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
 class RegexFilter(RegexMatcher):
     def process_line(self, hit, line):
         try:
@@ -123,7 +143,7 @@ class RegexFilter(RegexMatcher):
                 pdb.set_trace()
             raise
 
-    def filter(self, options, tmp, data, callback):
+    def filter(self, options, tmp, data, callback=None):
 
         li = []
 
@@ -189,7 +209,7 @@ class RegexSubstitHardcoded(RegexFilter):
 class RegexRemoveSaver(RegexMatcher):
     """this will remove the matching line but also save it"""
 
-    def filter(self, options, tmp, data, callback):
+    def filter(self, options, tmp, data, callback=None):
 
         li = []
 
@@ -228,13 +248,13 @@ class FilterDirective:
         
     """
 
-    name = filter = active = callback = None
+    name = filter_ = active = callback = None
 
     def __repr__(self):
         return "%s:%s active:%s callback=%s with %s\n" % (
             self.__class__.__name__,
             self.name,
-            self.filter,
+            self.filter_,
             self.active,
             (callback.__name__ if self.callback is not None else None),
         )
@@ -252,13 +272,15 @@ class FilterDirective:
 
             assert active is None or isinstance(active, bool)
 
-            assert filter_ is None or isinstance(filter_, DataMatcher)
+            assert filter_ is None or isinstance(
+                filter_, DataMatcher
+            ), "unexpected filter_ type: %s" % (filter_)
 
             assert callback is None or callable(callback)
 
             self.raw = getattr(filter_, "raw", False)
 
-            self.filter = filter_
+            self.filter_ = filter_
             self.active = active if active in (True, False) else bool(filter_)
             self.callback = callback
 
@@ -269,10 +291,13 @@ class FilterDirective:
                 pdb.set_trace()
             raise
 
+    def filter(self, *args, **kwargs):
+        return self.filter_.filter(*args, **kwargs)
+
     def copy(self):
         return self.__class__(
             name=self.name,
-            filter_=self.filter,
+            filter_=self.filter_,
             active=self.active,
             callback=self.callback,
         )
@@ -309,7 +334,7 @@ class FilterManager:
                 if directive.active is not True:
                     continue
 
-                filter_ = directive.filter
+                filter_ = directive.filter_
 
                 if filter_ is None:
                     raise ValueError(
@@ -328,16 +353,6 @@ class FilterManager:
 
             return rawfiltermgr, textfiltermgr
 
-            # raws = []
-            # texts = []
-
-            # for key, filter_ in self.filters.items():
-            #     if filter_.raw:
-            #         raws.append(filter_)
-            #     else:
-            #         texts.append(filter_)
-
-            # return (raws, texts)
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():

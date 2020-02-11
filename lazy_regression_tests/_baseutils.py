@@ -752,7 +752,7 @@ class DictFormatter:
     """
 
     def __repr__(self):
-        return "%s[%s]" % (self.__class__.__name__, stuff)
+        return "%s" % (self.__class__.__name__)
 
     def del_dict_item(self, di: dict, key: Any, value: Any):
         di.pop(key, None)
@@ -763,7 +763,16 @@ class DictFormatter:
     def __init__(self, di_default_formatter=None):
         self.di_default_formatter = di_default_formatter
 
-    def process(self, di_in, di_formatter=None, in_place=False, f_default=None):
+    def process(
+        self,
+        di_in,
+        di_formatter=None,
+        in_place=False,
+        f_default=None,
+        li_path=[],
+        keep: dict = None,
+    ):
+
         try:
             di = di_in if in_place else di_in.copy()
 
@@ -794,13 +803,22 @@ class DictFormatter:
                         if hit:
                             v = di.get(di_key, undefined)
                             if callable(func_fmt):
+                                if keep is not None:
+                                    keep[di_key] = v
+
                                 di = func_fmt(di, di_key, v)
                             elif isinstance(func_fmt, dict):
-                                di = self(
+                                if keep is not None:
+
+                                    childkeep = keep[di_key] = {}
+                                else:
+                                    childkeep = None
+                                di = self.process(
                                     di,
                                     di_formatter=func_fmt,
                                     f_default=f_default,
                                     in_place=True,
+                                    keep=childkeep,
                                 )
                             else:
                                 raise NotImplementedError(
@@ -812,14 +830,50 @@ class DictFormatter:
                 if v is undefined:
                     continue
 
-                if callable(func_fmt):
-                    di = func_fmt(di, key, v)
-                elif isinstance(func_fmt, dict):
-                    di = self(
-                        di, di_formatter=func_fmt, f_default=f_default, in_place=True
-                    )
+                elif isinstance(v, dict):
+
+                    # if rpdb(): # pragma: no cover
+                    #     pdb.set_trace()
+
+                    func_fmt = di_formatter[key]
+                    if isinstance(func_fmt, dict):
+
+                        if keep is not None:
+                            childkeep = keep[key] = {}
+                            # pdb.set_trace()
+                        else:
+                            childkeep = None
+
+                        self.process(
+                            v,
+                            di_formatter=func_fmt,
+                            f_default=f_default,
+                            in_place=True,
+                            keep=childkeep,
+                        )
+                    else:
+                        if keep is not None:
+                            keep[key] = v.copy()
+                        if callable(func_fmt):
+                            di[key] = func_fmt(di, key, v)
+                        else:
+                            del di[key]
+
                 else:
-                    raise NotImplementedError("%s.process(%s)" % (self, locals()))
+                    # if the formatter is a dict, then only a value
+                    # that is a dict should strip, by recursion
+                    # this is not the case here
+                    func_fmt = di_formatter[key]
+                    if isinstance(func_fmt, dict):
+                        continue
+
+                    if keep is not None:
+                        keep[key] = v
+
+                    if callable(func_fmt):
+                        di = func_fmt(di, key, v)
+                    else:
+                        del di[key]
 
             return di
 
