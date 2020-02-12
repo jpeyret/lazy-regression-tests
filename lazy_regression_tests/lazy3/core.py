@@ -53,6 +53,10 @@ from traceback import print_exc as xp
 from .validators import ValidationManager, NamedTesteeAttributeValidator
 from .filters import build_filters_for_class, FilterManager
 
+# aliasing the JSON response filter management to DictFilterManager as there is
+# very little that is HTTP specific
+from .http_validators import JsonFilterManager as DictFilterManager
+
 from lazy_regression_tests.utils import (
     # MediatedEnvironDict,
     undefined,

@@ -1,4 +1,11 @@
 import pdb
+import json
+
+#######################################################
+# Dependencies
+#######################################################
+
+from bs4 import BeautifulSoup as bs
 
 from .validators import (
     ValidationManager,
@@ -9,6 +16,8 @@ from .validators import (
     Validator,
     AttrNamedDictValidator,
 )
+
+from .filters import FilterManager
 
 
 undefined = NotImplemented
@@ -171,3 +180,59 @@ class JSONValidationMixin(HTTPValidationMixin):
     """ sets the expected content type to JSON """
 
     cls_validators = [ValidationDirective("content_type", exp="json")]
+
+
+class HtmlFilterManager(FilterManager):
+    """Filter Manager for HTML"""
+
+    def prep(self, tmp, data):
+        try:
+            if hasattr(data, "select"):
+                return data
+            else:
+                return bs(data)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def to_text(self, tmp, data):
+        try:
+            # pdb.set_trace()
+            return data.prettify()
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class JsonFilterManager(FilterManager):
+    """Filter Manager for JSON/dict content"""
+
+    def prep(self, tmp, data):
+        try:
+            if isinstance(data, dict):
+                return data
+            elif isinstance(data, str):
+                return json.loads(data)
+            else:
+                raise NotImplementedError(
+                    "%s.prep:unsupported data type:%s" % (self, type(data))
+                )
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def to_text(self, tmp, data):
+        try:
+            return json.dumps(data, sort_keys=True, indent=4)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise

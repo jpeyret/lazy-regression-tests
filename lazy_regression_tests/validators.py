@@ -25,7 +25,7 @@ except (ImportErrro,) as e:  # pragma: no cover
 #######################################################
 # constants
 #######################################################
-undefined = Ellipsis
+undefined = NotImplemented
 
 verbose = "-v" in sys.argv
 

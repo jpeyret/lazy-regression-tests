@@ -28,7 +28,7 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-undefined = Ellipsis
+undefined = NotImplemented
 
 ###################################################################
 # Python 2 to 3.  !!!TODO!!!p4- Simplify after Python support ends.

@@ -25,7 +25,7 @@ from functools import partial, wraps
 
 logger = logging.getLogger(__name__)
 
-undefined = Ellipsis
+undefined = NotImplemented
 
 from typing import List, Any, Tuple, Iterable
 
