@@ -117,7 +117,10 @@ class RegexMatcher(TextFilter, DataMatcher):
             return self
 
 
-class DictStripper(RawFilter, DataMatcher):
+class DictFilter(RawFilter, DataMatcher):
+    def __repr__(self):
+        return "%s[%s]=%s" % (self.__class__.__name__, self.name, self.dict_)
+
     def __init__(self, dict_: dict, name: str):
         self.dict_ = dict_
         self.name = name
@@ -365,10 +368,12 @@ class FilterManager:
     def __repr__(self):
 
         sub = dict(
-            id_="id=%s" % id(self) if verbose else "", name=self.__class__.__name__
+            id_="id=%s" % id(self) if verbose else "",
+            name=self.__class__.__name__,
+            filters=sorted(self.filters.keys()),
         )
 
-        tmpl = "%(name)s[%(id_s)s] filters=%(filters)s"  # % (sub, self)
+        tmpl = "%(name)s[%(id_)s] filters=%(filters)s"  # % (sub, self)
 
         return fill_template(tmpl, sub, self, RescueDict())
 
@@ -416,12 +421,14 @@ class FilterManager:
         """applies its filters to incoming data"""
         try:
 
+            callbacks = getattr(options, "reg_callbacks", {})
+
             for directive in self.filters.values():
 
                 if not directive.active:
                     continue
 
-                callback = options.reg_callbacks.get(directive.name)
+                callback = callbacks.get(directive.name)
                 data = directive.filter(options, tmp, data, callback)
             return data
 
@@ -451,6 +458,9 @@ class FilterManager:
                 self += directive
 
             elif isinstance(name, FilterManager):
+
+                # hmmm, wonder if we could override the FilterManager class here....
+
                 for directive in name.filters.values():
                     self += directive.copy()
             else:
@@ -521,24 +531,88 @@ def build_filters_for_class(cls, li_ancestor_filter):
     """build filters for class, before instance overrides"""
     try:
 
+        classname = cls.__name__
+        print("cls.__name__:%s" % (classname))
+
+        # breakpoints dont work for now as the class defs are an import time execution
+        # not a call time execution
+        if breakpoints(
+            "build_filters_for_class", dict(classname=classname)
+        ):  # pragma: no cover
+            pdb.set_trace()
+
         # remember, the mro for a class includes the class itself
         if not li_ancestor_filter:
             return {}
 
-        last_ = li_ancestor_filter[-1]
+        if len(li_ancestor_filter) == 0:
+            raise NotImplementedError("%s.build_filters_for_class(%s)" % (cls, {}))
 
-        if last_ is getattr(cls, "cls_filters", None):
+        if len(li_ancestor_filter) >= 1:
+
+            # first, build a set of all extensions
+            s_extension = set()
+            for di in li_ancestor_filter:
+                s_extension |= set(di.keys())
+
+            print(f"👉s_extension:{s_extension}")
+
+            finals = getattr(cls, "cls_filters", {})
+
+            print(f"👉finals:cls.cls_filters:{finals}")
+
+            ancestors = li_ancestor_filter
+
+            res = {}
+
+            for extension in s_extension:
+                li = [di.get(extension) for di in ancestors]
+                li = [di for di in li if di]
+                print(f"  {extension}:mro:{li}")
+
+                mgr_cls = None
+                mgr = finals.get(extension)
+
+                if not isinstance(mgr, FilterManager):
+                    print(f"\n\n\n👉 {classname} mgr_cls:{mgr} not a FilterManager")
+                    # pdb.set_trace()
+
+                    mgr = None
+                    for cand in li:
+                        if isinstance(cand, FilterManager):
+                            mgr = cand
+
+                    mgr_cls = mgr.__class__ if mgr else FilterManager
+
+                else:
+                    mgr_cls = mgr.__class__
+
+                    # raise NotImplementedError("%s.build_filters_for_class(%s)" % (cls, locals()))
+
+                mgr_cls = mgr_cls or FilterManager
+
+                # print(
+                #     f"👉serious business@{extension}:mgr_cls:{mgr_cls} w input:{li}"
+                # )
+                newfilter = mgr_cls()
+                for directive3 in li:
+                    if not isinstance(directive3, list):
+                        directive2 = [directive3]
+                    else:
+                        directive2 = directive3
+
+                    for directive in directive2:
+                        newfilter.set_filter(directive)
+
+                # print(f"  👉{extension}:reset to {newfilter}")
+                res[extension] = newfilter
+
+            return res
+            # pdb.set_trace()
+
+        else:
             return last_
 
-        first_filt = first(li_ancestor_filter)
-
-        di_debug = dict(
-            first_filt_keys=first_filt.keys(), len_first_filt=len(first_filt)
-        )
-
-        raise NotImplementedError(
-            "build_filters_for_class(%s):\ndi_debug:%s" % (cls.__name__, di_debug)
-        )
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if 1 or rpdb() or cpdb():
