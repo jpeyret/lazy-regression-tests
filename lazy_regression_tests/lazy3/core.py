@@ -1,10 +1,12 @@
 import pdb
 import os
+import sys
 
 from pathlib import Path
 
 undefined = NotImplemented
 
+verbose = "-v" in sys.argv
 
 #######################################################
 # Typing
@@ -50,7 +52,11 @@ from lazy_regression_tests._baseutils import debugObject, ppp, Dummy
 
 from traceback import print_exc as xp
 
-from .validators import ValidationManager, NamedTesteeAttributeValidator
+from .validators import (
+    ValidationManager,
+    NamedTesteeAttributeValidator,
+    build_validators_for_class,
+)
 from .filters import build_filters_for_class, FilterManager
 
 # aliasing the JSON response filter management to DictFilterManager as there is
@@ -74,6 +80,12 @@ from lazy_regression_tests.utils import (
 
 
 class LazyChecker:
+
+    extension = "?"
+
+    def __repr__(self):
+        return "%s[%s]" % (self.__class__.__name__, self.extension)
+
     def __init__(
         self,
         extension: str,
@@ -241,50 +253,32 @@ class _LazyMeta(type):
         intercepting the newly created class allows stacking of the 
         ancestral validators and formatters in reverse mro order
         i.e. top of ancestors go first
-
-        👆 TODO: filters too
-
         """
 
         try:
 
+            classname = cls.__name__
+
             # we want to build out the validators by running the basic ancestral ones first
             # ex:  check status=200 and content_type = html before checking <title>
-            li_bases2current = reversed(cls.mro())
-
-            # pick _this_ class's validators
-            li_ori = getattr(cls, "cls_validators", [])
-            if li_ori and not isinstance(li_ori, list):
-                li_ori = [li_ori]
-            else:
-                li_ori = li_ori.copy()
-
-            li_new = []
+            li_bases2current = list(reversed(cls.mro()))
 
             li_ancestor_filter = []
 
-            # and now add the bases' validators
             for basecls in li_bases2current:
-                validators = getattr(basecls, "cls_validators", [])
 
                 cls_filters = getattr(basecls, "cls_filters", {})
 
                 if cls_filters:
                     li_ancestor_filter.append(cls_filters)
 
-                if validators:
-                    if not isinstance(validators, list):
-                        validators = [validators]
-                    li_new.extend(validators)
-
-            cls.cls_validators = li_new + li_ori
-
-            #!!!TODO!!! 049.lazy.026.lazy3 👇
-            # add same for filters, by extension
+            cls.cls_validators = build_validators_for_class(cls, li_bases2current)
+            if verbose:
+                print(
+                    f"👉 class:{classname}.cls_validators:{cls.cls_validators}, cls_validators:{cls.cls_validators}"
+                )
 
             cls.cls_filters = build_filters_for_class(cls, li_ancestor_filter)
-
-            #!!!TODO!!! 049.lazy.026.lazy3 👆
 
             return super().__init__(name, bases, attrs)
 
