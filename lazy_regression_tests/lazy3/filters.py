@@ -367,10 +367,16 @@ class FilterManager:
 
     def __repr__(self):
 
+        try:
+            filters = sorted(self.filters.keys())
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            filters = self.filters
+
         sub = dict(
             id_="id=%s" % id(self) if verbose else "",
             name=self.__class__.__name__,
-            filters=sorted(self.filters.keys()),
+            filters=filters,
         )
 
         tmpl = "%(name)s[%(id_)s] filters=%(filters)s"  # % (sub, self)
