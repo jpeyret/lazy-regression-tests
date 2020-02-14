@@ -236,10 +236,10 @@ class FullyQualifiedNamesValidator(Validator):
 
 
 class DictValidator(Validator):
-    def get_value(self, source):
+    def get_value(self, source_):
         """ get the value from  """
         try:
-            res = nested_dict_get(source, self.selector)
+            res = nested_dict_get(source_, self.selector)
             return res
         except (KeyError,) as e:  # pragma: no cover
             raise
