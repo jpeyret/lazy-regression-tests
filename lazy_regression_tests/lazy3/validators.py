@@ -20,6 +20,7 @@ from typing import (
     Optional,
     # TYPE_CHECKING,
     Any,
+    Union,
 )
 
 
@@ -30,6 +31,7 @@ from lazy_regression_tests.utils import (
     ppp,
     debug_write_validation_log,
 )
+
 
 #######################################################
 # constants
@@ -49,6 +51,75 @@ def cpdb(*args, **kwargs):
 
 
 rpdb = breakpoints = cpdb
+
+
+class AutoExp:
+    """ this class can be used to specify exp in 2 ways 
+
+        at class level, `directive.exp is AutoExp` means that 
+
+            directive.exp = getattr(testee, directive.name)
+
+        at instance level `isistance(directive.exp, Autoexp)` will:
+
+            for path in directive.exp.paths:
+                try:
+
+    """
+
+    required = True
+
+    @classmethod
+    def get_exp_by_name(cls, testee, name):
+        try:
+            return getpath(testee, name)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def get_exp(cls, testee):
+        try:
+
+            for path in self.paths:
+                try:
+                    return getpath(testee, path)
+                # pragma: no cover pylint: disable=unused-variable
+                except (AttributeError,) as e:
+                    pass
+            else:
+                raise AttributeError(self.paths)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def __init__(self, paths: Union[list, tuple, str]):
+        try:
+            if isinstance(paths, tuple):
+
+                self.paths = paths
+
+            elif isinstance(paths, list):
+                self.paths = tuple(list)
+
+            elif isinstance(paths, str):
+                self.paths = (paths,)
+
+            else:
+                TypeError("%s.__init__:paths should be tuple, list or str of str")
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class OptAutoExp(AutoExp):
+    required = False
 
 
 #######################################################
@@ -382,15 +453,34 @@ class ValidationManager:
         try:
 
             for name, directive in self.validators.items():
-                # pdb.set_trace()
 
-                if directive.exp is undefined and not name in self.overrides:
-                    # pdb.set_trace()
-                    logger.info("directive %s is undefined" % (name))
+                if directive.exp in (AutoExp, OptAutoExp):
+                    try:
+                        directive.exp = directive.exp.get_exp_by_name(testee, name)
+                        continue
+                    except (AttributeError,) as e:
+                        if not directive.exp.required:
+                            if not name in self.overrides:
+                                logger.info("deactivating %s" % (name))
+                                directive.active = False
+                            else:
+                                directive.exp = undefined
+                            continue
+                        raise
 
-                    exp = getattr(testee, name, undefined)
-                    if exp is not undefined:
-                        directive.exp = exp
+                elif isinstance(directive.exp, AutoExp):
+                    try:
+                        directive.exp = directive.exp.get_exp(testee)
+                        continue
+                    except (AttributeError,) as e:
+                        if not directive.exp.required:
+                            if not name in self.overrides:
+                                logger.info("deactivating %s" % (name))
+                                directive.active = False
+                            else:
+                                directive.exp = undefined
+                            continue
+                        raise
 
             if self.overrides:
 
