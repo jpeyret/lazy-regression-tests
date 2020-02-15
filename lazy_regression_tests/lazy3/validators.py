@@ -79,7 +79,7 @@ class AutoExp:
                 pdb.set_trace()
             raise
 
-    def get_exp(cls, testee):
+    def get_exp(self, testee):
         try:
 
             for path in self.paths:
