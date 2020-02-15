@@ -210,7 +210,16 @@ class Validator:
         try:
 
             source_ = source_ or self.get_source(testee, **sources)
-            got = self.get_value(source_)
+            try:
+                got = self.get_value(source_)
+            # pragma: no cover pylint: disable=unused-variable
+            except (KeyError, AttributeError) as e:
+                testee.fail(
+                    "%s.validation error: could not access data in source %s"
+                    % (self, e)
+                )
+                return
+
             message = (
                 fill_template(t_message, locals(), testee, self) if t_message else None
             )
