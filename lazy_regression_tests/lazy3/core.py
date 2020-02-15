@@ -332,11 +332,13 @@ class LazyMixin(metaclass=_LazyMeta):
 
     def preformat(self, data, options: "LazyCheckerOptions"):
 
-        pdb.set_trace()
-
-        return  # 🧨049.lazy.026.lazy3
+        # return  # 🧨049.lazy.026.lazy3
 
         try:
+
+            raise NotImplementedError(
+                "%s.preformat(%s)" % (self, "🧟‍♂️🧟‍♂️🧟‍♂️ dead code 🧟‍♂️🧟‍♂️🧟‍♂️")
+            )
 
             env = self.lazy_environ
             if not self.lazy_environ.acquired:
@@ -359,15 +361,28 @@ class LazyMixin(metaclass=_LazyMeta):
 
     def _lazy_get_t_dirname(self, exp_got, subber):
 
-        env_name = dict(exp="template_dirname_exp", got="template_dirname_got")[exp_got]
-        dirname = self.control.env[env_name]
+        try:
 
-        dirname2 = os.path.join(dirname, subber.get("classname"))
+            env_name = dict(exp="template_dirname_exp", got="template_dirname_got")[
+                exp_got
+            ]
+            dirname = subber.get("dirname") or self.control.env[env_name]
 
-        return dirname2
+            dirname2 = os.path.join(dirname, subber.get("classname"))
+
+            return dirname2
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
     def _get_fnp_save(
-        self, exp_got: Union["got", "exp"], options: str, suffix: Optional[str]
+        self,
+        exp_got: Union["got", "exp"],
+        options: "LazyChecker",
+        suffix: Optional[str],
     ):
         """get the save path"""
 
