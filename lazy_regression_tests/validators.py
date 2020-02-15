@@ -11,6 +11,7 @@ from typing import (
 from operator import attrgetter
 import sys
 import re
+import os
 
 from traceback import print_exc as xp  # pylint: disable=unused-import
 
@@ -67,6 +68,7 @@ from lazy_regression_tests.utils import (
     first,
     fill_template,
     ppp,
+    debug_write_validation_log,
 )
 
 
@@ -442,9 +444,39 @@ class ValidationManager:
             self.prep_validation()
 
             if verbose:
-                ppp(self, "check_expectations")
+                print("🔬🧟‍♂️🧟‍♂️🧟‍♂️049.lazy.026.lazy3")
+                # if cpdb(): pdb.set_trace()
 
+                if not hasattr(self, "fnp_val_log"):
+
+                    dn_o = os.path.join(
+                        os.environ["lzrt_template_dirname_got"], "v2.validations"
+                    )
+
+                    if not os.path.exists(dn_o):
+                        os.makedirs(dn_o)
+
+                    filename = testee.lazy_filename
+                    di_sub = dict(
+                        filename=filename.rstrip("v2"),
+                        dn_o=dn_o,
+                        classname=testee.__class__.__name__,
+                    )
+
+                    t_fnp = "%(lazy_filename)s.%(classname)s.%(_testMethodName)s.txt"
+                    self.fnp_val_log = os.path.join(
+                        dn_o, fill_template(t_fnp, di_sub, testee)
+                    )
+
+            # if verbose:
+            #     ppp(self, "check_expectations")
+
+            seen = set()
             for name, directive in self.validators.items():
+
+                logname = name
+                if name == "content_type":
+                    logname = "%s=%s" % (name, directive.exp)
 
                 if breakpoints(
                     "check_expectations", {"name": directive.name}
@@ -453,6 +485,7 @@ class ValidationManager:
 
                 if not directive.active or directive.active is undefined:
                     logger.info("inactive %s" % (directive))
+                    seen.add("%s.inactive" % (logname))
                     continue
 
                 exp = directive.exp
@@ -468,7 +501,11 @@ class ValidationManager:
                 if exp is undefined:
                     raise ValueError("%s has undefined exp" % (directive))
 
+                seen.add(logname)
                 directive.validator.check(testee, exp)
+
+            if verbose:
+                debug_write_validation_log(self.fnp_val_log, seen)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise

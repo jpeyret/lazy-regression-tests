@@ -1,6 +1,7 @@
 import pdb
 import sys
 import re
+import os
 
 from operator import attrgetter
 
@@ -22,7 +23,13 @@ from typing import (
 )
 
 
-from lazy_regression_tests.utils import nested_dict_get, first, fill_template, ppp
+from lazy_regression_tests.utils import (
+    nested_dict_get,
+    first,
+    fill_template,
+    ppp,
+    debug_write_validation_log,
+)
 
 #######################################################
 # constants
@@ -371,8 +378,20 @@ class ValidationManager:
             elif isinstance(validatormgr, ValidationManager):
                 self.inject(validatormgr)
 
-    def prep_validation(self):
+    def prep_validation(self, testee):
         try:
+
+            for name, directive in self.validators.items():
+                # pdb.set_trace()
+
+                if directive.exp is undefined and not name in self.overrides:
+                    # pdb.set_trace()
+                    logger.info("directive %s is undefined" % (name))
+
+                    exp = getattr(testee, name, undefined)
+                    if exp is not undefined:
+                        directive.exp = exp
+
             if self.overrides:
 
                 for name, override in self.overrides.items():
@@ -411,7 +430,7 @@ class ValidationManager:
             raise
 
     def check_expectations(
-        self, testee: "unittest.TestCase", lazy_sourced_only: bool = False, **sources
+        self, testee: "unittest.TestCase", lazy_sourced_only: bool = True, **sources
     ):
         """
         loops through the validation directives and executives them if active
@@ -425,14 +444,46 @@ class ValidationManager:
 
         try:
 
-            self.prep_validation()
+            self.prep_validation(testee)
 
             if verbose:
-                ppp(self, "check_expectations")
+                print("🔬🧟‍♂️🧟‍♂️🧟‍♂️049.lazy.026.lazy3")
 
+                if not hasattr(self, "fnp_val_log"):
+
+                    dn_o = os.path.join(
+                        os.environ["lzrt_template_dirname_got"], "v3.validations"
+                    )
+
+                    if not os.path.exists(dn_o):
+                        os.makedirs(dn_o)
+
+                    filename = testee.lazy_filename
+                    # pdb.set_trace()
+                    di_sub = dict(
+                        filename=filename.rstrip("v3"),
+                        dn_o=dn_o,
+                        classname=testee.__class__.__name__,
+                    )
+
+                    t_fnp = "%(filename)s.%(classname)s.%(_testMethodName)s.txt"
+                    self.fnp_val_log = os.path.join(
+                        dn_o, fill_template(t_fnp, di_sub, testee)
+                    )
+
+            seen = set()
             for name, directive in self.validators.items():
 
+                logname = name
+                if name == "content_type":
+                    logname = "%s=%s" % (name, directive.exp)
+
                 validator = directive.validator
+
+                if not directive.active or directive.active is undefined:
+                    logger.info("inactive %s" % (directive))
+                    seen.add("%s.inactive" % (logname))
+                    continue
 
                 # sometimes, a test is done in several phases and not all sources are ready
                 if lazy_sourced_only:
@@ -444,16 +495,13 @@ class ValidationManager:
 
                     if sourcename and not sourcename in sources:
                         logger.info("unsourced %s" % directive)
+                        seen.add("%s.unsourced" % (logname))
                         continue
 
                 if breakpoints(
                     "check_expectations", {"name": directive.name}
                 ):  # pragma: no cover
                     pdb.set_trace()
-
-                if not directive.active or directive.active is undefined:
-                    logger.info("inactive %s" % (directive))
-                    continue
 
                 exp = directive.exp
 
@@ -468,7 +516,11 @@ class ValidationManager:
                 if exp is undefined:
                     raise ValueError("%s has undefined exp" % (directive))
 
+                seen.add(logname)
                 validator.check(testee, exp, sources)
+
+            if verbose:
+                debug_write_validation_log(self.fnp_val_log, seen)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -495,7 +547,7 @@ class ValidationManager:
 
                 if verbose:
                     logger.info("_add_baseline:existing.ante:%s" % (directive))
-                    logger.info("                  directive:%s" % (override))
+                    # logger.info("                  directive:%s" % (override))
 
                 if directive.active is not None:
                     existing.active = directive.active

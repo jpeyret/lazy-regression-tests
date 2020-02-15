@@ -679,3 +679,56 @@ def simple_subber(match, *args, **kwds):
         if cpdb():
             pdb.set_trace()
         raise
+
+
+def debug_write_validation_log(fnp_val_log, seen):
+    try:
+        try:
+            with open(fnp_val_log, "r") as fi:
+                seenb4 = set([line.strip() for line in fi.readlines()])
+                # pdb.set_trace()
+
+            # pragma: no cover pylint: disable=unused-variable
+        except (IOError,) as e:
+            seenb4 = set()
+
+        seenboth = seen | seenb4
+
+        def filter_(seenboth):
+            try:
+                res = set()
+
+                for v in seenboth:
+                    try:
+                        name, problem = v.split(".")
+                        if name in seenboth:
+                            # it worked another time...
+                            continue
+                        res.add(v)
+                    except (ValueError,) as e:
+                        # this is a straight-out success
+                        res.add(v)
+                    # pragma: no cover pylint: disable=unused-variable
+                    except (Exception,) as e:
+                        if cpdb():
+                            pdb.set_trace()
+                        raise
+
+                return res
+
+            # pragma: no cover pylint: disable=unused-variable
+            except (Exception,) as e:
+                if cpdb():
+                    pdb.set_trace()
+                raise
+
+        seenfinal = filter_(seenboth)
+
+        with open(fnp_val_log, "w") as fo:
+            [fo.write("%s\n" % (name)) for name in sorted(seenfinal)]
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            pdb.set_trace()
+        raise
