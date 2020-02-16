@@ -13,6 +13,14 @@ from lazy_regression_tests._baseutils import debugObject, ppp, Dummy, getpath
 
 from traceback import print_exc as xp
 
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
+
+
 #######################################################
 # Typing
 #######################################################
@@ -143,11 +151,12 @@ class Validator:
             getattr(self, "selector", "?"),
         )
 
-    def __init__(self, selector, sourcename: Optional[str], scalar=True):
+    def __init__(self, selector, sourcename: Optional[str], scalar=True, cargo=None):
         try:
             self.selector = selector
             self.sourcename = sourcename
             self.scalar = scalar
+            self.cargo = cargo
 
             assert isinstance(sourcename, str) or sourcename is None
         except (
@@ -214,11 +223,12 @@ class Validator:
                 got = self.get_value(source_)
             # pragma: no cover pylint: disable=unused-variable
             except (KeyError, AttributeError) as e:
-                testee.fail(
+                logger.warning(
                     "%s.validation error: could not access data in source %s"
                     % (self, e)
                 )
-                return
+                # pdb.set_trace()
+                got = undefined
 
             message = (
                 fill_template(t_message, locals(), testee, self) if t_message else None
@@ -529,7 +539,12 @@ class ValidationManager:
             raise
 
     def check_expectations(
-        self, testee: "unittest.TestCase", lazy_sourced_only: bool = True, **sources
+        self,
+        testee: "unittest.TestCase",
+        lazy_skip=None,
+        lazy_skip_except=None,
+        lazy_sourced_only: bool = True,
+        **sources,
     ):
         """
         loops through the validation directives and executives them if active
@@ -570,6 +585,48 @@ class ValidationManager:
                         dn_o, fill_template(t_fnp, di_sub, testee)
                     )
 
+            keep_filter = None
+            if lazy_skip_except:
+                if isinstance(lazy_skip_except, str):
+                    lazy_skip_except = [lazy_skip_except]
+
+                if isinstance(lazy_skip_except, (dict, list, set)):
+
+                    def keep_filter(name):
+                        return name in lazy_skip_except
+
+                elif isinstance(lazy_skip_except, type_regex_hack):
+
+                    def keep_filter(name):
+                        return bool(lazy_skip_except.search(name))
+
+                else:
+                    raise TypeError(
+                        "lazy_skip_except supports dictionary, list, string, set and regex:.got(%s)"
+                        % lazy_skip_except
+                    )
+
+            skip_filter = None
+            if lazy_skip:
+                if isinstance(lazy_skip, str):
+                    lazy_skip = [lazy_skip]
+
+                if isinstance(lazy_skip, (dict, list, set)):
+
+                    def skip_filter(name):
+                        return name in lazy_skip
+
+                elif isinstance(lazy_skip, type_regex_hack):
+
+                    def skip_filter(name):
+                        return bool(lazy_skip.search(name))
+
+                else:
+                    raise TypeError(
+                        "lazy_skip supports dictionary, list, string, set and regex:.got(%s)"
+                        % lazy_skip
+                    )
+
             seen = set()
             for name, directive in self.validators.items():
 
@@ -582,6 +639,14 @@ class ValidationManager:
                 if not directive.active or directive.active is undefined:
                     logger.info("inactive %s" % (directive))
                     seen.add("%s.inactive" % (logname))
+                    continue
+
+                if skip_filter and skip_filter(name):
+                    seen.add("%s.skipped" % (logname))
+                    continue
+
+                if keep_filter and not keep_filter(name):
+                    seen.add("%s.skipped" % (logname))
                     continue
 
                 # sometimes, a test is done in several phases and not all sources are ready
@@ -740,9 +805,15 @@ class ValidationManager:
                     active = exp is not undefined
 
                 if existing is None:
-                    possibles = ",".join(list(self.validators.keys()))
 
+                    possibles = ",".join(list(self.validators.keys()))
                     msg = f"unknown check `{name}`.  known checks are `{possibles}` on `{self}.validators`"
+
+                    if exp is undefined and active is False:
+                        # deactivating an absent validator isn't a big deal
+                        logger.warning("deactivating " + msg)
+                        return
+
                     raise KeyError(msg)
                 else:
                     self._add_override(

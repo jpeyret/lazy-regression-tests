@@ -104,13 +104,13 @@ class CSSValidator(Validator):
 
     to_text = False
 
-    def __init__(self, selector, scalar=None, to_text=True):
+    def __init__(self, selector, scalar=None, to_text=True, cargo=None):
 
         if scalar is None:
             scalar = selector.startswith("#")
 
         super(CSSValidator, self).__init__(
-            selector, scalar=scalar, sourcename=self.sourcename
+            selector, scalar=scalar, sourcename=self.sourcename, cargo=cargo
         )
         self.to_text = to_text
 

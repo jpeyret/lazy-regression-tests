@@ -464,9 +464,17 @@ class LazyMixin(metaclass=_LazyMeta):
 
         return self._filters
 
-    def check_expectations(self, **sources):
+    def check_expectations(
+        self, lazy_skip=None, lazy_skip_except=None, lazy_sourced_only=True, **sources
+    ):
         try:
-            self.validationmgr.check_expectations(self, **sources)
+            self.validationmgr.check_expectations(
+                self,
+                lazy_skip=lazy_skip,
+                lazy_skip_except=lazy_skip_except,
+                lazy_sourced_only=lazy_sourced_only,
+                **sources,
+            )
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
