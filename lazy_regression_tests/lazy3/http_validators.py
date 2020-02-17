@@ -58,12 +58,15 @@ class StatusCodeValidator(NamedTesteeAttributeValidator):
     sourcename = "response"
     selector = "status_code"
 
-    def test(self, testee, exp, got, message):
+    def test(self, testee, exp, got, message, name=None):
         try:
 
             if message is None:
                 message = fill_template(
-                    "%(name)s exp:%(exp)s<>%(got)s:got", locals(), self, {"name": self}
+                    "%(name)s exp:%(exp)s<>%(got)s:got",
+                    locals(),
+                    self,
+                    {"name": name or self},
                 )
 
             if isinstance(exp, (int, str)):

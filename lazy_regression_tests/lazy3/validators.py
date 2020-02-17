@@ -231,6 +231,7 @@ class Validator:
 
     def check(
         self,
+        name: str,
         testee: "LazyMixin",
         exp: Any,
         sources: dict,
@@ -260,14 +261,14 @@ class Validator:
             )
 
             if isinstance(exp, type_regex_hack):
-                self.test_regex(testee, exp, got, message)
+                self.test_regex(testee, exp, got, message, name=name)
                 if verbose:
                     logger.info("%s checked %s" % (testee, self))
 
             elif not callable(exp):
                 if "-v" in sys.argv:
                     print("\n\nvalidator.%s.checking(exp=%s,got=%s)" % (self, exp, got))
-                self.test(testee, exp, got, message)
+                self.test(testee, exp, got, message, name=name)
                 if verbose:
                     logger.info("%s checked %s" % (testee, self))
                 return got
@@ -285,7 +286,7 @@ class Validator:
                 pdb.set_trace()
             raise
 
-    def test_regex(self, testee, exp, got, message):
+    def test_regex(self, testee, exp, got, message, name=None):
         try:
 
             if message is None:
@@ -294,7 +295,7 @@ class Validator:
                     locals(),
                     exp,
                     self,
-                    {"name": self},
+                    {"name": name or self},
                 )
 
             testee.assertTrue(exp.search(str(got)), message)
@@ -306,7 +307,7 @@ class Validator:
                 pdb.set_trace()
             raise
 
-    def test(self, testee, exp, got, message):
+    def test(self, testee, exp, got, message, name=None):
         try:
 
             if exp is undefined:
@@ -314,7 +315,10 @@ class Validator:
 
             if message is None:
                 message = fill_template(
-                    "%(name)s exp:%(exp)s<>%(got)s:got", locals(), self, {"name": self}
+                    "%(name)s exp:%(exp)s<>%(got)s:got",
+                    locals(),
+                    self,
+                    {"name": name or self},
                 )
 
             # correcting for unspecified scalars
@@ -381,7 +385,7 @@ class AttrNamedDictValidator(DictValidator):
 
 
 class MixinExpInGot:
-    def test(self, testee, exp, got, message):
+    def test(self, testee, exp, got, message, name=None):
 
         if exp is undefined:
             raise ValueError("exp is undefined")
@@ -390,7 +394,7 @@ class MixinExpInGot:
             if message is None:
                 try:
                     message = "%s : exp:%s: is not in got:%s:" % (
-                        self,
+                        name or self,
                         str(exp),
                         str(got),
                     )
@@ -738,7 +742,7 @@ class ValidationManager:
                     raise ValueError("%s has undefined exp" % (directive))
 
                 seen.add(logname)
-                validator.check(testee, exp, sources)
+                validator.check(name, testee, exp, sources)
 
             if verbose:
                 debug_write_validation_log(self.fnp_val_log, seen)
