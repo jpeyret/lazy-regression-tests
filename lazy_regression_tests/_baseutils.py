@@ -2,6 +2,7 @@ import sys
 import types
 import re
 
+from traceback import print_exc as xp
 
 #######################################################
 # Typing
@@ -884,3 +885,9 @@ class DictFormatter:
             raise
 
     __call__ = process
+
+
+class InvalidConfigurationException(ValueError):
+    def __init__(self, msg, **kwargs):
+        super(InvalidConfigurationException, self).__init__(msg)
+        self.__dict__.update(kwargs)

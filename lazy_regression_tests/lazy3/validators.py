@@ -9,7 +9,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from lazy_regression_tests._baseutils import debugObject, ppp, Dummy, getpath
+from lazy_regression_tests._baseutils import (
+    debugObject,
+    ppp,
+    Dummy,
+    getpath,
+    InvalidConfigurationException,
+)
 
 from traceback import print_exc as xp
 
@@ -61,6 +67,10 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
+class DoNotCheck:
+    """use this to flag attributes that should not get checked """
+
+
 class AutoExp:
     """ this class can be used to specify exp in 2 ways 
 
@@ -81,7 +91,17 @@ class AutoExp:
     def get_exp_by_name(cls, testee, name):
         try:
             return getpath(testee, name)
+
         # pragma: no cover pylint: disable=unused-variable
+        except (AttributeError,) as e:
+            raise InvalidConfigurationException(
+                "Attribute/Key %s not found on %s but expected via AutoExp.  either disable the validation or add this attribute"
+                % (name, testee),
+                ori=e,
+            )
+
+        # pragma: no cover pylint: disable=unused-variable
+
         except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
@@ -97,7 +117,12 @@ class AutoExp:
                 except (AttributeError,) as e:
                     pass
             else:
-                raise AttributeError(self.paths)
+                # raise AttributeError(self.paths)
+                raise InvalidConfigurationException(
+                    "Attribute/Key %s not found on %s but expected via AutoExp.  either disable the validation or add this attribute"
+                    % (self.paths, testee),
+                    ori=e,
+                )
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
@@ -297,8 +322,8 @@ class Validator:
                 got = first(got)
 
             testee.assertEqual(exp, got, message)
-        except (AssertionError,) as e:  # pragma: no cover
-            raise
+        # except (AssertionError,) as e:  # pragma: no cover
+        #     raise
 
         except (
             Exception,
@@ -468,10 +493,11 @@ class ValidationManager:
             elif isinstance(validatormgr, ValidationManager):
                 self.inject(validatormgr)
 
-    def prep_validation(self, testee):
+    def prep_validation(self, testee, names):
         try:
 
-            for name, directive in self.validators.items():
+            for name in names:
+                directive = self.validators[name]
 
                 if directive.exp in (AutoExp, OptAutoExp):
                     try:
@@ -538,52 +564,15 @@ class ValidationManager:
                 pdb.set_trace()
             raise
 
-    def check_expectations(
+    def _get_names(
         self,
-        testee: "unittest.TestCase",
-        lazy_skip=None,
+        seen: set,
         lazy_skip_except=None,
+        lazy_skip=None,
         lazy_sourced_only: bool = True,
-        **sources,
     ):
-        """
-        loops through the validation directives and executives them if active
-        errors if exp or validator is missing 
-        :parm sources: a dictionary that provides data for each validator's sourcename
-        note that a validator can leave sourcename empty which means testee is 
-        the source
-        :param lazy_sourced_only: use this if not all sources are ready yet
-
-        """
 
         try:
-
-            self.prep_validation(testee)
-
-            if verbose:
-                print("🔬🧟‍♂️🧟‍♂️🧟‍♂️049.lazy.026.lazy3")
-
-                if not hasattr(self, "fnp_val_log"):
-
-                    dn_o = os.path.join(
-                        os.environ["lzrt_template_dirname_got"], "v3.validations"
-                    )
-
-                    if not os.path.exists(dn_o):
-                        os.makedirs(dn_o)
-
-                    filename = testee.lazy_filename
-                    # pdb.set_trace()
-                    di_sub = dict(
-                        filename=filename.rstrip("v3"),
-                        dn_o=dn_o,
-                        classname=testee.__class__.__name__,
-                    )
-
-                    t_fnp = "%(filename)s.%(classname)s.%(_testMethodName)s.txt"
-                    self.fnp_val_log = os.path.join(
-                        dn_o, fill_template(t_fnp, di_sub, testee)
-                    )
 
             keep_filter = None
             if lazy_skip_except:
@@ -627,8 +616,84 @@ class ValidationManager:
                         % lazy_skip
                     )
 
+            res = []
+            for name in self.validators:
+                logname = name
+                if name == "content_type":
+                    directive = self.validators[name]
+                    logname = "%s=%s" % (name, directive.exp)
+
+                if skip_filter and skip_filter(name):
+                    seen.add("%s.skipped" % (logname))
+                    continue
+
+                if keep_filter and not keep_filter(name):
+                    seen.add("%s.skipped" % (logname))
+                    continue
+                res.append(name)
+
+            return res
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def check_expectations(
+        self,
+        testee: "unittest.TestCase",
+        lazy_skip=None,
+        lazy_skip_except=None,
+        lazy_sourced_only: bool = True,
+        **sources,
+    ):
+        """
+        loops through the validation directives and executives them if active
+        errors if exp or validator is missing 
+        :parm sources: a dictionary that provides data for each validator's sourcename
+        note that a validator can leave sourcename empty which means testee is 
+        the source
+        :param lazy_sourced_only: use this if not all sources are ready yet
+
+        """
+
+        try:
+
             seen = set()
-            for name, directive in self.validators.items():
+            names = self._get_names(
+                seen=seen, lazy_skip_except=lazy_skip_except, lazy_skip=lazy_skip
+            )
+
+            self.prep_validation(testee, names)
+
+            if verbose:
+                print("🔬🧟‍♂️🧟‍♂️🧟‍♂️049.lazy.026.lazy3")
+
+                if not hasattr(self, "fnp_val_log"):
+
+                    dn_o = os.path.join(
+                        os.environ["lzrt_template_dirname_got"], "v3.validations"
+                    )
+
+                    if not os.path.exists(dn_o):
+                        os.makedirs(dn_o)
+
+                    filename = testee.lazy_filename
+                    # pdb.set_trace()
+                    di_sub = dict(
+                        filename=filename.rstrip("v3"),
+                        dn_o=dn_o,
+                        classname=testee.__class__.__name__,
+                    )
+
+                    t_fnp = "%(filename)s.%(classname)s.%(_testMethodName)s.txt"
+                    self.fnp_val_log = os.path.join(
+                        dn_o, fill_template(t_fnp, di_sub, testee)
+                    )
+
+            for name in names:
+                directive = self.validators[name]
 
                 logname = name
                 if name == "content_type":
@@ -639,14 +704,6 @@ class ValidationManager:
                 if not directive.active or directive.active is undefined:
                     logger.info("inactive %s" % (directive))
                     seen.add("%s.inactive" % (logname))
-                    continue
-
-                if skip_filter and skip_filter(name):
-                    seen.add("%s.skipped" % (logname))
-                    continue
-
-                if keep_filter and not keep_filter(name):
-                    seen.add("%s.skipped" % (logname))
                     continue
 
                 # sometimes, a test is done in several phases and not all sources are ready

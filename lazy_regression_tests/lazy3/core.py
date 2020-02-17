@@ -496,7 +496,7 @@ class LazyMixin(metaclass=_LazyMeta):
     # diff-related
     #######################################################
 
-    def assert_exp(self, got: Any, extension: str, suffix: str = ""):
+    def assert_exp(self, got: Any, extension: str, suffix: str = "") -> LazyTemp:
 
         # 🔬 this is the v2 path
 
@@ -537,7 +537,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
-    def _check(self, got: Any, options: LazyChecker, suffix: str = ""):
+    def _check(self, got: Any, options: LazyChecker, suffix: str = "") -> LazyTemp:
 
         try:
             env = self.lazy_environ
@@ -571,7 +571,7 @@ class LazyMixin(metaclass=_LazyMeta):
             if control.baseline():
                 with open(fnp_exp, "w") as fo:
                     fo.write(formatted_got)
-                return
+                return tmp
 
             try:
                 with open(fnp_exp) as fi:
@@ -583,7 +583,7 @@ class LazyMixin(metaclass=_LazyMeta):
                     tmp.message = message = "no check because IOError on %s" % (fnp_exp)
                     with open(fnp_exp, "w") as fo:
                         fo.write(formatted_got)
-                    return
+                    return tmp
                 else:
                     raise
 
