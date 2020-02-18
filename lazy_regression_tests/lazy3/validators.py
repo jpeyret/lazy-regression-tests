@@ -455,6 +455,11 @@ class ValidationDirective:
             self.name = name
             self.validator = validator
             self.exp = exp
+
+            # careful....
+            if active is None and exp and validator:
+                active = True
+
             self.active = active
 
         except (

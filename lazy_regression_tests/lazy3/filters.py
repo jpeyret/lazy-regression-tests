@@ -118,6 +118,9 @@ class RegexMatcher(TextFilter, DataMatcher):
 
 
 class DictFilter(RawFilter, DataMatcher):
+
+    scalar = True
+
     def __repr__(self):
         return "%s[%s]=%s" % (self.__class__.__name__, self.name, self.dict_)
 

@@ -165,7 +165,11 @@ class LazyTemp(object):
             if scalar:
                 setattr(self.filtered, name, value)
             else:
-                li = getattr(self.filtered, name, [])
+                li = getattr(self.filtered, name, None)
+                if li is None:
+                    li = []
+                    setattr(self.filtered, name, li)
+
                 li.append(value)
 
         # pragma: no cover pylint: disable=unused-variable
@@ -531,7 +535,7 @@ class LazyMixin(metaclass=_LazyMeta):
             if hasattr(filter_, "prep"):
                 checker.prep = filter_.prep
 
-            return self._check(got, checker, suffix)
+            return self._lazycheck(got, checker, suffix)
 
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -542,7 +546,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
-    def _check(self, got: Any, options: LazyChecker, suffix: str = "") -> LazyTemp:
+    def _lazycheck(self, got: Any, options: LazyChecker, suffix: str = "") -> LazyTemp:
 
         try:
             env = self.lazy_environ
