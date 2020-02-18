@@ -120,8 +120,7 @@ class AutoExp:
                 # raise AttributeError(self.paths)
                 raise InvalidConfigurationException(
                     "Attribute/Key %s not found on %s but expected via AutoExp.  either disable the validation or add this attribute"
-                    % (self.paths, testee),
-                    ori=e,
+                    % (self.paths, testee)
                 )
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:

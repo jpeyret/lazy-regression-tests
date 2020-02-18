@@ -225,7 +225,8 @@ class RegexRemoveSaver(RegexMatcher):
 
         try:
             line_out = []
-            for line in data.split("\n"):
+            lines = data.split("\n")
+            for ix, line in enumerate(lines):
                 hit = self.patre.search(line)
                 if hit:
                     li.append(line)

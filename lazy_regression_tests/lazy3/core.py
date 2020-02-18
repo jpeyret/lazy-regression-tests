@@ -97,11 +97,16 @@ class LazyChecker:
         self.write_exp_on_ioerror = write_exp_on_ioerror
         self.rawfiltermgr = rawfiltermgr
         self.textfiltermgr = textfiltermgr
-        ppp(self, self)
+
+        if verbose:
+            ppp(self, self)
 
         self.filterhash = None
 
         self.reg_callbacks = {}
+
+    def debug(self, ix, lines):
+        print("\n".join(lines[ix - 5 : +ix + 5]))
 
     def prep(self, tmp, data):
         return data
