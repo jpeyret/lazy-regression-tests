@@ -223,7 +223,10 @@ class Validator:
         return source_
 
     def get_value(self, source):
-        res = source.get(self.selector)
+        if self.selector is None:
+            return source
+        else:
+            res = source.get(self.selector)
         if rpdb() and res is None:  # pragma: no cover
             pdb.set_trace()
         return res

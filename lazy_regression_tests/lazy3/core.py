@@ -18,7 +18,18 @@ from typing import (
     Union,
 )
 
+
 #######################################################
+
+import pdb
+
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
+
 
 # from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
 

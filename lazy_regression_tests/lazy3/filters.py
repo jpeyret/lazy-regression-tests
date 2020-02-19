@@ -120,6 +120,7 @@ class RegexMatcher(TextFilter, DataMatcher):
 class DictFilter(RawFilter, DataMatcher):
 
     scalar = True
+    dict_ = "?"
 
     def __repr__(self):
         return "%s[%s]=%s" % (self.__class__.__name__, self.name, self.dict_)
@@ -368,6 +369,26 @@ class FilterManager:
 
         its core method is  `set_filter` 
     """
+
+    def prep(self, tmp, data):
+        """default do-nothing implementation"""
+        try:
+            return data
+        # pragma: no cover pylint: disable=unused-variable, broad-except
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def to_text(self, tmp, data):
+        """default do-nothing implementation"""
+        try:
+            return str(data)
+        # pragma: no cover pylint: disable=unused-variable, broad-except
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
     def __repr__(self):
 
