@@ -894,3 +894,122 @@ class InvalidConfigurationException(ValueError):
     def __init__(self, msg, **kwargs):
         super(InvalidConfigurationException, self).__init__(msg)
         self.__dict__.update(kwargs)
+
+
+class Breakpoints(object):
+
+    enabled = False
+
+    @classmethod
+    def factory(cls, options=None, active=False, fnp_config=None):  # pragma: no cover
+        fnp_config = fnp_config or getattr(options, OPTION_NAME, None)
+        if fnp_config:
+            try:
+                return Breakpoints(fnp_config, active)
+            except IOError:
+                logger.warning("file %s not found" % (fnp_config))
+                return DisabledBreakpoints()
+        return DisabledBreakpoints()
+
+    def __init__(self, fnp_config, active=False):  # pragma: no cover
+
+        self.active = active
+        self.enabled = active
+
+        if isinstance(fnp_config, file_):
+            self.fnp_config = fnp_config.name
+            self.config = json.load(fnp_config)
+        else:
+            self.fnp_config = fnp_config
+            with open(self.fnp_config) as fi:
+                self.config = json.load(fi)
+
+    def breakpoint(self, lookup, caller_variables):  # pragma: no cover
+
+        self.enabled = False
+        if not self.active:
+            return
+
+        try:
+            breakpoints = self.config.get("breakpoints", {})
+            # logger.debug("\n"+"*" * 80)
+            # logger.debug("lookup:%s" % (lookup))
+            # logger.debug("caller_variables:%s" % (caller_variables))
+            # logger.debug("breakpoints:%s" % (breakpoints.keys()))
+            # logger.debug("*" * 80 + "\n")
+            # pdb.set_trace()
+
+            conditions = breakpoints.get(lookup, [])
+
+            if isinstance(conditions, dict):
+                conditions = [conditions]
+
+            for condition_ in conditions:
+                # https://stackoverflow.com/questions/10832373/python-dictionary-match-key-values-in-two-dictionaries
+                # for possible alternatives
+                caller_status = dict(
+                    [
+                        (k, v)
+                        for k, v in caller_variables.items()
+                        if k in condition_.keys()
+                    ]
+                )
+
+                if condition_ == caller_status:
+                    logger.info(
+                        "breakpoint activated @%s for %s" % (lookup, condition_)
+                    )
+                    res = self.enabled = True
+                    return res
+
+            return False
+
+        except Exception as e:  # pragma: no cover
+            logger.error(repr(e)[:100])
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    __call__ = breakpoint
+
+
+try:
+    file_ = file
+except NameError:
+    from io import IOBase
+
+    file_ = IOBase
+
+
+def set_breakpoints3(recurse=True, fnp_config=None):
+
+    if fnp_config is None:
+
+        argv = sys.argv
+
+        if not "-b" in argv:
+            print("no breakpoints")
+            return None
+
+        pos_flag = argv.index("-b")
+
+        fnp_config = argv.pop(pos_flag + 1)
+        _ = argv.pop(pos_flag)
+
+        print("fnp_config:%s" % (fnp_config))
+        print("_:", _)
+        print("sys.argv:%s" % (sys.argv))
+
+    # from bemyerp.lib.breakpoints import Breakpoints
+
+    breakpoints = Breakpoints.factory(fnp_config=fnp_config, active=True)
+    if breakpoints.active:
+        if recurse:
+            for module in sys.modules.values():
+                try:
+                    if not callable(module.breakpoints):
+                        continue
+                    module.breakpoints = breakpoints
+                except AttributeError:  # pragma: no cover
+                    pass
+    return breakpoints
