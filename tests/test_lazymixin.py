@@ -55,6 +55,7 @@ from lazy_regression_tests.lazy3.filters import (
     RegexRemoveSaver,
     DictFilter,
     CSSRemoveFilter,
+    FilterDirective,
 )
 
 
@@ -96,15 +97,20 @@ rpdb.enabled = False  # type: ignore
 #     KeepTextFilter,
 # )
 
+from lazy_regression_tests.lazy3 import LazyMixin
+
 ##########################################################
 # tests
 ##########################################################
+
+lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
 
 
 lzrt_template_dirname = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
 lzrt_template_dirname_got = "/<someroot>/out/tests/%(subject)s/%(lazy_dirname_extras)s"
 lzrt_template_dirname_exp = "/<someroot>/wk/tests/%(subject)s/%(lazy_dirname_extras)s"
 lzrt_template_basename = lzrt_default_t_basename
+
 
 di_mock_env = dict(
     lzrt_template_dirname=lzrt_template_dirname,
@@ -430,7 +436,7 @@ class Test_IOError_Handling(LazyMixin, unittest.TestCase):
         raise IOError()
 
     di = di_mock_env.copy()
-    di.update(lzrt_directive=LazyIOErrorCodes.assertion)
+    # di.update(lzrt_directive=LazyIOErrorCodes.assertion)
 
     @mock.patch.dict(os.environ, di.copy())
     def test_write_assertionerror(self):
@@ -619,10 +625,18 @@ class BaseHtmlFilter(LazyMixinBasic, unittest.TestCase):
 
     patre_manual_remove = re.compile("csrfmiddlewaretoken|var\ssettings|nodiff")
 
-    _li_remove = [
-        RegexRemoveSaver("var\ssettings\s=\s", hitname="settings"),
-        re.compile("var\scsrfmiddlewaretoken\s=\s"),
-    ]
+    cls_filters = dict(
+        html=[
+            FilterDirective(
+                "csrf", RegexRemoveSaver("var\s+csrf[a-zA-Z0-9_]+\s+=\s+", "csrf")
+            )
+        ]
+    )
+
+    # _li_remove = [
+    #     RegexRemoveSaver("var\ssettings\s=\s", hitname="settings"),
+    #     re.compile("var\scsrfmiddlewaretoken\s=\s"),
+    # ]
 
     def format_exp(self):
         exp = []
@@ -693,7 +707,11 @@ var settings = {"li_user_message": []};
 
     """
 
-    li_remove = [CSSRemoveFilter(".nodiff")]
+    # li_remove = [CSSRemoveFilter(".nodiff")]
+
+    cls_filters = dict(
+        html=FilterDirective("nodiff", CSSRemoveFilter(".nodiff", name="nodiff"))
+    )
 
 
 @unittest.skipUnless(has_directory_to_write_to, NO_TESTWRITES_MSG)
