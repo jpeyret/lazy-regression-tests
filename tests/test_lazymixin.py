@@ -50,7 +50,12 @@ from lazy_regression_tests._baseutils import (
     RescueDict,
 )
 
-from lazy_regression_tests.filters import CSSRemoveFilter
+from lazy_regression_tests.lazy3.filters import (
+    RegexSubstitHardcoded,
+    RegexRemoveSaver,
+    DictFilter,
+    CSSRemoveFilter,
+)
 
 
 import pdb
@@ -73,23 +78,23 @@ def rpdb():  # pragma: no cover
 rpdb.enabled = False  # type: ignore
 #
 
-from lazy_regression_tests.core import (
-    lzrt_default_t_basename,
-    lzrt_default_t_subdir,
-    LazyMixin,
-    LazyIOErrorCodes,
-    OnAssertionError,
-    DiffFormatter,
-    lzrt_default_t_basename,
-)
+# from lazy_regression_tests.core import (
+#     lzrt_default_t_basename,
+#     lzrt_default_t_subdir,
+#     LazyMixin,
+#     LazyIOErrorCodes,
+#     OnAssertionError,
+#     DiffFormatter,
+#     lzrt_default_t_basename,
+# )
 
-from lazy_regression_tests.utils import (
-    DictionaryKeyFilter,
-    _Filter,
-    RemoveTextFilter,
-    RegexRemoveSaver,
-    KeepTextFilter,
-)
+# from lazy_regression_tests.utils import (
+#     DictionaryKeyFilter,
+#     _Filter,
+#     RemoveTextFilter,
+#     RegexRemoveSaver,
+#     KeepTextFilter,
+# )
 
 ##########################################################
 # tests
