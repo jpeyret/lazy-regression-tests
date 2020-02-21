@@ -756,6 +756,7 @@ class DictFormatter:
         return "%s" % (self.__class__.__name__)
 
     def del_dict_item(self, di: dict, key: Any, value: Any):
+        """ delete the given key if it exists """
         di.pop(key, None)
         return di
 
@@ -888,6 +889,8 @@ class DictFormatter:
 
 
 class InvalidConfigurationException(ValueError):
+    """ indicates that some configuration is missing or invalid """
+
     def __init__(self, msg, **kwargs):
         super(InvalidConfigurationException, self).__init__(msg)
         self.__dict__.update(kwargs)

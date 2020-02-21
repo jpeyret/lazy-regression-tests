@@ -453,15 +453,24 @@ class ValidationDirective:
             self.validator,
         )
 
-    def __init__(self, name, validator=None, exp=None, active=None):
+    def __init__(
+        self,
+        name: str,
+        validator: Optional[Validator] = None,
+        exp=None,
+        active: Optional[bool] = None,
+    ):
         try:
             self.name = name
             self.validator = validator
             self.exp = exp
 
-            # careful....
+            # if we know exp and we have a validator
+            # assume active unless it has been set to True or False
             if active is None and exp and validator:
                 active = True
+
+            assert validator is None or isinstance(validator, Validator)
 
             self.active = active
 
