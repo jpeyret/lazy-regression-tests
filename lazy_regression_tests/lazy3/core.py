@@ -314,6 +314,8 @@ class LazyMixin(metaclass=_LazyMeta):
     cls_validators = []
     add_lazy_dirname = []
 
+    lazy_dirname_extras = []
+
     lazytemp = None
     lazy_basename_extras = ""
 
