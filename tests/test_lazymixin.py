@@ -52,6 +52,8 @@ from lazy_regression_tests._baseutils import (
     Subber,
     RescueDict,
     Dummy,
+    set_breakpoints3,
+    InvalidConfigurationException,
 )
 
 
@@ -66,6 +68,8 @@ from lazy_regression_tests.lazy3.filters import (
 
 from lazy_regression_tests.lazy3.core import OPT_DIRECTIVE_BASELINE
 
+
+from lazy_regression_tests.lazy3.http_validators import JsonFilterManager
 
 rescuedict = RescueDict()
 
@@ -577,6 +581,315 @@ class Test_Error_Handling(LazyMixinBasic, unittest.TestCase):
 
             # it would be nice to re-mock os.environ and with
             # $lzrt_directive=baseline...  that should then pass
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+filtername23 = "var2and3"
+
+filter_23 = FilterDirective(filtername23, RegexRemoveSaver("var2|var3", "var2and3"))
+
+filtername1 = "var1"
+
+filter_1 = FilterDirective(filtername1, RegexRemoveSaver("var1", "var1"))
+
+
+class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
+    """
+    filters are additive through a class's mro
+    """
+
+    filtername = filtername23
+
+    cls_filters = dict(txt=filter_23)
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_001_filter(self):
+        try:
+
+            changed_data = self.data.replace("var2", "var3")
+
+            li_change = ["var2", "var3"]
+
+            fnp_exp = self.seed(changed_data, self.extension)
+
+            # test that lines matching the filter are removed from the file
+            with open(fnp_exp) as fi:
+                data = fi.read()
+
+            for text in li_change:
+                self.assertFalse(
+                    text in data,
+                    "%s should have been stripped out of %s" % (text, data),
+                )
+
+            # but the filtered data is still accessible through the filtered dictionary
+            tmp = self.lazytemp
+            # this is the value originally passed into seed
+            self.assertEqual(tmp.filtered[self.filtername], ["var3"])
+
+            # tmp is reset on each new instance but we are still on the same instance after seed
+            # by default the filter results are put in a list
+            tmp.filtered[self.filtername] = []
+
+            tmp = self.assert_exp(self.data, self.extension)
+
+            with open(tmp.fnp_got) as fi:
+                data = fi.read()
+
+            for text in li_change:
+                self.assertFalse(
+                    text in data,
+                    "%s should have been stripped out of %s" % (text, data),
+                )
+
+            # this the unchanged value in self.data
+            self.assertEqual(tmp.filtered[self.filtername], ["var2"])
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_002_filter_scalar(self):
+        """
+        instead of the standard, list-appending filtering we want to have a scalar result
+        to do this we can modify the filter
+        """
+
+        try:
+
+            scalar_filter = RegexRemoveSaver("var2|var3", "var2and3", scalar=True)
+
+            # we can modify a filter if we know its name
+            self.filters[self.extension].set_filter(
+                self.filtername, filter_=scalar_filter
+            )
+
+            # did we change the filter?
+            newfilter = self.filters[self.extension].filters[self.filtername].filter_
+
+            self.assertTrue(scalar_filter is newfilter)
+
+            # and it should be a scalar
+            self.assertEqual(True, newfilter.scalar)
+
+            changed_data = self.data.replace("var2", "var3")
+
+            li_change = ["var2", "var3"]
+
+            fnp_exp = self.seed(changed_data, self.extension)
+
+            # test that lines matching the filter are removed from the file
+            with open(fnp_exp) as fi:
+                data = fi.read()
+
+            for text in li_change:
+                self.assertFalse(
+                    text in data,
+                    "%s should have been stripped out of %s" % (text, data),
+                )
+
+            # but the filtered data is still accessible through the filtered dictionary
+            tmp = self.lazytemp
+
+            # this is the value originally passed into seed, as a scalar
+            self.assertEqual(tmp.filtered[self.filtername], "var3")
+
+            tmp = self.assert_exp(self.data, self.extension)
+
+            with open(tmp.fnp_got) as fi:
+                data = fi.read()
+
+            for text in li_change:
+                self.assertFalse(
+                    text in data,
+                    "%s should have been stripped out of %s" % (text, data),
+                )
+
+            # this the unchanged value in self.data
+            self.assertEqual(tmp.filtered[self.filtername], "var2")
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+#################################################################
+# Test MRO-based additive filtering
+# filters go from most-generic to most-specific, with named filter
+# overriding precedings settings.
+#################################################################
+
+
+class AnyName:
+    cls_filters = dict(txt=filter_23)
+
+
+class AnotherName:
+    cls_filters = dict(txt=filter_1)
+
+
+class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.TestCase):
+    def change_data(self, data):
+        li_change = ["var1", "var2", "var3"]
+
+        changed_data = data
+        for value in li_change:
+            changed_data = changed_data.replace(value, "%sxxx" % (value))
+
+        return changed_data
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_001_everything_filteredout(self):
+        try:
+
+            changed_data = self.change_data(self.data)
+            self.seed(changed_data, self.extension)
+
+            self.assert_exp(self.data, self.extension)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_002_deactivated_filter_fail(self):
+        try:
+
+            changed_data = self.change_data(self.data)
+
+            self.filters[self.extension].set_filter(filtername1, active=False)
+            self.seed(changed_data, self.extension)
+
+            try:
+                self.assert_exp(self.data, self.extension)
+                self.fail("should have failed on var1 difference")
+            # pragma: no cover pylint: disable=unused-variable
+            except (AssertionError,) as e:
+                self.assertTrue("var1" in str(e))
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_003_bad_activation(self):
+        """
+        you cant activate a filter that doesn't exist
+        the error happens when assert_exp is called and filtering is attempted
+        this supports the scenario where:
+
+        # we know we need to filter out changing data, but we let the subclasses
+        # decide how to do it
+        cls_filters = dict(txt, FilterDirective("changing",active=True))
+
+        #
+        cls_filters = dict(txt, FilterDirective("changing",filter_=<some filter>))
+
+
+        """
+        try:
+
+            # dont care so much if you try to deactivate a filter that doesnt exist
+            self.filters[self.extension].set_filter("xyz", active=True)
+
+            try:
+
+                self.assert_exp(self.data, self.extension)
+                self.fail("should have failed on due to xyz filter not existing")
+
+            # pragma: no cover pylint: disable=unused-variable
+            except (InvalidConfigurationException,) as e:
+                self.assertTrue("xyz" in str(e))
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_004_tolerate_bad_deactivation(self):
+        """
+        you can deactivate a filter that has not been set
+        """
+        try:
+
+            # dont care so much if you try to deactivate a filter that doesnt exist
+            self.filters[self.extension].set_filter("xxx", active=False)
+            self.assert_exp(self.data, self.extension)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class Test_JSON_Filtering(LazyMixinBasic, unittest.TestCase):
+
+    extension = "json"
+
+    cls_filters = dict(json=JsonFilterManager())
+
+    j_data = dict(
+        var1=1, var2=dict(var21=21, var22=22, var23=dict(var231=231)), var3=3, var4=4
+    )
+
+    def setUp(self):
+        self.j_data = self.j_data.copy()
+        self.lazy_environ.acquired = False
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_001_same(self):
+        """sanity check"""
+        try:
+            self.seed(self.j_data, self.extension)
+            self.assert_exp(self.j_data, self.extension)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    changes = dict(var1="one")
+
+    def change_data(self, changes=None):
+
+        changes = changes or self.changes.copy()
+
+        j_data = self.j_data.copy()
+        j_data.update(**changes)
+        return j_data
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_002_changes_caught(self):
+        """sanity check"""
+        try:
+            changed_data = self.change_data()
+            self.seed(changed_data, self.extension)
+            try:
+                self.assert_exp(self.j_data, self.extension)
+                pdb.set_trace()
+                self.fail("should have changed on %s" % (self.changes))
+
+            # pragma: no cover pylint: disable=unused-variable
+            except (AssertionError,) as e:
+                pdb.set_trace()
+                self.assertTrue("var1" in str(e))
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1250,15 +1563,41 @@ if __name__ == "__main__":
 
     cpdb = set_cpdb()
     rpdb = set_rpdb()
+    breakpoints = set_breakpoints3() or breakpoints
     rc = 0
+
+    tmpl_source = """
+alias _lcdgot=1
+alias _lcdexp=2
+alias _ldiffexpgot=3
+
+unalias _lcdgot
+unalias _lcdexp
+unalias _ldiffexpgot
+alias _lcdexp='cd %(lzrt_template_dirname_exp)s'
+alias _lcdgot='cd %(lzrt_template_dirname_got)s'
+alias _ldiffexpgot='ksdiff %(lzrt_template_dirname_exp)s %(lzrt_template_dirname_got)s'
+"""
+
     try:
         rc = unittest.main()
     finally:
-        with open("./diff.sh", "w") as fo:
-            msg = "ksdiff %s %s\n" % (
-                lzrt_template_dirname_exp,
-                lzrt_template_dirname_got,
+        with open("/Users/jluc/kds2/wk/bin/lsource.sh", "w") as fo:
+
+            fo.write(
+                fill_template(
+                    tmpl_source,
+                    dict(
+                        lzrt_template_dirname_exp=lzrt_template_dirname_exp,
+                        lzrt_template_dirname_got=lzrt_template_dirname_got,
+                    ),
+                )
             )
-            print("\n\n\n", msg)
-            fo.write(msg)
+
+            # msg = "ksdiff %s %s\n" % (
+            #     lzrt_template_dirname_exp,
+            #     lzrt_template_dirname_got,
+            # )
+            # print("\n\n\n", msg)
+            # fo.write(msg)
         sys.exit(rc)
