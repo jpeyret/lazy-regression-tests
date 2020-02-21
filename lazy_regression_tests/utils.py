@@ -19,6 +19,7 @@ from lazy_regression_tests._baseutils import (
     nested_dict_pop,
     first,
     DictFormatter,
+    InvalidConfigurationException,
 )
 
 from traceback import print_exc as xp  # pylint: disable=unused-import
