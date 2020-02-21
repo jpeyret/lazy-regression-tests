@@ -64,6 +64,10 @@ from lazy_regression_tests.lazy3.filters import (
     FilterManager,
 )
 
+from lazy_regression_tests.lazy3.core import OPT_DIRECTIVE_BASELINE
+
+
+rescuedict = RescueDict()
 
 import pdb
 
@@ -124,6 +128,10 @@ di_mock_env = dict(
     lzrt_template_basename=lzrt_template_basename,
 )
 
+di_mock_env_baseline = di_mock_env.copy()
+di_mock_env_baseline.update(lzrt_directive=OPT_DIRECTIVE_BASELINE)
+
+
 di_mock_env_no_extras = dict(
     [(k, v.replace("/%(lazy_dirname_extras)s", "")) for k, v in di_mock_env.items()]
 )
@@ -173,10 +181,27 @@ class LazyMixinBasic(LazyMixin):
 
     tmp_formatted_data = None
 
+    extension = "txt"
+
+    data = """
+somedata
+var1
+var2
+"""
+
     subject = "<somesubject>"
 
     def _lazy_write(self, fnp, formatted_data):
         self.tmp_formatted_data = formatted_data
+
+    def setUp(self):
+        """not sure why needed, but need to reset the environment
+            to make sure mocked values are taken into account
+           This is probably due to some too aggressive optimization,
+           i.e. we-dont-expect-env-variables to change during a test run
+        """
+
+        self.lazy_environ.acquired = False
 
     def seed(self, exp, extension, suffix=""):
         try:
@@ -205,6 +230,21 @@ class LazyMixinBasic(LazyMixin):
            └── test_lazymixin.TestBasic.test_002_naming_convention.txt
                            👆        👆                         👆 
             the            class name, method name and extension are in the filename
+
+
+        it is also possible to inject one or more extra parts into the directory, above, the classname
+        this is done via the `lazy_dirname_extras` variable which results in an attribute lookup
+        on the TestCase instance
+        that is inserted into the path
+
+        class MyTestClass:
+            lazy_dirname_extras = ["site"]
+
+            def test_site(self):
+                self.site = "example.com"
+            
+
+
         """
         try:
             t_msg = ":%s: not found in :%s:"
@@ -221,10 +261,28 @@ class LazyMixinBasic(LazyMixin):
 
                 dirname, fname = os.path.split(fnp)
 
-                self.assertTrue(
-                    dirname.endswith(classname),
-                    "dir %s does end with %s class" % (dirname, classname),
-                )
+                if getattr(self, "lazy_dirname_extras", None):
+                    li = self._handle_dirname_extras([])
+
+                    li2 = [classname] + [
+                        fill_template(tmpl, self, rescuedict) for tmpl in li
+                    ]
+
+                    tail = os.path.join(*li2)
+
+                    self.assertTrue(
+                        dirname.endswith(tail),
+                        "dir %s does end with %s extras/class" % (dirname, tail),
+                    )
+
+                    # raise NotImplementedError("%s.check_naming_convention(lazy_dirname_extras)" % (self))
+
+                else:
+
+                    self.assertTrue(
+                        dirname.endswith(classname),
+                        "dir %s does end with %s class" % (dirname, classname),
+                    )
 
                 # class name and method are both in the filename
                 for part in [classname, self._testMethodName]:
@@ -309,64 +367,14 @@ class Test_001_Configuration(LazyMixinBasic, unittest.TestCase):
             raise
 
 
-@unittest.skipUnless(False, "v2 049.lazy.026.lazy3")
-@mock.patch.dict(os.environ, di_mock_env)
-class Test_Basics(LazyMixinBasic, unittest.TestCase):
-    def test_extensions(self):
-        try:
-            fnp_root = self.lazy_fnp_exp_root()
-
-            got = self._lazy_add_extension(fnp_root, "html")
-            exp = "%s.html" % (fnp_root)
-            self.assertEqual(exp, got)
-
-            suffix = "test"
-            exp2 = "%s.%s.html" % (fnp_root, suffix)
-            got2 = self._lazy_add_extension(fnp_root, "html", suffix=suffix)
-            self.assertEqual(exp2, got2)
-
-            got3 = self._lazy_add_extension(fnp_root)
-            self.assertEqual(fnp_root, got3)
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-    def test_format_data(self):
-        self.assertEqual(
-            "{}", self.lazy_format_dict({}), "lazy_format_dict returns json.string"
-        )
-        self.assertEqual("{}", self.lazy_format_data({}))
-        self.assertEqual("{}", self.lazy_format_data("{}"))
-
-    def test_format_unicode_data(self):
-
-        data = u"foo"
-        self.assertEqual(data, self.lazy_format_data(data))
-
-
 class TestBasic(LazyMixinBasic, unittest.TestCase):
-
-    extension = "txt"
-
-    data = "foo"
-
-    def lazy_write_ioerror(self, *args, **kwds):
-        logger.info("%s.lazy_write_ioerror" % (self))
-        pass
-
     @mock.patch.dict(os.environ, di_mock_env)
     def test_001_equal_string(self):
         """sanity check - are we ok if exp == got"""
 
         try:
-            exp = got = "foo"
-
-            # this
-            self.seed(got, self.extension)
-            self.assert_exp(got, self.extension)
+            self.seed(self.data, self.extension)
+            self.assert_exp(self.data, self.extension)
 
         except (
             Exception,
@@ -377,10 +385,6 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
 
 
 class TestNamingConventions(LazyMixinBasic, unittest.TestCase):
-
-    extension = "txt"
-    data = "foo"
-
     @mock.patch.dict(os.environ, di_mock_env)
     def test_001_base_naming_convention(self):
 
@@ -409,6 +413,8 @@ class TestNamingConventions(LazyMixinBasic, unittest.TestCase):
         self.seed(self.data, self.extension, suffix=suffix)
         self.assert_exp(self.data, self.extension, suffix=suffix)
 
+        self.check_naming_convention()
+
         t_msg = ":%s: does not end with :%s:"
 
         for fnp in [self.lazytemp.fnp_got, self.lazytemp.fnp_exp]:
@@ -419,6 +425,49 @@ class TestNamingConventions(LazyMixinBasic, unittest.TestCase):
 
             self.assertTrue(fname.endswith(should_end), msg)
 
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_003_dirname_extras_list(self):
+        """
+        
+        The intent of `lazy_dirname_extras` is to partition tests by other attributes, like say 
+        a site name or a test database name.
+
+        .
+        └── TestNamingConventions
+            ├── example.com
+            │   └── test_lazymixin.TestNamingConventions.test_003_dirname_extras_list.txt
+
+        """
+
+        self.lazy_dirname_extras = ["site"]
+
+        self.site = "example.com"
+
+        self.seed(self.data, self.extension)
+        self.assert_exp(self.data, self.extension)
+
+        self.check_naming_convention()
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_004_dirname_multiple_string(self):
+        """
+        .
+        └── TestNamingConventions
+            ├── example.com
+            │   ├── testB
+            │   │   └── test_lazymixin.TestNamingConventions.test_004_dirname_multiple_string.txt
+        """
+
+        self.lazy_dirname_extras = "site abtest"
+
+        self.site = "example.com"
+        self.abtest = "testB"
+
+        self.seed(self.data, self.extension)
+        self.assert_exp(self.data, self.extension)
+
+        self.check_naming_convention()
+
 
 lorem = """
 <html><head><title></title></head><body>
@@ -427,127 +476,113 @@ adipisicing elit. Consequatur Quidem, sint incidunt?</p></body></html>
 """
 
 
-class Test_IOError_Handling(LazyMixin, unittest.TestCase):
+class Test_Error_Handling(LazyMixinBasic, unittest.TestCase):
+    """
+    if `self.lazytemp.fnp_exp` is not found, that means this is a first time run
+    and `got` is written to both `self.lazytemp.fnp_exp` and `self.lazytemp.fnp_got`
+    and assert_exp is automatically considered to be successful
 
-    lazy_filename = lazy_filename
+    this is also the behavior with $lzrt_directive == "baseline" environment variable
+    """
 
-    debug_env = debug_env
-
-    def _lazy_write(self, fnp, formatted_data):
-        pass
-
-    def lazy_format_html(self, data):
-        self.formatted_by = "lazy_format_html"
-        self.data = data
-
-    data = formatted_by = handled_by = None
-
-    def lazy_write_assertionerror(self, fnp, formatted_data, message, exc):
-        try:
-            self.handled_by = LazyIOErrorCodes.assertion
-            self.assertEqual("IOError(%s)" % (fnp), formatted_data)
-        except (AssertionError,) as e:
-            raise
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-    def lazy_write_ioerror(self, fnp, formatted_data, message, exc):
-        self.handled_by = "lazy_write_ioerror"
-        raise IOError()
-
-    di = di_mock_env.copy()
-    # di.update(lzrt_directive=LazyIOErrorCodes.assertion)
-
-    @unittest.skipUnless(False, "v2 049.lazy.026.lazy3")
-    @mock.patch.dict(os.environ, di.copy())
-    def test_write_assertionerror(self):
-
-        got = exp = "wont be found"
-        try:
-
-            with mock.patch(
-                funcpath_open, mock.mock_open(read_data=exp)
-            ) as mocked_open:
-
-                self.lazy_environ["lzrt_directive"] = LazyIOErrorCodes.assertion
-
-                mocked_open.side_effect = IOError("fake IOError")
-                try:
-                    self.assert_exp(got)
-                except (AssertionError,) as e:
-                    self.assertEqual(self.handled_by, LazyIOErrorCodes.assertion)
-                except (
-                    Exception,
-                ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-                    # pdb.set_trace()
-                    if rpdb():  # pragma: no cover
-                        pdb.set_trace()
-                    self.fail("should have AssertionError. got Exception:%s" % str(e))
-
-                else:
-                    self.fail("should have AssertionError")
-
-        finally:
-            self.lazy_environ.clear()
-
-    @unittest.skipUnless(False, "v2 049.lazy.026.lazy3")
     @mock.patch.dict(os.environ, di_mock_env)
-    def test_write_ioerror(self):
-
-        got = exp = "wont be found"
+    def test_001_exp_does_not_exist(self):
 
         try:
-            self.lazy_environ["lzrt_directive"] = LazyIOErrorCodes.ioerror
 
-            with mock.patch(
-                funcpath_open, mock.mock_open(read_data=exp)
-            ) as mocked_open:
+            # first time run, so exp does not exist
+            self.assert_exp(self.data, self.extension)
 
-                mocked_open.side_effect = IOError("fake IOError")
-                try:
-                    self.assert_exp(got)
-                except (IOError,) as e:
-                    self.assertEqual(self.handled_by, "lazy_write_ioerror")
+            for fnp in [self.lazytemp.fnp_got, self.lazytemp.fnp_exp]:
+                with open(fnp) as fi:
+                    data = fi.read()
+                self.assertEqual(self.data.strip(), data.strip())
 
-                except (AssertionError,) as e:
-                    if (
-                        self.lazy_environ.get("lzrt_directive")
-                        == LazyIOErrorCodes.assertion
-                    ):
-                        self.assertEqual(self.handled_by, LazyIOErrorCodes.assertion)
-                    else:
-                        raise
-
-                except (
-                    Exception,
-                ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-                    raise
-                else:
-                    self.fail("should have IOError")
-
-        except (AssertionError, IOError) as e:
-            raise
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
-        finally:
-            self.lazy_environ.clear()
 
+    #
 
-class LazyMixin_DirRdbname(LazyMixinBasic):
-    """put `rdbname` attribute, if found, in the directory hieararchy"""
+    @mock.patch.dict(os.environ, di_mock_env_baseline)
+    def test_002_baseline(self):
+        """
+        the environment has been mocked to tell lazy to consider the data
+        as a baseline:
 
-    lazy_dirname_extras = "rdbname"
+        - `got` is written to both `self.lazytemp.fnp_exp` and `self.lazytemp.fnp_got`
+        - assert_exp is automatically considered to be successful
 
-    cls_filters = dict(txt=FilterManager())
+        """
+
+        try:
+
+            # we are changing the data to go into the seed, i.e. the `exp` side of things
+            changed_data = self.data.replace("var2", "var3")
+
+            self.assertFalse(changed_data.strip() == self.data.strip())
+
+            self.seed(changed_data, self.extension)
+
+            for fnp in [self.lazytemp.fnp_got, self.lazytemp.fnp_exp]:
+                with open(fnp) as fi:
+                    data = fi.read()
+                self.assertEqual(changed_data.strip(), data.strip())
+
+            # now we call assert_exp, but the data will be taken as baseline
+            self.assert_exp(self.data, self.extension)
+
+            for fnp in [self.lazytemp.fnp_got, self.lazytemp.fnp_exp]:
+                with open(fnp) as fi:
+                    data = fi.read()
+                self.assertEqual(self.data.strip(), data.strip())
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_003_changed_data(self):
+        """
+        Here the data is changed, but the exp is already seeded and
+        lzrt_directive is unset, i.e. it is not 'baseline'
+        An assertionError should be thrown
+        """
+
+        try:
+
+            # we are changing the data to go into the seed, i.e. the `exp` side of things
+            changed_data = self.data.replace("var2", "var3")
+
+            self.assertFalse(changed_data.strip() == self.data.strip())
+
+            self.seed(changed_data, self.extension)
+
+            for fnp in [self.lazytemp.fnp_got, self.lazytemp.fnp_exp]:
+                with open(fnp) as fi:
+                    data = fi.read()
+                self.assertEqual(changed_data.strip(), data.strip())
+
+            # expect an error now
+            try:
+                self.assert_exp(self.data, self.extension)
+                self.fail("should have thrown an AssertionError")
+            # pragma: no cover pylint: disable=unused-variable
+            except (AssertionError,) as e:
+                pass
+
+            # it would be nice to re-mock os.environ and with
+            # $lzrt_directive=baseline...  that should then pass
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
 
 def debug_expgot(exp, got, testee=None):
@@ -559,73 +594,6 @@ def debug_expgot(exp, got, testee=None):
     li.append("got:%s:" % (got))
 
     logger.info("\n  ".join(li))
-
-
-class Test_DirRdbname(LazyMixin_DirRdbname, unittest.TestCase):
-
-    lazy_dirname_extras = "rdbname"
-
-    @unittest.skipUnless(False, "v2 049.lazy.026.lazy3")
-    @mock.patch.dict(os.environ, di_mock_env)
-    def test_fnp_exp_root(self):
-        try:
-            self.rdbname = "mydb"
-
-            exp = got = None
-            exp = os.path.join(
-                lzrt_template_dirname_exp
-                % {"subject": "exp", "lazy_dirname_extras": self.rdbname},
-                "test_lazymixin.%s.%s"
-                % (self.__class__.__name__, self._testMethodName),
-            )
-
-            got = self.lazy_fnp_exp_root()
-            msg = "\nexp:%s\n<>\ngot:%s" % (exp, got)
-            self.assertEqual(exp, got, msg)
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            ppp(os.environ, "os.environ")
-            debug_expgot(exp, got)
-
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-    @mock.patch.dict(os.environ, di_mock_env)
-    def test_fnp_exp_root_missing_rdbname(self):
-        try:
-            # self.rdbname = "mydb"
-
-            exp = got = None
-            exp = os.path.join(
-                lzrt_template_dirname_exp
-                % {"subject": "exp", "lazy_dirname_extras": ""},
-                "%s" % (self.__class__.__name__),
-            )
-
-            subber = get_subber_for_dirname(
-                self, di_env=dict(template_dirname_exp=lzrt_template_dirname_exp)
-            )
-            tdirname = self._lazy_get_t_dirname("exp", subber)
-
-            got = tdirname
-            msg = "\nexp:%s\n<>\ngot:%s" % (exp, got)
-            self.assertEqual(exp, got, msg)
-
-            if verbose:
-                debug_expgot(exp, got, self)
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            ppp(os.environ, "os.environ")
-            debug_expgot(exp, got)
-
-            if cpdb():
-                pdb.set_trace()
-            raise
 
 
 livetests_dir = os.environ.get("lzrt_livetests_dir", "")

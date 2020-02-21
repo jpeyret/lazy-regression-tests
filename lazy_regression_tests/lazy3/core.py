@@ -400,6 +400,34 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
+    def _handle_dirname_extras(self, _litd):
+        try:
+
+            dirname_extras = getattr(self, "lazy_dirname_extras", "")
+            if not dirname_extras:
+                return _litd
+
+            if isinstance(dirname_extras, list):
+                dirname_extras = " ".join(dirname_extras)
+            if dirname_extras:
+                # expand something like "foo, bar" into [..."%(foo)s", "%(bar)s"...]
+                li_replace = [
+                    "%%(%s)s" % (attrname) for attrname in dirname_extras.split()
+                ]
+
+                if "%(lazy_dirname_extras)s" in _litd:
+                    _litd = replace(_litd, "%(lazy_dirname_extras)s", li_replace)
+                else:
+                    _litd.extend(li_replace)
+
+            return _litd
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
     def _get_fnp_save(
         self,
         exp_got: Union["got", "exp"],
@@ -428,17 +456,7 @@ class LazyMixin(metaclass=_LazyMeta):
             t_dirname = self._lazy_get_t_dirname(exp_got, subber)
             _litd = t_dirname.split(os.path.sep)
 
-            dirname_extras = getattr(self, "lazy_dirname_extras", "")
-            if dirname_extras:
-                # expand something like "foo, bar" into [..."%(foo)s", "%(bar)s"...]
-                li_replace = [
-                    "%%(%s)s" % (attrname) for attrname in dirname_extras.split()
-                ]
-
-                if "%(lazy_dirname_extras)s" in _litd:
-                    _litd = replace(_litd, "%(lazy_dirname_extras)s", li_replace)
-                else:
-                    _litd.extend(li_replace)
+            _litd = self._handle_dirname_extras(_litd)
 
             _lid = ["/"] + [fill_template(t_, subber) for t_ in _litd]
 
@@ -617,7 +635,6 @@ class LazyMixin(metaclass=_LazyMeta):
                 if exp != formatted_got():
                     raise self.Fail(message)
 
-            # pdb.set_trace()
             try:
                 # supports a timeout mechanism, if the module is available
                 self.assertEqualTimed(exp, formatted_got)
