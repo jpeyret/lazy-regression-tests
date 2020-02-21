@@ -35,6 +35,7 @@ from lazy_regression_tests.utils import (
     RescueDict,
     Subber,
     DictFormatter,
+    InvalidConfigurationException,
 )
 
 
@@ -426,7 +427,7 @@ class FilterManager:
                 filter_ = directive.filter_
 
                 if filter_ is None:
-                    raise ValueError(
+                    raise InvalidConfigurationException(
                         "Directive.%s is active. without a filter" % (directive)
                     )
 
@@ -435,7 +436,7 @@ class FilterManager:
                 elif isinstance(filter_, TextFilter):
                     textfiltermgr.set_filter(directive)
                 else:
-                    raise ValueError(
+                    raise InvalidConfigurationException(
                         "Directive.%s uses an unknown FilterType.  Filters need be either RawFilter or TextFilter subclasses"
                         % (directive)
                     )
@@ -482,6 +483,9 @@ class FilterManager:
 
         """
 
+        if breakpoints("set_filter", {"name": name}):  # pragma: no cover
+            pdb.set_trace()
+
         try:
 
             if isinstance(name, FilterDirective):
@@ -521,8 +525,8 @@ class FilterManager:
                 if directive.active in (False, True):
                     existing.active = directive.active
 
-                if directive.filter:
-                    existing.filter = directive.filter
+                if directive.filter_:
+                    existing.filter_ = directive.filter_
 
                 if directive.callback:
                     existing.callback = directive.callback
