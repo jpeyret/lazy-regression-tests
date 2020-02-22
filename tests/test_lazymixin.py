@@ -66,6 +66,8 @@ from lazy_regression_tests._baseutils import (
     InvalidConfigurationException,
 )
 
+from lazy_regression_tests.lazy3 import DictValidator, ValidationDirective
+
 
 from lazy_regression_tests.lazy3.filters import (
     RegexRemoveSaver,
@@ -783,15 +785,22 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
             raise
 
 
-class Test_JSON(LazyMixinBasic, unittest.TestCase):
-
-    extension = "json"
+class BaseForJson:
 
     cls_filters = dict(json=JsonFilterManager())
 
     j_data = dict(
-        var1=1, var2=dict(var21=21, var22=22, var23=dict(var231=231)), var3=3, var4=4
+        var1=1,
+        var2=dict(var21=21, var22=22, var23=dict(var231=231)),
+        var3=3,
+        var4=4,
+        someval="xyz",
     )
+
+
+class Test_JSON(BaseForJson, LazyMixinBasic, unittest.TestCase):
+
+    extension = "json"
 
     def setUp(self):
         self.j_data = self.j_data.copy()
@@ -914,6 +923,132 @@ class Test_JSON_DictFilter(Test_JSON):
         except (Exception,) as e:
             if cpdb():
                 ppp(di_debug, "\ndebug")
+                pdb.set_trace()
+            raise
+
+
+class CustomDictValidator(DictValidator):
+    """  let's write our own
+
+         for keys prefixed with `<selector>`, 'var' in this example 
+         check that value ends with what comes after the prefix
+         numeric if applicable
+
+         var2 : 2 ✅
+         var3 : 5 ❌
+         varfoo : "foo" ✅
+    """
+
+    def check(self, name: str, testee: "LazyMixin", exp: Any, sources: dict):
+        """
+
+        """
+
+        try:
+            source_ = self.get_source(testee, **sources)
+            got = self.get_value(source_)
+
+            for key, value in got:
+
+                expvalue = key.split(self.selector)[1]
+                try:
+                    expvalue = int(expvalue)
+                # pragma: no cover pylint: disable=unused-variable
+                except (ValueError,) as e:
+                    pass
+
+                testee.assertEqual(expvalue, value)
+
+        except (AssertionError,) as e:  # pragma: no cover
+            raise
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def get_value(self, source, res=None):
+        """ we are getting a dict and we recurse into 
+            because this is what this validator wants to do
+            we could have used any number of data selection
+            strategies
+        """
+        try:
+            if res is None:
+                res = []
+            for key, value in source.items():
+                if key.startswith(self.selector):
+                    if isinstance(value, dict):
+                        self.get_value(value, res)
+                    else:
+                        res.append((key, value))
+            return res
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
+
+    cls_validators = [
+        ValidationDirective("var3", DictValidator("var3"), exp=3),
+        ValidationDirective("nested", DictValidator("var2.var23.var231"), exp=231),
+    ]
+
+    def test_001_expects(self):
+        try:
+            self.check_expectations(data=self.j_data)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_002_fail231(self):
+        try:
+            self.set_expectation("nested", exp=232)
+            try:
+                self.check_expectations(data=self.j_data)
+                self.fail("should have errored 231<>232")
+            except (AssertionError,) as e:
+                self.assertTrue("232" in str(e) and "231" in str(e))
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_003_add_expected_fail(self):
+        try:
+            self.set_expectation(
+                ValidationDirective("var22", DictValidator("var22"), exp=23)
+            )
+            try:
+                self.check_expectations(data=self.j_data)
+                self.fail("should have errored 22<>23")
+            except (AssertionError,) as e:
+                self.assertTrue("22" in str(e) and "23" in str(e))
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_004_custom(self):
+        try:
+            self.set_expectation(
+                "custom", validator=CustomDictValidator("var"), exp="N/A", active=True
+            )
+            self.check_expectations(data=self.j_data)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
                 pdb.set_trace()
             raise
 

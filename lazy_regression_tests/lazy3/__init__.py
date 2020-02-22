@@ -10,4 +10,5 @@ from .validators import (
     FullyQualifiedNamesValidator,
     MixinExpInGot,
     ValidationDirective,
+    DictValidator,
 )

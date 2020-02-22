@@ -175,10 +175,13 @@ class Validator:
             getattr(self, "selector", "?"),
         )
 
-    def __init__(self, selector, sourcename: Optional[str], scalar=True, cargo=None):
+    def __init__(
+        self, selector, sourcename: Optional[str] = None, scalar=True, cargo=None
+    ):
         try:
             self.selector = selector
-            self.sourcename = sourcename
+            if sourcename:
+                self.sourcename = sourcename
             self.scalar = scalar
             self.cargo = cargo
 
@@ -231,22 +234,14 @@ class Validator:
             pdb.set_trace()
         return res
 
-    def check(
-        self,
-        name: str,
-        testee: "LazyMixin",
-        exp: Any,
-        sources: dict,
-        t_message: str = None,
-        source_: Any = None,
-    ):
+    def check(self, name: str, testee: "LazyMixin", exp: Any, sources: dict):
         """
 
         """
 
         try:
 
-            source_ = source_ or self.get_source(testee, **sources)
+            source_ = self.get_source(testee, **sources)
             try:
                 got = self.get_value(source_)
             # pragma: no cover pylint: disable=unused-variable
@@ -258,6 +253,7 @@ class Validator:
                 # pdb.set_trace()
                 got = undefined
 
+            t_message = getattr(self, "t_message", None)
             message = (
                 fill_template(t_message, locals(), testee, self) if t_message else None
             )
@@ -364,6 +360,9 @@ class FullyQualifiedNamesValidator(Validator):
 
 
 class DictValidator(Validator):
+
+    sourcename = "data"
+
     def get_value(self, source_):
         """ get the value from  """
         try:
@@ -858,22 +857,37 @@ class ValidationManager:
 
             for example:
 
-            class SuperClass(LazyMixin):
-            #we want to check the title, but we don't know yet what any request is expected to return
-                cls_validators = ValidationDirective("title", active=True, validator=CSSTitleValidator())
+            # class SuperClass(LazyMixin):
+            # #we want to check the title, but we don't know yet what any request is expected to return
+            #     cls_validators = ValidationDirective("title", active=True, validator=CSSTitleValidator())
 
-            class Test_1(Superclass):
-                cls_validators = ValidationDirective("title", exp="Always Test1!")
+            # class Test_1(Superclass):
+            #     cls_validators = ValidationDirective("title", exp="Always Test1!")
 
-                def test_different_after_all(self):
-                    self.set_expectation("title","different title")
+            #     def test_different_after_all(self):
+            #         self.set_expectation("title","different title")
 
-            class Test_DontWannaTestTitle(Superclass):
-                cls_validators = ValidationDirective("title", active=False)
+            # class Test_DontWannaTestTitle(Superclass):
+            #     cls_validators = ValidationDirective("title", active=False)
 
         """
 
         try:
+
+            if validator is not None:
+                if not isinstance(validator, Validator):
+                    raise InvalidConfigurationException(
+                        "%s. validator %s is not an instance of Validator"
+                        % (name, validator)
+                    )
+
+            return self.add_directive(
+                name=name, exp=exp, validator=validator, active=active, final=True
+            )
+
+            if isinstance(name, ValidationDirective):
+                self._add_override(name)
+                return
 
             if validator is None:
                 existing = self.validators.get(name)
@@ -887,8 +901,9 @@ class ValidationManager:
                     msg = f"unknown check `{name}`.  known checks are `{possibles}` on `{self}.validators`"
 
                     if exp is undefined and active is False:
-                        # deactivating an absent validator isn't a big deal
-                        logger.warning("deactivating " + msg)
+                        logger.warning(
+                            "lazy.validations: deactivating absent validation" + msg
+                        )
                         return
 
                     raise KeyError(msg)
@@ -920,12 +935,15 @@ class ValidationManager:
         exp: Any = undefined,
         validator: Validator = None,
         active: Optional[bool] = None,
-        sourcname: str = None,
-        selector=None,
+        final=False,
     ):
         """ hmmmm, looks a lot like set_expectations """
 
         try:
+
+            if isinstance(name, ValidationDirective):
+                self._add_baseline(name)
+                return
 
             # bit of shuffling around to fix likely config mistakes...
             if validator is None and isinstance(exp, Validator):

@@ -65,15 +65,7 @@ class JsonSchemaValidator(Validator):
     def get_value(self, source_):
         return source_
 
-    def check(
-        self,
-        name: str,
-        testee: "LazyMixin",
-        exp: dict,
-        sources: dict,
-        t_message: str = None,
-        source_: Any = None,
-    ):
+    def check(self, name: str, testee: "LazyMixin", exp: dict, sources: dict):
 
         # def check(
         #     self, testee: "LazyMixin", exp: dict, t_message: str = None, source_: Any = None
@@ -81,8 +73,7 @@ class JsonSchemaValidator(Validator):
         try:
 
             igot = None
-            # source_ = source_ or self.get_source(testee)
-            source_ = source_ or self.get_source(testee, **sources)
+            source_ = self.get_source(testee, **sources)
             got = self.get_value(source_)
 
             if not isinstance(got, list):
