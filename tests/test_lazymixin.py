@@ -66,7 +66,13 @@ from lazy_regression_tests._baseutils import (
     InvalidConfigurationException,
 )
 
-from lazy_regression_tests.lazy3 import DictValidator, ValidationDirective
+from lazy_regression_tests.lazy3 import (
+    DictValidator,
+    ValidationDirective,
+    ValidationManager,
+    DirectValidator,
+    AutoExp,
+)
 
 
 from lazy_regression_tests.lazy3.filters import (
@@ -1045,6 +1051,218 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
                 "custom", validator=CustomDictValidator("var"), exp="N/A", active=True
             )
             self.check_expectations(data=self.j_data)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_005_deactivate(self):
+        try:
+            data = self.j_data.copy()
+            data["var3"] = "not3"
+
+            # since we know we will fail the var3=3 test, we turn it off
+
+            self.set_expectation("var3", active=False)
+
+            self.check_expectations(data=data)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_006_change_expectations(self):
+        try:
+            data = self.j_data.copy()
+            data["var3"] = "not3"
+
+            # instead of deactivateing the var3 check, we change its expectations
+
+            self.set_expectation("var3", exp="not3")
+
+            self.check_expectations(data=data)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_007_cant_activate_missing_validation(self):
+        try:
+
+            self.set_expectation("no_such_validation", active=True)
+
+            try:
+                self.check_expectations(data=self.j_data)
+            # pragma: no cover pylint: disable=unused-variable
+            except (Exception,) as e:
+                self.assertTrue(isinstance(e, InvalidConfigurationException))
+                self.assertTrue("no_such_validation" in str(e))
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class Test_JSON_ValidationFail(Test_JSON_Validation):
+    def test_005_custom_expfail(self):
+        try:
+            data = self.j_data.copy()
+            data["var6"] = 7
+            self.set_expectation(
+                "custom", validator=CustomDictValidator("var"), exp="N/A", active=True
+            )
+            try:
+                try:
+                    self.check_expectations(data=data)
+                    self.fail("should have errored 6<>7")
+                except (AssertionError,) as e:
+                    self.assertTrue("6" in str(e) and "7" in str(e))
+            # pragma: no cover pylint: disable=unused-variable
+            except (Exception,) as e:
+                if cpdb():
+                    pdb.set_trace()
+                raise
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class PretendHttpValidations:
+    cls_validators = [
+        ValidationDirective(
+            "status_code", validator=DirectValidator("status_code"), exp=200
+        ),
+        ValidationDirective(
+            "content_type", validator=DirectValidator("content_type"), exp="html"
+        ),
+    ]
+
+
+class Test_Direct_Validation(
+    PretendHttpValidations, BaseForJson, LazyMixinBasic, unittest.TestCase
+):
+    """ we can also check expectations directly against the TestCase
+        For example, suppose your unit test class tracked attributes
+        after getting a response through `requests`
+
+
+    """
+
+    cls_validators = [
+        # this overrides the expectations set before
+        ValidationDirective("content_type", exp="json")
+    ]
+
+    def test_001_expects(self):
+        try:
+
+            self.content_type = "json"
+            self.status_code = 200
+
+            self.check_expectations(data=self.j_data)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_002_fails_on_html(self):
+        try:
+
+            self.content_type = "html"
+            self.status_code = 200
+            try:
+                self.check_expectations(data=self.j_data)
+            except (AssertionError,) as e:
+                self.assertTrue("html" in str(e) and "json" in str(e))
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class Test_Direct_AutoExpectations(
+    PretendHttpValidations, BaseForJson, LazyMixinBasic, unittest.TestCase
+):
+
+    cls_validators = [
+        # this overrides the expectations set before we are now expecting to get them from the data
+        ValidationDirective(
+            "content_type",
+            exp=AutoExp("http_content_type"),
+            validator=DictValidator("content_type"),
+        ),
+        ValidationDirective("status_code", active=False),
+        ValidationDirective("title", exp=AutoExp, validator=DictValidator("title")),
+    ]
+
+    j_data = dict(
+        var1=1,
+        var2=dict(var21=21, var22=22, var23=dict(var231=231)),
+        var3=3,
+        var4=4,
+        someval="xyz",
+        title="mytitle",
+        content_type="not_xml",
+    )
+
+    def setUp(self):
+        self.j_data = self.j_data.copy()
+
+    http_content_type = "not_xml"
+
+    def test_001_expects(self):
+        """
+            The 2 AutoExp validators, combined with setting the attributes
+            on the unittest.TestCase insstance or class , is really the equivalent of:
+
+            self.set_expectation("title",exp="mytitle")
+            self.set_expectation("content_type",exp="json")
+
+        """
+
+        try:
+
+            self.title = "mytitle"
+
+            self.check_expectations(data=self.j_data)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def test_002_fail(self):
+        """
+        make sure it errors when appropriate
+        """
+
+        try:
+
+            data = self.j_data.copy()
+            data["title"] = "mytitle2"
+
+            self.http_content_type = "changed_expectations"
+            self.title = "mytitle2"
+
+            try:
+                self.check_expectations(data=data)
+                self.fail("%s should have failed" % self.http_content_type)
+            # pragma: no cover pylint: disable=unused-variable
+            except (AssertionError,) as e:
+                self.assertTrue(self.http_content_type in str(e))
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:

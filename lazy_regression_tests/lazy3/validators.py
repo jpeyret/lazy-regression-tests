@@ -420,7 +420,9 @@ class MixinExpInGot:
             raise
 
 
-class NamedTesteeAttributeValidator(AttributeValidator):
+class DirectValidator(AttributeValidator):
+    """ this is intended to check attributes/data on unittest.Testcase instance """
+
     sourcename = None
 
     def __init__(self, selector=None):
@@ -435,6 +437,9 @@ class NamedTesteeAttributeValidator(AttributeValidator):
         super(NamedTesteeAttributeValidator, self).__init__(
             selector, sourcename=self.sourcename
         )
+
+
+NamedTesteeAttributeValidator = DirectValidator
 
 
 #######################################################
@@ -754,7 +759,9 @@ class ValidationManager:
                     exp = getattr(testee, directive.name, undefined)
 
                 if exp is undefined:
-                    raise ValueError("%s has undefined exp" % (directive))
+                    raise InvalidConfigurationException(
+                        "%s has undefined exp" % (directive)
+                    )
 
                 seen.add(logname)
                 validator.check(name, testee, exp, sources)
@@ -880,6 +887,8 @@ class ValidationManager:
                         "%s. validator %s is not an instance of Validator"
                         % (name, validator)
                     )
+
+            # ok, this is at the end
 
             return self.add_directive(
                 name=name, exp=exp, validator=validator, active=active, final=True
