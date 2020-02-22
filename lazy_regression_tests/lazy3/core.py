@@ -152,7 +152,7 @@ class LazyMixin(metaclass=_LazyMeta):
             env_name = dict(exp="template_dirname_exp", got="template_dirname_got")[
                 exp_got
             ]
-            dirname = subber.get("dirname") or self.control.env[env_name]
+            dirname = subber.get("dirname") or self._lazy_control.env[env_name]
 
             dirname2 = os.path.join(dirname, subber.get("classname"))
 
@@ -350,7 +350,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 env.clear()
                 env.acquire(self.ENVIRONMENT_VARNAME_ROOT)
 
-            self.control = control = _Control(self, env, options)
+            self._lazy_control = control = _Control(self, env, options)
 
             # only create the lazy temp the first time.
             tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env, self)

@@ -334,46 +334,6 @@ def get_subber_for_dirname(self, di_env={}):
         raise
 
 
-class Test_001_Configuration(LazyMixinBasic, unittest.TestCase):
-
-    # old_os_environ = os.environ
-    # try:
-    #     os.environ = {}
-    #     self.assertRaises(OSError, my_function)
-    # finally:
-    #     os.environ = old_os_environ
-
-    def test_001_missing_configuration(self):
-        try:
-            try:
-                ante = os.environ
-                os.environ = {}
-                try:
-
-                    subber = get_subber_for_dirname(self)
-
-                    tdirname = self._lazy_get_t_dirname("exp", subber)
-
-                    # tdirname = self._lazy_get_t_dirname("exp")
-                except (ValueError, KeyError) as e:
-                    message = str(e)
-                    self.assertTrue("dirname" in message)
-
-                # tbasename = self._lazy_get_t_basename("exp")
-                # # should default to default
-                # self.assertEqual(lzrt_default_t_basename, tbasename)
-
-            finally:
-                os.environ = ante
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-
 class TestBasic(LazyMixinBasic, unittest.TestCase):
     @mock.patch.dict(os.environ, di_mock_env)
     def test_001_equal_string(self):
