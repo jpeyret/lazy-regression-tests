@@ -207,10 +207,13 @@ var2
 
         self.lazy_environ.acquired = False
 
-    def seed(self, exp, extension, suffix=""):
+    def seed(self, exp, extension=None, suffix=""):
         try:
             try:
-                self.assert_exp(exp, extension, suffix=suffix)
+
+                extension = extension or self.extension
+
+                self.assert_exp(exp, extension=extension, suffix=suffix)
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e:
                 pass
@@ -948,6 +951,31 @@ class Test_JSON_DictFilter(Test_JSON):
                 pdb.set_trace()
             raise
 
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_003_text_stillworks(self):
+        """
+        `assert_exp` is built around extensions, on purpose.  
+        You can run tests on several data formats.
+        """
+
+        try:
+
+            fnp_exp = self.seed(self.j_data, self.extension)
+            self.check_naming_convention()
+
+            self.assert_exp(self.j_data, self.extension)
+
+            fnp_exp = self.seed(self.data, "txt")
+            self.assertTrue(fnp_exp.endswith(".txt"))
+            self.assert_exp(self.data, "txt")
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                ppp(di_debug, "\ndebug")
+                pdb.set_trace()
+            raise
+
 
 def debug_expgot(exp, got, testee=None):
 
@@ -995,10 +1023,4 @@ alias _ldiffexpgot='ksdiff %(lzrt_template_dirname_exp)s %(lzrt_template_dirname
                 )
             )
 
-            # msg = "ksdiff %s %s\n" % (
-            #     lzrt_template_dirname_exp,
-            #     lzrt_template_dirname_got,
-            # )
-            # print("\n\n\n", msg)
-            # fo.write(msg)
         sys.exit(rc)

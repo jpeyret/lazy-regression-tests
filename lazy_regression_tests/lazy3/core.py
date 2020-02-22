@@ -104,7 +104,8 @@ class LazyChecker:
         textfiltermgr=None,
         write_exp_on_ioerror: bool = True,
     ):
-        self.extension = extension
+        self.lazy_extension = self.extension = extension
+
         self.write_exp_on_ioerror = write_exp_on_ioerror
         self.rawfiltermgr = rawfiltermgr
         self.textfiltermgr = textfiltermgr
@@ -322,7 +323,7 @@ class LazyMixin(metaclass=_LazyMeta):
     # this normally resolves to os.environ, but can be preset for testing
     lazy_environ = MediatedEnvironDict()
 
-    T_FILENAME = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
+    T_FILENAME = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(lazy_extension)s"
 
     ENVIRONMENT_VARNAME_ROOT = "lzrt_"
 
@@ -408,15 +409,16 @@ class LazyMixin(metaclass=_LazyMeta):
             extension = options
 
             subber = Subber(
-                self,
                 options,
                 {
                     "filename": self.lazy_filename,
                     "suffix": suffix,
                     "classname": self.__class__.__name__,
                     "exp_got": exp_got,
-                    "extension": extension,
                 },
+                # the lower priority the TestCase instance the less probability
+                # of name clashes
+                self,
             )
 
             # calculating the directory path
