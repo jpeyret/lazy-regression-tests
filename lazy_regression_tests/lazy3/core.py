@@ -29,8 +29,6 @@ from typing import (
 
 #######################################################
 
-import pdb
-
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -58,25 +56,22 @@ except (ImportError,) as e:  # pragma: no cover
     class CustomTimeoutError(Exception):
         """we'll never see this """
 
-        pass
 
-
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
-
-from lazy_regression_tests._baseutils import debugObject, ppp, Dummy
-
+# pylint: disable=unused-import
+from lazy_regression_tests._baseutils import ppp, Dummy
 from traceback import print_exc as xp
 
-from .validators import (
-    ValidationManager,
-    NamedTesteeAttributeValidator,
-    build_validators_for_class,
-)
-from .filters import build_filters_for_class, FilterManager
+# pylint: enable=unused-import
+
+
+# pylint: disable=unused-wildcard-import,wildcard-import
+from .common import *
+
+# pylint: enable=unused-wildcard-import,wildcard-import
+
+
+from .validators import ValidationManager
+from .filters import FilterManager
 
 
 # aliasing the JSON response filter management to DictFilterManager as there is
@@ -84,11 +79,8 @@ from .filters import build_filters_for_class, FilterManager
 from .http_validators import JsonFilterManager as DictFilterManager
 
 from lazy_regression_tests.utils import (
-    # MediatedEnvironDict,
-    undefined,
     Subber,
     RegexRemoveSaver as RegexRemoveSaver1,
-    ppp,
     fill_template,
 )
 
@@ -100,10 +92,6 @@ from lazy_regression_tests.utils import (
 
 
 from .core_assist import LazyChecker, LazyTemp, MediatedEnvironDict, _Control, _LazyMeta
-
-OPT_DIRECTIVE_SKIP = "skip"
-OPT_DIRECTIVE_BASELINE = "baseline"
-OPT_DIRECTIVE_NODIFF = "nodiff"
 
 
 class LazyMixin(metaclass=_LazyMeta):
@@ -179,10 +167,7 @@ class LazyMixin(metaclass=_LazyMeta):
                     "%%(%s)s" % (attrname) for attrname in dirname_extras.split()
                 ]
 
-                if "%(lazy_dirname_extras)s" in _litd:
-                    _litd = replace(_litd, "%(lazy_dirname_extras)s", li_replace)
-                else:
-                    _litd.extend(li_replace)
+                _litd.extend(li_replace)
 
             return _litd
 
@@ -333,11 +318,10 @@ class LazyMixin(metaclass=_LazyMeta):
 
             return self._lazycheck(got, checker, suffix)
 
+        # pragma: no cover pylint: disable=unused-variable
         except (AssertionError,) as e:  # pragma: no cover
             raise
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -358,7 +342,7 @@ class LazyMixin(metaclass=_LazyMeta):
             # the environment requests that no diffing or writing take place
             # typically indicated by setting environment variable `lzrt_directive=skip`
             if control.skip():
-                return
+                return tmp
 
             # calculate the paths of the exp/got files
             tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
