@@ -495,8 +495,6 @@ class ValidationManager:
         if verbose:
             lines = ["  validators:"]
             lines += ["    %s" % str(val) for val in self.validators.values()]
-            # lines += ["  overrides:"]
-            # lines += ["    %s" % str(val) for val in self.overrides.values()]
             extra = "\n".join(lines)
         else:
             extra = ""
@@ -506,8 +504,6 @@ class ValidationManager:
     def __init__(self, testee, *validator_managers):
 
         self.validators = {}
-
-        self.overrides = {}
 
         for validatormgr in validator_managers:
 
@@ -530,11 +526,6 @@ class ValidationManager:
                     except (AttributeError,) as e:
                         if not directive.exp.required:
                             directive.active = False
-                            # if not name in self.overrides:
-                            #     logger.info("deactivating %s" % (name))
-                            #     directive.active = False
-                            # else:
-                            #     directive.exp = undefined
                             continue
                         raise
 
@@ -545,43 +536,8 @@ class ValidationManager:
                     except (AttributeError,) as e:
                         if not directive.exp.required:
                             directive.active = False
-                            # if not name in self.overrides:
-                            #     logger.info("deactivating %s" % (name))
-                            #     directive.active = False
-                            # else:
-                            #     directive.exp = undefined
                             continue
                         raise
-
-            # if self.overrides:
-
-            #     for name, override in self.overrides.items():
-            #         if not override.validator:
-
-            #             directive = self.validators[name]
-            #             if verbose:
-            #                 logger.info("validator.ante:%s" % (directive))
-            #                 logger.info("override      :%s" % (override))
-
-            #             directive.active = (
-            #                 override.active
-            #                 if override.active is not None
-            #                 else directive.active
-            #             )
-            #             directive.exp = (
-            #                 override.exp
-            #                 if override.exp is not undefined
-            #                 else directive.exp
-            #             )
-
-            #             if verbose:
-            #                 logger.info("validator.post:%s" % (directive))
-
-            #         else:
-            #             self._add_baseline(override, name)
-            #             # raise NotImplementedError(
-            #             #     "%s.prep_validation(%s) with validator" % (self, locals())
-            #             # )
 
         except (
             Exception,
@@ -820,11 +776,6 @@ class ValidationManager:
                 pdb.set_trace()
             raise
 
-    def _add_override(self, directive, name=None):
-        raise NotImplementedError("%s._add_override(%s)" % (self, locals()))
-        name = name or directive.name
-        self.overrides[name] = directive
-
     def remove_expectation(self, name):
         """ set an expection's active to False, disabling it """
         try:
@@ -891,48 +842,9 @@ class ValidationManager:
                         % (name, validator)
                     )
 
-            # ok, this is at the end
-
             return self.add_directive(
                 name=name, exp=exp, validator=validator, active=active, final=True
             )
-
-            if isinstance(name, ValidationDirective):
-                self._add_override(name)
-                return
-
-            if validator is None:
-                existing = self.validators.get(name)
-
-                if active is None:
-                    active = exp is not undefined
-
-                if existing is None:
-
-                    possibles = ",".join(list(self.validators.keys()))
-                    msg = f"unknown check `{name}`.  known checks are `{possibles}` on `{self}.validators`"
-
-                    if exp is undefined and active is False:
-                        logger.warning(
-                            "lazy.validations: deactivating absent validation" + msg
-                        )
-                        return
-
-                    raise KeyError(msg)
-                else:
-                    self._add_override(
-                        ValidationDirective(name, validator, exp, active)
-                    )
-
-            else:
-
-                if active is None:
-                    active = not (exp is undefined)
-
-                self._add_override(ValidationDirective(name, validator, exp, active))
-
-            if verbose:
-                ppp(self, "after set_expectation")
 
         except (
             Exception,
