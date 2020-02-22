@@ -5,36 +5,46 @@ test lazy-regression-tests
 
 import sys
 import os
+
 import unittest
-import json
-import codecs
-from collections import namedtuple
-import tempfile
-
-
-import re
-import shutil
-import difflib
-
-# pyver = sys.version_info.major
-pyver = "?"
-
-
-verbose = "-v" in sys.argv
 
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
     import mock  # python 2?
 
-try:
-    from bs4 import BeautifulSoup as bs
-except (ImportError,) as e:
-    try:
-        from BeautifulSoup import BeautifulSoup as bs
-    except (Exception,) as e2:
-        bs = None
+import json
+import tempfile
 
+
+import re
+
+
+# pylint: disable=unused-import
+#######################################################
+# Typing
+#######################################################
+from typing import (
+    Optional,
+    # TYPE_CHECKING,
+    Any,
+    cast,
+)
+from bemyerp.pssystem.typing_ import T_options
+
+# if TYPE_CHECKING:
+#    from bemyerp.xxx import yyy
+
+#######################################################
+# pylint: enable=unused-import
+
+
+verbose = "-v" in sys.argv
+
+
+# pylint: disable=attribute-defined-outside-init
+
+# pylint: disable=missing-function-docstring,missing-class-docstring  #🧨🧨🧨🧨 turn this back on later 🧨🧨🧨🧨
 
 import logging
 
@@ -58,10 +68,8 @@ from lazy_regression_tests._baseutils import (
 
 
 from lazy_regression_tests.lazy3.filters import (
-    RegexSubstitHardcoded,
     RegexRemoveSaver,
     DictFilter,
-    CSSRemoveFilter,
     FilterDirective,
     FilterManager,
     JsonFilterManager,
@@ -112,10 +120,6 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
 
 
-# lzrt_template_dirname = os.path.join(dirtemp, "out/%(subject)s/%(lazy_dirname_extras)s")
-# lzrt_template_dirname_got = os.path.join(dirtemp, "got/%(subject)s/%(lazy_dirname_extras)s")
-# lzrt_template_dirname_exp = os.path.join(dirtemp, "exp/%(subject)s/%(lazy_dirname_extras)s")
-
 lzrt_template_dirname = os.path.join(dirtemp, "out")
 lzrt_template_dirname_got = os.path.join(dirtemp, "got")
 lzrt_template_dirname_exp = os.path.join(dirtemp, "exp")
@@ -144,35 +148,16 @@ module_ = module_ if module_ in sys.modules else "__builtin__"
 funcpath_open = "%s.open" % module_
 
 
-class Foo(object):
-    pass
-
-
-if __name__ == "__main__":
-    lazy_filename = os.path.splitext(os.path.basename(__file__))[0]
-else:
-    try:
-        logger.error("Foo.__module__:%s:" % (Foo.__module__))
-        lazy_filename = Foo.__module__.split(".")[-1]
-        # lazy_filename = "xxx"
-        # lazy_filename = os.path.splitext(os.path.basename(__file__))[0]
-        logger.error(Foo.__module__)
-    except (NameError,) as e:
-        logger.error(debugObject(globals(), "globals"))
-        logger.error(debugObject(dir(Foo), "Foo"))
-        raise
-
-
 def debug_env(self):
     ppp(self.lazy_environ, "lazyenv")
 
 
+# pylint: disable=no-member
 class LazyMixinBasic(LazyMixin):
 
     """
-    these are for not-live tests.
-
-
+    basic support functionality for the rest of the tests
+    similar in fact to how LazyMixin is normally used.
 
     """
 
@@ -180,7 +165,7 @@ class LazyMixinBasic(LazyMixin):
 
     debug_env = debug_env
 
-    lazy_filename = lazy_filename
+    lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
 
     tmp_formatted_data = None
 
@@ -191,11 +176,6 @@ somedata
 var1
 var2
 """
-
-    subject = "<somesubject>"
-
-    def _lazy_write(self, fnp, formatted_data):
-        self.tmp_formatted_data = formatted_data
 
     def setUp(self):
         """not sure why needed, but need to reset the environment
@@ -238,9 +218,9 @@ var2
             the            class name, method name and extension are in the filename
 
 
-        it is also possible to inject one or more extra parts into the directory, above, the classname
-        this is done via the `lazy_dirname_extras` variable which results in an attribute lookup
-        on the TestCase instance
+        It is also possible to inject one or more extra parts into the directory,
+        above, the classname this is done via the `lazy_dirname_extras` 
+        variable which results in an attribute lookup on the TestCase instance
         that is inserted into the path
 
         class MyTestClass:
@@ -248,8 +228,7 @@ var2
 
             def test_site(self):
                 self.site = "example.com"
-            
-
+    
 
         """
         try:
@@ -281,8 +260,6 @@ var2
                         "dir %s does end with %s extras/class" % (dirname, tail),
                     )
 
-                    # raise NotImplementedError("%s.check_naming_convention(lazy_dirname_extras)" % (self))
-
                 else:
 
                     self.assertTrue(
@@ -306,8 +283,13 @@ var2
             raise
 
 
-def get_subber_for_dirname(self, di_env={}):
+# pylint: enable=no-member
+
+
+def get_subber_for_dirname(self, di_env: Optional[dict] = None):
     try:
+
+        di_env = di_env or {}
 
         di_sub = dict(suffix="")
         subber = Subber(
