@@ -1,3 +1,11 @@
+""" core LazyMixin functionality 
+
+be very cautious of referencing self.<attribute> when there is no 'lazy' prefix to it
+
+for this reason auxiliary classes have been moved to core_assist.py
+
+"""
+
 import pdb
 import os
 import sys
@@ -70,6 +78,7 @@ from .validators import (
 )
 from .filters import build_filters_for_class, FilterManager
 
+
 # aliasing the JSON response filter management to DictFilterManager as there is
 # very little that is HTTP specific
 from .http_validators import JsonFilterManager as DictFilterManager
@@ -90,224 +99,11 @@ from lazy_regression_tests.utils import (
 # 🔬LazyCheckerOptions2 in v2
 
 
-class LazyChecker:
-
-    extension = "?"
-
-    def __repr__(self):
-        return "%s[%s]" % (self.__class__.__name__, self.extension)
-
-    def __init__(
-        self,
-        extension: str,
-        rawfiltermgr=None,
-        textfiltermgr=None,
-        write_exp_on_ioerror: bool = True,
-    ):
-        self.lazy_extension = self.extension = extension
-
-        self.write_exp_on_ioerror = write_exp_on_ioerror
-        self.rawfiltermgr = rawfiltermgr
-        self.textfiltermgr = textfiltermgr
-
-        if verbose:
-            ppp(self, self)
-
-        self.filterhash = None
-
-        self.reg_callbacks = {}
-
-    def debug(self, ix, lines):
-        print("\n".join(lines[ix - 5 : +ix + 5]))
-
-    def prep(self, tmp, data):
-        return data
-
-    def to_text(self, tmp, data):
-        return str(data)
-
-    def filter_raw(self, tmp, data):
-        return self.rawfiltermgr.filter(self, tmp, data)
-
-    def filter_text(self, tmp, data):
-        return self.textfiltermgr.filter(self, tmp, data).strip()
-
-    def format(self, tmp, data):
-        try:
-            # used to only format once
-            if (
-                isinstance(data, str)
-                and self.filterhash
-                and self.filterhash == hash(data)
-            ):
-                return data
-
-            data = self.prep(tmp, data)
-            data = self.filter_raw(tmp, data)
-            str_data = self.to_text(tmp, data)
-            str_data = self.filter_text(tmp, str_data)
-
-            self.filterhash = hash(str_data)
-
-            return str_data
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                ppp(self, self)
-                pdb.set_trace()
-            raise
-
-
-class LazyTemp(object):
-    def __repr__(self):
-        return "LazyTemp[id=%s]" % (id(self))
-
-    def __init__(self, control, env, testee):
-        self.control = control
-        self.fnp_exp = self.fnp_got = None
-        self.env = env.copy()
-        self.message = ""
-        self.filtered = Dummy()
-        self.testee = testee
-
-    def add_filtered(self, name, value, scalar):
-        """ each filter saves what it finds here """
-        try:
-            if scalar:
-                setattr(self.filtered, name, value)
-            else:
-                li = getattr(self.filtered, name, None)
-                if li is None:
-                    li = []
-                    setattr(self.filtered, name, li)
-
-                li.append(value)
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-
-class MediatedEnvironDict(dict):
-    def __init__(self, acquired=False, **kwds):
-        """
-        """
-        self.acquired = acquired
-        super(MediatedEnvironDict, self).__init__(**kwds)
-
-    def acquire(self, rootname):
-        if self.acquired:
-            return
-
-        len_root = len(rootname)
-
-        for k, value in os.environ.items():
-            if k.startswith(rootname):
-                k2 = k[len_root:]
-                self[k2] = value
-
-        self.acquired = True
-
+from .core_assist import LazyChecker, LazyTemp, MediatedEnvironDict, _Control, _LazyMeta
 
 OPT_DIRECTIVE_SKIP = "skip"
 OPT_DIRECTIVE_BASELINE = "baseline"
 OPT_DIRECTIVE_NODIFF = "nodiff"
-
-
-class _Control(object):
-    """unifies environment and function arguments
-       to determine handlers for IOError and AssertionError
-       save in the LazyTemp results object as well.
-    """
-
-    def __init__(
-        self, lazy: "LazyMixin", env: MediatedEnvironDict, options: "LazyCheckerOptions"
-    ):
-
-        self.lazy = lazy
-        self.env = env
-        self.options = options
-
-    def write_exp_on_ioerror(self):
-        return getattr(self.options, "write_exp_on_ioerror", True)
-
-    _directive = undefined
-
-    @property
-    def directive(self) -> str:
-        """ note that  """
-        if self._directive is undefined:
-            res = self._directive = self.env.get("directive", "").strip().lower()
-            assert res in (
-                OPT_DIRECTIVE_SKIP,
-                OPT_DIRECTIVE_BASELINE,
-                OPT_DIRECTIVE_NODIFF,
-                "",
-            )
-        return self._directive
-
-    def skip(self):
-        return self.directive == OPT_DIRECTIVE_SKIP
-
-    def baseline(self):
-        return self.directive == OPT_DIRECTIVE_BASELINE
-
-    def nodiff(self):
-        return self.directive == OPT_DIRECTIVE_NODIFF
-
-
-#######################################################
-#
-#######################################################
-
-
-class _LazyMeta(type):
-    def __new__(mcls, name, bases, attrs, **kwargs):
-        cls_ = super(_LazyMeta, mcls).__new__(mcls, name, bases, attrs)
-        return cls_
-
-    def __init__(cls, name, bases, attrs, **kwargs):
-        """ 
-        intercepting the newly created class allows stacking of the 
-        ancestral validators and formatters in reverse mro order
-        i.e. top of ancestors go first
-        """
-
-        try:
-
-            classname = cls.__name__
-
-            # we want to build out the validators by running the basic ancestral ones first
-            # ex:  check status=200 and content_type = html before checking <title>
-            li_bases2current = list(reversed(cls.mro()))
-
-            li_ancestor_filter = []
-
-            for basecls in li_bases2current:
-
-                cls_filters = getattr(basecls, "cls_filters", {})
-
-                if cls_filters:
-                    li_ancestor_filter.append(cls_filters)
-
-            cls.cls_validators = build_validators_for_class(cls, li_bases2current)
-            if verbose:
-                print(
-                    f"👉 class:{classname}.cls_validators:{cls.cls_validators}, cls_validators:{cls.cls_validators}"
-                )
-
-            cls.cls_filters = build_filters_for_class(cls, li_ancestor_filter)
-
-            return super().__init__(name, bases, attrs)
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            if cpdb():
-                pdb.set_trace()
-            raise
 
 
 class LazyMixin(metaclass=_LazyMeta):
