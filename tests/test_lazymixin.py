@@ -64,12 +64,11 @@ from lazy_regression_tests.lazy3.filters import (
     CSSRemoveFilter,
     FilterDirective,
     FilterManager,
+    JsonFilterManager,
 )
 
 from lazy_regression_tests.lazy3.core import OPT_DIRECTIVE_BASELINE
 
-
-from lazy_regression_tests.lazy3.http_validators import JsonFilterManager
 
 rescuedict = RescueDict()
 
