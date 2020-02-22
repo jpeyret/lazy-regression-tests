@@ -213,13 +213,6 @@ class _Control(object):
 
 
 class _LazyMeta(type):
-
-    # pylint: disable=bad-mcs-classmethod-argument  #be quiet.  this is _LazyMeta metaclass, not an app-level `cls`
-    def __new__(mcls, name, bases, attrs, **kwargs):
-        cls_ = super(_LazyMeta, mcls).__new__(mcls, name, bases, attrs)
-        return cls_
-
-    # pylint: disable=return-in-init   #duh pylint, this is metaclass magic
     def __init__(cls, name, bases, attrs, **kwargs):
         """ 
         intercepting the newly created class allows stacking of the 
@@ -252,7 +245,7 @@ class _LazyMeta(type):
 
             cls.cls_filters = build_filters_for_class(cls, li_ancestor_filter)
 
-            return super().__init__(name, bases, attrs)
+            super().__init__(name, bases, attrs)
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
