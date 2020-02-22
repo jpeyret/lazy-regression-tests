@@ -71,18 +71,12 @@ from .common import *
 
 
 from .validators import ValidationManager
-from .filters import FilterManager
 
 
 # aliasing the JSON response filter management to DictFilterManager as there is
 # very little that is HTTP specific
-from .http_validators import JsonFilterManager as DictFilterManager
 
-from lazy_regression_tests.utils import (
-    Subber,
-    RegexRemoveSaver as RegexRemoveSaver1,
-    fill_template,
-)
+from lazy_regression_tests.utils import Subber, fill_template
 
 #######################################################
 # extract to secondary
@@ -95,6 +89,24 @@ from .core_assist import LazyChecker, LazyTemp, MediatedEnvironDict, _Control, _
 
 
 class LazyMixin(metaclass=_LazyMeta):
+    """ Intended as a Mixin to unittest classes it provides a number of services automatically
+
+        - validations via cls_validators and set_expectation
+        - regression testing against last seen baseline via `self.assert_exp(data, extension)`
+        - filtering to avoid false regression alerts from variable data (timestamps, csrf protection tokens)
+           - cls_filters = dict(<extension>=FilterDirectives...)
+           - self.set_filter(FilterDirective)
+
+        - both validations and filters are intended to be defined in mixin ancestor classes and mixed and 
+          matched as desired
+
+        class MyTest(LazyMixin, unittest.TestCase):
+            cls_filters = dict(html=filter_csrftokens)
+            cls_validators = [validate_http, validate_html]
+
+            
+    """
+
     cls_filters = {}
     cls_validators = []
     add_lazy_dirname = []
@@ -112,7 +124,11 @@ class LazyMixin(metaclass=_LazyMeta):
     ENVIRONMENT_VARNAME_ROOT = "lzrt_"
 
     @classmethod
-    def get_basename(cls, name_, file_, module_):
+    def get_basename(cls, name_, file_, module_) -> str:
+        """ called from mytest.py this returns mytest and is the base for file naming
+        its use in client code is a bit anomalous as the enclosing class
+        hasn't been created yet.
+        """
         cls.lazy_pa = pa = Path(file_)
         return pa.stem
 
@@ -134,7 +150,7 @@ class LazyMixin(metaclass=_LazyMeta):
             raise
 
     def _lazy_get_t_dirname(self, exp_got, subber):
-
+        """ get the template for the directory names where to save files """
         try:
 
             env_name = dict(exp="template_dirname_exp", got="template_dirname_got")[
@@ -153,6 +169,17 @@ class LazyMixin(metaclass=_LazyMeta):
             raise
 
     def _handle_dirname_extras(self, _litd):
+        """ allows injection of extra instance-set attributes into the directory hierarchies
+        The intent of `lazy_dirname_extras` is to partition tests by other attributes, like say 
+        a site name or a test database name.
+        given `lazy_dirname_extras = "site"` and `self.site = 'example.com'`
+        .
+        └── <myclass>
+            ├── example.com
+            │   └── <get_basename>.<myclass>.<_testMethodName>.txt
+
+        """
+
         try:
 
             dirname_extras = getattr(self, "lazy_dirname_extras", "")
@@ -183,11 +210,9 @@ class LazyMixin(metaclass=_LazyMeta):
         options: "LazyChecker",
         suffix: Optional[str],
     ):
-        """get the save path"""
+        """ get the save path """
 
         try:
-
-            extension = options
 
             subber = Subber(
                 options,
@@ -226,9 +251,8 @@ class LazyMixin(metaclass=_LazyMeta):
 
             return os.path.join(dirname, basename)
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable, broad-except
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -241,14 +265,15 @@ class LazyMixin(metaclass=_LazyMeta):
 
     @property
     def validationmgr(self):
+        """ create the validationmgr on demand """
         if self._validationmgr is undefined:
-            res = None
-            self._validationmgr = res = ValidationManager(self, *self.cls_validators)
+            self._validationmgr = ValidationManager(self, *self.cls_validators)
 
         return self._validationmgr
 
     @property
     def filters(self):
+        """ build filters at the instance level """
         if self._filters is undefined:
             self._filters = self.lazy_build_filters()
 
@@ -257,6 +282,7 @@ class LazyMixin(metaclass=_LazyMeta):
     def check_expectations(
         self, lazy_skip=None, lazy_skip_except=None, lazy_sourced_only=True, **sources
     ):
+        """ validate active validation directives """
         try:
             self.validationmgr.check_expectations(
                 self,
@@ -272,6 +298,8 @@ class LazyMixin(metaclass=_LazyMeta):
             raise
 
     def set_expectation(self, *args, **kwargs):
+        """ add/modify a validation """
+
         validationmgr = self.validationmgr
 
         name = args[0]
@@ -287,23 +315,28 @@ class LazyMixin(metaclass=_LazyMeta):
     #######################################################
 
     def assert_exp(self, got: Any, extension: str, suffix: str = "") -> LazyTemp:
-
-        # 🔬 this is the v2 path
+        """
+        regression test that `got` is the same as what was last encountered and stored
+        in `exp` file.
+        """
 
         try:
 
-            assert isinstance(extension, str), (
-                "need string extension parameter for LazyMixin2 %s.assert_exp(extension=%s)"
-                % (self, extension)
-            )
+            if not isinstance(extension, str):
+                raise InvalidConfigurationException(
+                    "%s.extension has to be a string (extension=%s) and one of the existing filters"
+                    % (self, extension)
+                )
 
-            filter_ = self.filters[extension]
+            try:
+                filter_ = self.filters[extension]
+            # pragma: no cover pylint: disable=unused-variable
+            except (KeyError,) as e:
+                raise InvalidConfigurationException(
+                    f"{self}. unknown extension={extension}. known extensions in filters:{self.filters.keys()}"
+                )
 
             rawfiltermgr, textfiltermgr = filter_.get_raw_text_filters()
-
-            di_debug = {}
-
-            # raise NotImplementedError("%s.assert_exp(%s)" % (self, di_debug))
 
             checker = LazyChecker(
                 extension=extension,
@@ -366,6 +399,8 @@ class LazyMixin(metaclass=_LazyMeta):
                 with open(fnp_exp) as fi:
                     # linefeeds have a tendency to creep in sometimes
                     exp = fi.read().rstrip()
+
+            # pragma: no cover pylint: disable=unused-variable
             except (IOError,) as e:
                 # by default we just want to write the received data as our expectation
                 if control.write_exp_on_ioerror():
@@ -384,6 +419,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 if exp != formatted_got():
                     raise self.fail(message)
 
+            # pragma: no cover pylint: disable=unused-variable
             try:
                 # supports a timeout mechanism, if the module is available
                 self.assertEqualTimed(exp, formatted_got)
@@ -395,9 +431,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 self.fail(message)
             except (AssertionError,) as e:  # pragma: no cover
                 raise
-            except (
-                Exception,
-            ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            except (Exception,) as e:
                 if cpdb():
                     pdb.set_trace()
                 raise
@@ -429,4 +463,5 @@ class LazyMixin(metaclass=_LazyMeta):
     else:
         #
         def assertEqualTimed(self, exp, got, message=None):
+            """ fallback if timeout package is not available """
             self.assertEqual(exp, got, message)
