@@ -348,39 +348,6 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
-    #######################################################
-    # dubious
-    #######################################################
-
-    def preformat(self, data, options: "LazyCheckerOptions"):
-
-        # return  # 🧨049.lazy.026.lazy3
-
-        try:
-
-            raise NotImplementedError(
-                "%s.preformat(%s)" % (self, "🧟‍♂️🧟‍♂️🧟‍♂️ dead code 🧟‍♂️🧟‍♂️🧟‍♂️")
-            )
-
-            env = self.lazy_environ
-            if not self.lazy_environ.acquired:
-                env.clear()
-                env.acquire(self.ENVIRONMENT_VARNAME_ROOT)
-
-            self.control = control = _Control(self, env, options)
-
-            tmp = self.lazytemp = self.lazytemp or LazyTemp(control, env, self)
-
-            # 🤔 ahhh, but we need this to BeautifulSoup or do other stuff...
-            return options.format(tmp, data)
-
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
-                pdb.set_trace()
-            raise
-
     def _lazy_get_t_dirname(self, exp_got, subber):
 
         try:
@@ -633,7 +600,7 @@ class LazyMixin(metaclass=_LazyMeta):
             if control.nodiff():
                 tmp.message = message = "exp and got are not equal but diffing disabled"
                 if exp != formatted_got():
-                    raise self.Fail(message)
+                    raise self.fail(message)
 
             try:
                 # supports a timeout mechanism, if the module is available
@@ -645,9 +612,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 )
                 self.fail(message)
             except (AssertionError,) as e:  # pragma: no cover
-                # pdb.set_trace()
                 raise
-            # timeout_decorator.timeout_decorator.TimeoutError
             except (
                 Exception,
             ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
@@ -658,18 +623,6 @@ class LazyMixin(metaclass=_LazyMeta):
             return self.lazytemp
 
         except (AssertionError,) as e:  # pragma: no cover
-            if rpdb():  # pragma: no cover
-                pdb.set_trace()
-
-                dn = "/Users/jluc/kds2/issues2/049.lazy/021.p4.v2"
-                fnp = os.path.join(dn, "exp.%s.txt" % (self.__class__.__name__))
-                with open(fnp, "w") as fo:
-                    fo.write(exp)
-
-                fnp = os.path.join(dn, "got.%s.txt" % (self.__class__.__name__))
-                with open(fnp, "w") as fo:
-                    fo.write(formatted_got)
-
             raise
         except (
             Exception,
@@ -677,11 +630,6 @@ class LazyMixin(metaclass=_LazyMeta):
             if cpdb():
                 pdb.set_trace()
             raise
-
-    # @timeout(TIMEOUT_MAXTIME_TO_ALLOW)
-    # def assertEqualTimed(self, exp, got, message):
-    #     # Issue.049.lazy.018.timeout
-    #     self.assertEqual(exp, got, message)
 
     #######################################################
     # Note the conditional method definition and the fallback to

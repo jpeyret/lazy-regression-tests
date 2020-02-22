@@ -127,6 +127,7 @@ class DictFilter(RawFilter, DataMatcher):
         return "%s[%s]=%s" % (self.__class__.__name__, self.name, self.dict_)
 
     def __init__(self, dict_: dict, name: str):
+        assert isinstance(dict_, dict)
         self.dict_ = dict_
         self.name = name
         self.formatter = DictFormatter(di_default_formatter=dict_)
