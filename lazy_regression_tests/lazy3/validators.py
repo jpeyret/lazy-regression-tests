@@ -495,8 +495,8 @@ class ValidationManager:
         if verbose:
             lines = ["  validators:"]
             lines += ["    %s" % str(val) for val in self.validators.values()]
-            lines += ["  overrides:"]
-            lines += ["    %s" % str(val) for val in self.overrides.values()]
+            # lines += ["  overrides:"]
+            # lines += ["    %s" % str(val) for val in self.overrides.values()]
             extra = "\n".join(lines)
         else:
             extra = ""
@@ -529,11 +529,12 @@ class ValidationManager:
                         continue
                     except (AttributeError,) as e:
                         if not directive.exp.required:
-                            if not name in self.overrides:
-                                logger.info("deactivating %s" % (name))
-                                directive.active = False
-                            else:
-                                directive.exp = undefined
+                            directive.active = False
+                            # if not name in self.overrides:
+                            #     logger.info("deactivating %s" % (name))
+                            #     directive.active = False
+                            # else:
+                            #     directive.exp = undefined
                             continue
                         raise
 
@@ -543,43 +544,44 @@ class ValidationManager:
                         continue
                     except (AttributeError,) as e:
                         if not directive.exp.required:
-                            if not name in self.overrides:
-                                logger.info("deactivating %s" % (name))
-                                directive.active = False
-                            else:
-                                directive.exp = undefined
+                            directive.active = False
+                            # if not name in self.overrides:
+                            #     logger.info("deactivating %s" % (name))
+                            #     directive.active = False
+                            # else:
+                            #     directive.exp = undefined
                             continue
                         raise
 
-            if self.overrides:
+            # if self.overrides:
 
-                for name, override in self.overrides.items():
-                    if not override.validator:
+            #     for name, override in self.overrides.items():
+            #         if not override.validator:
 
-                        directive = self.validators[name]
-                        if verbose:
-                            logger.info("validator.ante:%s" % (directive))
-                            logger.info("override      :%s" % (override))
+            #             directive = self.validators[name]
+            #             if verbose:
+            #                 logger.info("validator.ante:%s" % (directive))
+            #                 logger.info("override      :%s" % (override))
 
-                        directive.active = (
-                            override.active
-                            if override.active is not None
-                            else directive.active
-                        )
-                        directive.exp = (
-                            override.exp
-                            if override.exp is not undefined
-                            else directive.exp
-                        )
+            #             directive.active = (
+            #                 override.active
+            #                 if override.active is not None
+            #                 else directive.active
+            #             )
+            #             directive.exp = (
+            #                 override.exp
+            #                 if override.exp is not undefined
+            #                 else directive.exp
+            #             )
 
-                        if verbose:
-                            logger.info("validator.post:%s" % (directive))
+            #             if verbose:
+            #                 logger.info("validator.post:%s" % (directive))
 
-                    else:
-                        self._add_baseline(override, name)
-                        # raise NotImplementedError(
-                        #     "%s.prep_validation(%s) with validator" % (self, locals())
-                        # )
+            #         else:
+            #             self._add_baseline(override, name)
+            #             # raise NotImplementedError(
+            #             #     "%s.prep_validation(%s) with validator" % (self, locals())
+            #             # )
 
         except (
             Exception,
@@ -819,6 +821,7 @@ class ValidationManager:
             raise
 
     def _add_override(self, directive, name=None):
+        raise NotImplementedError("%s._add_override(%s)" % (self, locals()))
         name = name or directive.name
         self.overrides[name] = directive
 
