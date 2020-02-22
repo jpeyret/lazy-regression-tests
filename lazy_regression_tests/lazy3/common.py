@@ -5,6 +5,12 @@
 
 """
 
+import sys
+
+verbose = "-v" in sys.argv
+
+undefined = NotImplemented
+
 OPT_DIRECTIVE_SKIP = "skip"
 OPT_DIRECTIVE_BASELINE = "baseline"
 OPT_DIRECTIVE_NODIFF = "nodiff"

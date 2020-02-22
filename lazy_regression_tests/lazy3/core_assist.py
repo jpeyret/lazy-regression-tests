@@ -8,13 +8,9 @@ for this reason auxiliary classes have been moved to core_assist.py
 
 import pdb
 import os
-import sys
 
-from pathlib import Path
-
-undefined = NotImplemented
-
-verbose = "-v" in sys.argv
+# pylint: disable=unused-wildcard-import,wildcard-import,unused-import
+from .common import *
 
 #######################################################
 # Typing
@@ -26,37 +22,25 @@ from typing import (
     Union,
 )
 
-from .validators import (
-    ValidationManager,
-    NamedTesteeAttributeValidator,
-    build_validators_for_class,
-)
-from .filters import build_filters_for_class, FilterManager
+from lazy_regression_tests._baseutils import ppp, Dummy
 
-from .common import *
+from traceback import print_exc as xp
+
+
+# pylint: enable=unused-wildcard-import,wildcard-import,unused-import
+
+from .validators import build_validators_for_class
+from .filters import build_filters_for_class
 
 
 #######################################################
 
-import pdb
-
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
 
 rpdb = breakpoints = cpdb
-
-
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
-
-from lazy_regression_tests._baseutils import debugObject, ppp, Dummy
-
-from traceback import print_exc as xp
 
 
 class LazyChecker:
@@ -229,10 +213,13 @@ class _Control(object):
 
 
 class _LazyMeta(type):
+
+    # pylint: disable=bad-mcs-classmethod-argument  #be quiet.  this is _LazyMeta metaclass, not an app-level `cls`
     def __new__(mcls, name, bases, attrs, **kwargs):
         cls_ = super(_LazyMeta, mcls).__new__(mcls, name, bases, attrs)
         return cls_
 
+    # pylint: disable=return-in-init   #duh pylint, this is metaclass magic
     def __init__(cls, name, bases, attrs, **kwargs):
         """ 
         intercepting the newly created class allows stacking of the 

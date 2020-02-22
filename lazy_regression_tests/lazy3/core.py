@@ -37,8 +37,6 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-# from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
-
 try:
 
     from timeout_decorator import timeout
