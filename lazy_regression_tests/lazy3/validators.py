@@ -296,7 +296,11 @@ class Validator:
                     {"name": name or self},
                 )
 
-            testee.assertTrue(exp.search(str(got)), message)
+            if not isinstance(got, (list, set)):
+                testee.assertTrue(exp.search(str(got)), message)
+            else:
+                for igot in got:
+                    testee.assertTrue(exp.search(str(igot)), message)
 
         except (
             Exception,
