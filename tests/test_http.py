@@ -324,7 +324,6 @@ class HTMLCheck(HTMLBase):
             response = self.get_response()
 
             if self.fail_on_validate:
-                pdb.set_trace()
                 try:
                     self.check_expectations(response=response)
                 # pragma: no cover pylint: disable=unused-variable
