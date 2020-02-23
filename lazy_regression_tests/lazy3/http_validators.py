@@ -210,3 +210,29 @@ class HtmlFilterManager(FilterManager):
             if cpdb():
                 pdb.set_trace()
             raise
+
+
+class ResponseHTML:
+
+    _selectable = undefined
+
+    @property
+    def selectable(self):
+
+        if self._selectable is undefined:
+            self._selectable = bs(self.content)
+        return self._selectable
+
+    def __init__(self, response):
+        try:
+            self._response = response
+            self.content = response.content
+            self.status_code = response.status_code
+            self.headers = response._headers
+
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
