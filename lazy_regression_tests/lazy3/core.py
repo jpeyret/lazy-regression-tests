@@ -151,10 +151,20 @@ class LazyMixin(metaclass=_LazyMeta):
         """ get the template for the directory names where to save files """
         try:
 
-            env_name = dict(exp="template_dirname_exp", got="template_dirname_got")[
-                exp_got
-            ]
-            dirname = subber.get("dirname") or self._lazy_control.env[env_name]
+            env_name = dict(
+                exp="template_dirname_exp",
+                got="template_dirname_got",
+                report="template_dirname_report",
+            )[exp_got]
+            dirname = subber.get("dirname") or self._lazy_control.env.get(env_name)
+
+            if dirname is None:
+                if exp_got in ("exp", "got"):
+                    raise InvalidConfigurationException(
+                        "could not get output directory for %s in %s"
+                        % (exp_got, self._lazy_control.env)
+                    )
+                return None
 
             dirname2 = os.path.join(dirname, subber.get("classname"))
 
@@ -227,6 +237,10 @@ class LazyMixin(metaclass=_LazyMeta):
 
             # calculating the directory path
             t_dirname = self._lazy_get_t_dirname(exp_got, subber)
+
+            if t_dirname is None:
+                return None
+
             _litd = t_dirname.split(os.path.sep)
 
             _litd = self._handle_dirname_extras(_litd)
@@ -357,6 +371,34 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
+    def _save_raw(self, options, suffix, control, tmp, got):
+
+        try:
+            control.save_raw = True
+
+            if not control.save_raw:
+                return
+
+            fnp_raw = self._get_fnp_save("report", options, suffix)
+
+            if fnp_raw is None:
+                return
+
+            data = options.prep(tmp, got)
+
+            # linefeeds have a tendency to creep in sometimes
+            formatted_got = options.format(tmp, got).rstrip()
+
+            with open(fnp_raw, "w") as fo:
+                str_data = options.to_text(tmp, data)
+                fo.write(str_data)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
     def _lazycheck(self, got: Any, options: LazyChecker, suffix: str = "") -> LazyTemp:
 
         try:
@@ -378,6 +420,8 @@ class LazyMixin(metaclass=_LazyMeta):
             # calculate the paths of the exp/got files
             tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
             tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
+
+            self._save_raw(options, suffix, control, tmp, got)
 
             # linefeeds have a tendency to creep in sometimes
             formatted_got = options.format(tmp, got).rstrip()
@@ -456,10 +500,35 @@ class LazyMixin(metaclass=_LazyMeta):
             """ comparisons will automatically times out after %s seconds""" % (
                 TIMEOUT_MAXTIME_TO_ALLOW
             )
-            self.assertEqual(exp, got, message)
+            try:
+                self.assertEqual(exp, got, message)
+            except (AssertionError,) as e:
+                raise self.format_assertion_message(e)
 
     else:
         #
         def assertEqualTimed(self, exp, got, message=None):
             """ fallback if timeout package is not available """
-            self.assertEqual(exp, got, message)
+            try:
+                self.assertEqual(exp, got, message)
+            except (AssertionError,) as e:
+                raise self.format_assertion_message(e)
+
+    def format_assertion_message(self, ori):
+
+        message = f"""
+
+❌❌❌Regressions found:
+
+Expected contents are in file:
+  {self.lazytemp.fnp_exp}
+
+Received contents are in file:
+  {self.lazytemp.fnp_got}
+
+Original exception:
+ {ori}
+❌❌❌
+"""
+        exc = ori.__class__(message)
+        return exc

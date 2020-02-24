@@ -943,8 +943,8 @@ def build_validators_for_class(cls, li_revmro):
                     if not isinstance(
                         validator, (ValidationManager, ValidationDirective)
                     ):
-                        raise ValueError(
-                            "unexpected validation {validator} on class.{cls_.__name__}"
+                        raise InvalidConfigurationException(
+                            f"unexpected validation {validator} on class.{cls_.__name__}"
                         )
 
                     if not validator in seen:

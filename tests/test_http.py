@@ -20,7 +20,6 @@ import tempfile
 from django.http import HttpResponse
 
 from jinja2 import Template
-from django.http import HttpResponse
 import datetime
 
 import re
@@ -104,52 +103,43 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-# from lazy_regression_tests.core import (
-#     lzrt_default_t_basename,
-#     lzrt_default_t_subdir,
-#     LazyMixin,
-#     LazyIOErrorCodes,
-#     OnAssertionError,
-#     DiffFormatter,
-#     lzrt_default_t_basename,
-# )
-
-# from lazy_regression_tests.utils import (
-#     DictionaryKeyFilter,
-#     _Filter,
-#     RemoveTextFilter,
-#     RegexRemoveSaver,
-#     KeepTextFilter,
-# )
-
 from lazy_regression_tests.lazy3 import LazyMixin
 
 ##########################################################
 # tests
 ##########################################################
 
+
 lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
 
 
-dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
+# dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
 
 
-lzrt_template_dirname = os.path.join(dirtemp, "out")
-lzrt_template_dirname_got = os.path.join(dirtemp, "got")
-lzrt_template_dirname_exp = os.path.join(dirtemp, "exp")
+# lzrt_template_dirname = os.path.join(dirtemp, "out")
+# lzrt_template_dirname_got = os.path.join(dirtemp, "got")
+# lzrt_template_dirname_exp = os.path.join(dirtemp, "exp")
+# lzrt_template_dirname_report = os.path.join(dirtemp, "report")
 
 
-lzrt_template_basename = lzrt_default_t_basename
+# lzrt_template_basename = lzrt_default_t_basename
 
 
-di_mock_env = dict(
-    lzrt_template_dirname=lzrt_template_dirname,
-    lzrt_template_dirname_got=lzrt_template_dirname_got,
-    lzrt_template_dirname_exp=lzrt_template_dirname_exp,
-    lzrt_template_basename=lzrt_template_basename,
-)
+# di_mock_env = dict(
+#     lzrt_template_dirname=lzrt_template_dirname,
+#     lzrt_template_dirname_got=lzrt_template_dirname_got,
+#     lzrt_template_dirname_exp=lzrt_template_dirname_exp,
+#     lzrt_template_basename=lzrt_template_basename,
+#     lzrt_template_dirname_report = lzrt_template_dirname_report,
+# )
+
+from lazy_regression_tests.lazy3.helper_tst import *
+
+di_mock_env = get_mock_env()
 
 di_mock_env_baseline = di_mock_env.copy()
+
+
 di_mock_env_baseline.update(lzrt_directive=OPT_DIRECTIVE_BASELINE)
 
 
@@ -415,7 +405,7 @@ class Test_ValidationFailLine3(Test_ValidationNonScalar):
     fail_on_validate = "Line3"
 
     template = """
-        <html><head><title>Greetings<title></head>
+        <html><head><title>Greetings</title></head>
         <body>Hi <span id="name" >{{ name }}</span>! It is now 
         <span class="timestamp">{{ now }}</span>.
         <ul>
@@ -425,6 +415,56 @@ class Test_ValidationFailLine3(Test_ValidationNonScalar):
         </ul>
         </body></html>
     """
+
+
+class Helper(HTMLValidationMixin, HelperHTML, CheckitMixin):
+    """ just some boiler plate code to assist in testing 
+        No Lazy-related features on bases yet
+    """
+
+    extension = "html"
+
+
+class Test_Features(Helper, LazyMixinBasic):
+
+    name = "Mr. Rabbit"
+    line1 = "Item 1"
+    line2 = "Item 2"
+    line3 = "Item 3"
+
+    template = """
+<title>Greetings</title>
+<script>
+const csrf_token = '{{csrf}}';
+</script>
+<body>
+    Hi&nbsp;<span id="name">{{ name }}</span>&nbsp;! 
+    It is now<span class="timestamp">{{ timestamp }}</span>.
+    Your order is:
+    <ul>
+        <li>{{line1}}</li>
+        <li>{{line2}}</li>
+        <li>{{line3}}</li>
+    </ul>
+</body>
+    """
+
+    cls_validators = [
+        ValidationDirective("title", exp="Greetings"),
+        ValidationDirective("name", exp=AutoExp, validator=CSSValidator("#name")),
+    ]
+
+    cls_filters = dict(
+        html=[
+            FilterDirective(
+                "timestamp",
+                filter_=CSSRemoveFilter("span.timestamp", "timestamp", scalar=True),
+            ),
+            FilterDirective(
+                "csrf", filter_=RegexRemoveSaver("csrf_token", "csrf_token")
+            ),
+        ]
+    )
 
 
 class Test_Validation_Fail(HTMLBase):
@@ -517,14 +557,6 @@ alias _ldiffexpgot='ksdiff %(lzrt_template_dirname_exp)s %(lzrt_template_dirname
     finally:
         with open("/Users/jluc/kds2/wk/bin/lsource.sh", "w") as fo:
 
-            fo.write(
-                fill_template(
-                    tmpl_source,
-                    dict(
-                        lzrt_template_dirname_exp=lzrt_template_dirname_exp,
-                        lzrt_template_dirname_got=lzrt_template_dirname_got,
-                    ),
-                )
-            )
+            fo.write(fill_template(tmpl_source, di_mock_env))
 
         sys.exit(rc)
