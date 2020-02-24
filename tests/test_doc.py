@@ -105,7 +105,7 @@ class Test_Features(Helper, LazyMixinBasic):
     line2 = "Item 2"
     line3 = "Item 3"
 
-    cls_filters = dict(html=filter_variables)
+    xcls_filters = dict(html=filter_variables)
 
     cls_validators = [
         ValidationDirective("title", exp="Your order"),
