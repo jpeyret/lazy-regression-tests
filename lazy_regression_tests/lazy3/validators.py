@@ -19,6 +19,8 @@ from lazy_regression_tests._baseutils import (
 
 from traceback import print_exc as xp
 
+from .common import *
+
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -84,6 +86,9 @@ class AutoExp:
                 try:
 
     """
+
+    def __repr__(self):
+        return "%s[%s]" % (self.__class__.__name__, getattr(self, "paths", ""))
 
     required = True
 
@@ -496,18 +501,20 @@ class ValidationDirective:
 class ValidationManager:
     def __repr__(self):
 
+        extra = f" for {self.testee}"
+
         if verbose:
-            lines = ["  validators:"]
+
+            lines = ["", "  validators:"]
             lines += ["    %s" % str(val) for val in self.validators.values()]
-            extra = "\n".join(lines)
-        else:
-            extra = ""
+            extra += "\n".join(lines)
 
         return "%s%s" % (self.__class__.__name__, extra)
 
     def __init__(self, testee, *validator_managers):
 
         self.validators = {}
+        self.testee = testee
 
         for validatormgr in validator_managers:
 
@@ -651,6 +658,8 @@ class ValidationManager:
                 seen=seen, lazy_skip_except=lazy_skip_except, lazy_skip=lazy_skip
             )
 
+            name = validator = None
+
             self.prep_validation(testee, names)
 
             if verbose:
@@ -731,11 +740,11 @@ class ValidationManager:
             if verbose:
                 debug_write_validation_log(self.fnp_val_log, seen)
 
-        except (AssertionError,) as e:  # pragma: no cover
+        except (AssertionError,) as assert_exc:  # pragma: no cover
+            format_assertion_error(self, assert_exc, validator=validator, name=name)
             raise
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable, broad-except
+        except (Exception,) as e:  #
             if cpdb():
                 pdb.set_trace()
             raise
@@ -900,6 +909,19 @@ class ValidationManager:
             if rpdb() or cpdb():
                 ppp(locals())
 
+                pdb.set_trace()
+            raise
+
+    def debug(self):
+        try:
+            print(f"\n\n{self}:")
+            for key in self.validators:
+                value = self.validators[key]
+                print(f"  {key} : {value}")
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
                 pdb.set_trace()
             raise
 

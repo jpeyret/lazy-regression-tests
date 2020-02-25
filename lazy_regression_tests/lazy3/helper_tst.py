@@ -78,6 +78,22 @@ def get_mock_env(seed={}):
 choice_csrf = string.ascii_letters + string.digits
 
 
+def get_fake_html_response(testee, data={}):
+    try:
+
+        data = testee.get_data(seed=data)
+
+        tmpl = Template(testee.template)
+        text = tmpl.render(**data)
+        return HttpResponse(text)
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            pdb.set_trace()
+        raise
+
+
 class Helper:
 
     fail_on_validate = None

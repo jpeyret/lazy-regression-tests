@@ -371,7 +371,7 @@ class LazyMixin(metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
-    def _save_raw(self, options, suffix, control, tmp, got):
+    def _get_fnp_raw(self, options, suffix, control, tmp, got):
 
         try:
             control.save_raw = True
@@ -381,17 +381,7 @@ class LazyMixin(metaclass=_LazyMeta):
 
             fnp_raw = self._get_fnp_save("report", options, suffix)
 
-            if fnp_raw is None:
-                return
-
-            data = options.prep(tmp, got)
-
-            # linefeeds have a tendency to creep in sometimes
-            formatted_got = options.format(tmp, got).rstrip()
-
-            with open(fnp_raw, "w") as fo:
-                str_data = options.to_text(tmp, data)
-                fo.write(str_data)
+            return fnp_raw
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -421,10 +411,10 @@ class LazyMixin(metaclass=_LazyMeta):
             tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
             tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
 
-            self._save_raw(options, suffix, control, tmp, got)
+            fnp_raw = self._get_fnp_raw(options, suffix, control, tmp, got)
 
             # linefeeds have a tendency to creep in sometimes
-            formatted_got = options.format(tmp, got).rstrip()
+            formatted_got = options.format(tmp, got, fnp_raw).rstrip()
 
             # at this point, we want to write the received, formatted, data regardless
             with open(fnp_got, "w") as fo:

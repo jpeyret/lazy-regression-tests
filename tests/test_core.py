@@ -196,15 +196,26 @@ var2
 
     def seed(self, exp, extension=None, suffix=""):
         try:
+
+            exception = None
             try:
 
                 extension = extension or self.extension
-
                 self.assert_exp(exp, extension=extension, suffix=suffix)
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e:
                 pass
-            return self.lazytemp.fnp_exp
+            # pragma: no cover pylint: disable=unused-variable
+            except (Exception,) as e:
+                exception = e
+                raise
+            finally:
+                if exception:
+                    raise exception
+
+                tmp = self.lazytemp
+                self.lazytemp = None
+                return tmp
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -480,9 +491,9 @@ class Test_Error_Handling(LazyMixinBasic, unittest.TestCase):
 
             self.assertFalse(changed_data.strip() == self.data.strip())
 
-            self.seed(changed_data, self.extension)
+            lazytemp = self.seed(changed_data, self.extension)
 
-            for fnp in [self.lazytemp.fnp_got, self.lazytemp.fnp_exp]:
+            for fnp in [lazytemp.fnp_got, lazytemp.fnp_exp]:
                 with open(fnp) as fi:
                     data = fi.read()
                 self.assertEqual(changed_data.strip(), data.strip())
@@ -516,9 +527,9 @@ class Test_Error_Handling(LazyMixinBasic, unittest.TestCase):
 
             self.assertFalse(changed_data.strip() == self.data.strip())
 
-            self.seed(changed_data, self.extension)
+            lazytemp = self.seed(changed_data, self.extension)
 
-            for fnp in [self.lazytemp.fnp_got, self.lazytemp.fnp_exp]:
+            for fnp in [lazytemp.fnp_got, lazytemp.fnp_exp]:
                 with open(fnp) as fi:
                     data = fi.read()
                 self.assertEqual(changed_data.strip(), data.strip())
@@ -567,7 +578,8 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
 
             li_change = ["var2", "var3"]
 
-            fnp_exp = self.seed(changed_data, self.extension)
+            fnp_exp = self.seed(changed_data, self.extension).fnp_exp
+            self.lazytemp = None
 
             # test that lines matching the filter are removed from the file
             with open(fnp_exp) as fi:
@@ -580,13 +592,13 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
                 )
 
             # but the filtered data is still accessible through the filtered dictionary
-            tmp = self.lazytemp
-            # this is the value originally passed into seed
-            self.assertEqual(tmp.filtered[self.filtername], ["var3"])
+            # tmp = self.lazytemp
+            # # this is the value originally passed into seed
+            # self.assertEqual(tmp.filtered[self.filtername], ["var3"])
 
-            # tmp is reset on each new instance but we are still on the same instance after seed
-            # by default the filter results are put in a list
-            tmp.filtered[self.filtername] = []
+            # # tmp is reset on each new instance but we are still on the same instance after seed
+            # # by default the filter results are put in a list
+            # tmp.filtered[self.filtername] = []
 
             tmp = self.assert_exp(self.data, self.extension)
 
@@ -600,7 +612,7 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
                 )
 
             # this the unchanged value in self.data
-            self.assertEqual(tmp.filtered[self.filtername], ["var2"])
+            self.assertEqual(["var2"], tmp.filtered[self.filtername])
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -636,7 +648,8 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
 
             li_change = ["var2", "var3"]
 
-            fnp_exp = self.seed(changed_data, self.extension)
+            tmp = self.seed(changed_data, self.extension)
+            fnp_exp = tmp.fnp_exp
 
             # test that lines matching the filter are removed from the file
             with open(fnp_exp) as fi:
@@ -649,7 +662,6 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
                 )
 
             # but the filtered data is still accessible through the filtered dictionary
-            tmp = self.lazytemp
 
             # this is the value originally passed into seed, as a scalar
             self.assertEqual(tmp.filtered[self.filtername], "var3")
@@ -884,7 +896,7 @@ class Test_JSON_DictFilter(Test_JSON):
             changed_data = self.change_data()
             changed_data["var2"]["var22"] = "changed"
 
-            fnp_exp = self.seed(changed_data, self.extension)
+            fnp_exp = self.seed(changed_data, self.extension).fnp_exp
             with open(fnp_exp) as fi:
                 data = fi.read()
 
@@ -916,12 +928,12 @@ class Test_JSON_DictFilter(Test_JSON):
 
         try:
 
-            fnp_exp = self.seed(self.j_data, self.extension)
-            self.check_naming_convention()
+            self.seed(self.j_data, self.extension)
 
             self.assert_exp(self.j_data, self.extension)
+            self.check_naming_convention()
 
-            fnp_exp = self.seed(self.data, "txt")
+            fnp_exp = self.seed(self.data, "txt").fnp_exp
             self.assertTrue(fnp_exp.endswith(".txt"))
             self.assert_exp(self.data, "txt")
 

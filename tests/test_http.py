@@ -198,10 +198,14 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
                 extension = extension or self.extension
 
                 self.assert_exp(exp, extension=extension, suffix=suffix)
+
+                fnp_exp = self.lazytemp.fnp_exp
+                self.lazytemp = None
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e:
-                pass
-            return self.lazytemp.fnp_exp
+                fnp_exp = self.lazytemp.fnp_exp
+                self.lazytemp = None
+            return fnp_exp
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:

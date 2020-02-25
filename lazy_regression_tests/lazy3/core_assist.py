@@ -85,7 +85,7 @@ class LazyChecker:
     def filter_text(self, tmp, data):
         return self.textfiltermgr.filter(self, tmp, data).strip()
 
-    def format(self, tmp, data):
+    def format(self, tmp, data, fnp_raw):
         try:
             # used to only format once
             if (
@@ -96,6 +96,17 @@ class LazyChecker:
                 return data
 
             data = self.prep(tmp, data)
+
+            if fnp_raw:
+                str_data = self.to_text(tmp, data)
+
+                dirname = os.path.dirname(fnp_raw)
+                if not os.path.isdir(dirname):
+                    os.makedirs(dirname)
+
+                with open(fnp_raw, "w") as fo:
+                    fo.write(str_data)
+
             data = self.filter_raw(tmp, data)
             str_data = self.to_text(tmp, data)
             str_data = self.filter_text(tmp, str_data)
