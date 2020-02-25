@@ -213,6 +213,8 @@ class HtmlFilterManager(FilterManager):
 
 
 class ResponseHTML:
+    def __repr__(self):
+        return "%s" % (self.__class__.__name__)
 
     _selectable = undefined
 
