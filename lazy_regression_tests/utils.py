@@ -19,7 +19,6 @@ from lazy_regression_tests._baseutils import (
     nested_dict_pop,
     first,
     DictFormatter,
-    InvalidConfigurationException,
 )
 
 from traceback import print_exc as xp  # pylint: disable=unused-import
@@ -680,6 +679,23 @@ def simple_subber(match, *args, **kwds):
         if cpdb():
             pdb.set_trace()
         raise
+
+
+class InvalidConfigurationException(ValueError):
+    """ indicates that some configuration is missing or invalid """
+
+    def __init__(self, msg, **kwargs):
+
+        new_message = f"""
+❌⚙️❌⚙️❌⚙️❌
+
+{msg}
+
+❌⚙️❌⚙️❌⚙️❌
+"""
+
+        super(InvalidConfigurationException, self).__init__(new_message)
+        self.__dict__.update(kwargs)
 
 
 def debug_write_validation_log(fnp_val_log, seen):

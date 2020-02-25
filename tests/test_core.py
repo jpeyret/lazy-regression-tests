@@ -63,8 +63,10 @@ from lazy_regression_tests._baseutils import (
     RescueDict,
     Dummy,
     set_breakpoints3,
-    InvalidConfigurationException,
 )
+
+from lazy_regression_tests.utils import InvalidConfigurationException
+
 
 from lazy_regression_tests.lazy3 import (
     DictValidator,
@@ -781,7 +783,7 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
-            if cpdb():
+            if 1 or cpdb():
                 pdb.set_trace()
             raise
 

@@ -68,8 +68,10 @@ from lazy_regression_tests._baseutils import (
     RescueDict,
     Dummy,
     set_breakpoints3,
-    InvalidConfigurationException,
 )
+
+from lazy_regression_tests.utils import InvalidConfigurationException
+
 
 from lazy_regression_tests.lazy3 import (
     DictValidator,
