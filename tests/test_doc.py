@@ -185,8 +185,6 @@ class Test_Features_CustomLineValidation(Test_Features_Regex):
             for igot in got:
                 if not igot.endswith("3"):
                     testee.assertTrue(igot.startswith("Item"))
-
-            pdb.set_trace()
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             raise
@@ -220,6 +218,8 @@ class Test_Turning_ThingsOff(Test_Features):
 
             filter_ = self.filters["html"]
             ppp(filter_, filter_)
+
+            filter_.debug(self)
 
             timefilter = filter_.filters.get("timestamp")
 

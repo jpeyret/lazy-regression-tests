@@ -550,6 +550,72 @@ class FilterManager:
             newinst.filters[name] = filter_.copy()
         return newinst
 
+    def debug(self, testee):
+
+        try:
+            padder = "⚙️" * 6 + "  lazy-tests configuration  " + "⚙️" * 6
+            print(f"\n{padder}\n{self}  validators:")
+
+            for key in self.filters:
+                value = self.filters[key]
+                print(f"  {key:20.20}: active:{value.active} ")
+
+            li_revmro = list(reversed(testee.__class__.mro()))
+
+            li = [
+                (cls, getattr(cls, "cls_filters", {}).get("html")) for cls in li_revmro
+            ]
+
+            li = [tu_ for tu_ in li if tu_[1]]
+
+            actual = None
+            for cls, filt_ in li:
+                # pdb.set_trace()
+                oi = filt_.filters
+                print(f"{cls.__name__:30.30} {filt_} filters.id:{id(filt_.filters)}")
+
+                for key, actual in oi.items():
+                    print(f"  {key:20.20} : {str(actual):40.40} id actual:{id(actual)}")
+
+            pdb.set_trace()
+            ppp(actual, actual)
+            # raise NotImplementedError("%s.debug(%s)" % (self, locals()))
+
+            # li_info = [
+            #     f"{cls.__module__}.{cls.__name__}"
+            #     for cls in li_revmro
+            #     if getattr(cls, "cls_validators", None)
+            # ]
+
+            # print("\n\n ⚙️class-level inheritance:\n%s\n" % "\n".join(li_info))
+
+            # for cls in li_revmro:
+            #     cls_validators = getattr(cls, "cls_validators", None)
+            #     # print(f" {cls.__name__}:{cls_validators}")
+            #     if cls_validators:
+            #         print(f"\nfrom class {cls.__name__}:")
+            #         if isinstance(cls_validators, list):
+
+            #             for item in cls_validators:
+            #                 if hasattr(item, "validators"):
+            #                     print(f"   {item.validators:60.60}")
+            #                 else:
+            #                     print(f"   {item}")
+
+            #             # print(f"   {cls_validators}")
+            #         elif hasattr(cls_validators, "validators"):
+            #             print(f"   {cls_validators.validators:60.60}")
+            #         else:
+            #             print(f"   {cls_validators:60.60}")
+
+            print(f"\n{padder}\n")
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if 1 or cpdb():
+                pdb.set_trace()
+            raise
+
 
 class RawFilterManager(FilterManager):
     filter_cls = RawFilter
