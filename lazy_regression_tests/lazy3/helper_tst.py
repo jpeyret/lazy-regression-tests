@@ -35,38 +35,56 @@ from lazy_regression_tests.lazy3.http_validators import ResponseHTML
 
 
 def get_mock_env(seed={}):
+    """
+        this is used to mock the environment variables and 
+
+        also determines whether temp files are:
+        - used     : useful for self-testing the lazy-test itself
+        - not used : pretty much required for actual lazy-test usage
+
+        Note the self-caching 
+    """
 
     try:
 
-        di_mock_env = getattr(get_mock_env, "di_mock_env", None)
-        if di_mock_env:
-            res = di_mock_env.copy()
+        # to use temp files or not?
+        USE_TEMP_FILE = not (os.getenv("lzrt_TESTING_NO_TEMP_FILE"))
+
+        if USE_TEMP_FILE:
+
+            di_mock_env = getattr(get_mock_env, "di_mock_env", None)
+            if di_mock_env:
+                res = di_mock_env.copy()
+                res.update(**seed)
+                return res
+
+            dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
+
+            lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
+
+            lzrt_template_dirname = os.path.join(dirtemp, "out")
+            lzrt_template_dirname_got = os.path.join(dirtemp, "got")
+            lzrt_template_dirname_exp = os.path.join(dirtemp, "exp")
+            lzrt_template_dirname_report = os.path.join(dirtemp, "report")
+
+            lzrt_template_basename = lzrt_default_t_basename
+
+            res = get_mock_env.di_mock_env = dict(
+                lzrt_template_dirname=lzrt_template_dirname,
+                lzrt_template_dirname_got=lzrt_template_dirname_got,
+                lzrt_template_dirname_exp=lzrt_template_dirname_exp,
+                lzrt_template_basename=lzrt_template_basename,
+                lzrt_template_dirname_report=lzrt_template_dirname_report,
+            )
+
+            res = res.copy()
+            res.update(**seed)
+
+            return res
+        else:
+            res = os.environ.copy()
             res.update(**seed)
             return res
-
-        dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
-
-        lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
-
-        lzrt_template_dirname = os.path.join(dirtemp, "out")
-        lzrt_template_dirname_got = os.path.join(dirtemp, "got")
-        lzrt_template_dirname_exp = os.path.join(dirtemp, "exp")
-        lzrt_template_dirname_report = os.path.join(dirtemp, "report")
-
-        lzrt_template_basename = lzrt_default_t_basename
-
-        res = get_mock_env.di_mock_env = dict(
-            lzrt_template_dirname=lzrt_template_dirname,
-            lzrt_template_dirname_got=lzrt_template_dirname_got,
-            lzrt_template_dirname_exp=lzrt_template_dirname_exp,
-            lzrt_template_basename=lzrt_template_basename,
-            lzrt_template_dirname_report=lzrt_template_dirname_report,
-        )
-
-        res = res.copy()
-        res.update(**seed)
-
-        return res
 
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
