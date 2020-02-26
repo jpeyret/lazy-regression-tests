@@ -762,7 +762,7 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
-            if 1 or cpdb():
+            if cpdb():
                 pdb.set_trace()
             raise
 

@@ -17,7 +17,7 @@ from .validators import (
     AttrNamedDictValidator,
 )
 
-from .filters import FilterManager
+from .filters import FilterManager, RawFilter, DataMatcher
 
 from traceback import print_exc as xp
 
@@ -32,6 +32,57 @@ rpdb = breakpoints = cpdb
 
 
 from lazy_regression_tests.utils import first, fill_template, ppp
+
+#################################################################
+# the Filters
+#################################################################
+
+
+class CSSRemoveFilter(RawFilter, DataMatcher):
+    """ this belongs in the http_validators module """
+
+    def __init__(self, pattern, name, scalar=False, *args):
+        self.selector = pattern
+        self.name = name
+        self.scalar = scalar
+
+    def pre_format(self, data):
+        try:
+            data = bs(data)
+            return data
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def filter(self, options, tmp, data, callback):
+        try:
+
+            if isinstance(data, str):
+                data = self.pre_format(data)
+
+            li = []
+
+            for hit in data.select(self.selector):
+
+                s_hit = str(hit)
+                self.add_to_filter_hit(tmp, hit)
+                li.append(hit)
+
+            if callback:
+                callback(self.name, data, li)
+
+            for hit in li:
+                hit.decompose()
+
+            return data
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
 
 class HeadersValidator(AttrNamedDictValidator):

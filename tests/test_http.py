@@ -157,8 +157,8 @@ from lazy_regression_tests.lazy3.http_validators import (
     HTMLValidationMixin,
     ResponseHTML,
     CSSValidator,
+    CSSRemoveFilter,
 )
-from lazy_regression_tests.lazy3.filters import CSSRemoveFilter
 
 
 def debug_env(self):

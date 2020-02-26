@@ -25,8 +25,6 @@ from lazy_regression_tests.lazy3.http_validators import (
 )
 
 
-di_mock_env = get_mock_env()
-
 from lazy_regression_tests.lazy3 import LazyMixin
 
 from lazy_regression_tests.lazy3 import ValidationDirective, AutoExp
@@ -40,14 +38,18 @@ from lazy_regression_tests.lazy3.http_validators import CSSValidator
 
 from lazy_regression_tests.lazy3.filters import (
     FilterDirective,
-    # operates on a BeautifulSoup DOM, using standard CSS
-    # selectors
-    CSSRemoveFilter,
     # takes effect
     RegexRemoveSaver,
 )
 
-from lazy_regression_tests.lazy3.http_validators import HtmlFilterManager
+from lazy_regression_tests.lazy3.http_validators import (
+    # provides save-to-file, load-from-file functionality
+    # and calls BeautifulSoup to get a DOM
+    HtmlFilterManager,
+    # operates on a BeautifulSoup DOM, using standard CSS
+    # selectors
+    CSSRemoveFilter,
+)
 
 
 #################################################################
@@ -60,6 +62,8 @@ from lazy_regression_tests.lazy3.helper_tst import (
     get_mock_env,
     get_fake_html_response,
 )
+
+di_mock_env = get_mock_env()
 
 
 DO_SKIPPED_TESTS = False
