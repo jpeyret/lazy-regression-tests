@@ -143,12 +143,6 @@ class TitleCSSValidator(FullyQualifiedNamesValidator, CSSValidator):
 # Compose base validations/expectations
 #######################################################
 
-http_validations = ValidationManager("base")
-http_validations.add_directive("status_code", 200, StatusCodeValidator())
-http_validations.add_directive(
-    "content_type", validator=ContentTypeValidator(), active=True
-)
-
 
 class HTTPValidationMixin:
     """ sets basic expectations 
@@ -156,28 +150,29 @@ class HTTPValidationMixin:
         - and has a content_type, which changes depending on end points
     """
 
-    cls_validators = http_validations
+    cls_validators = [
+        ValidationDirective("status_code", exp=200, validator=StatusCodeValidator()),
+        ValidationDirective(
+            "content_type", active=True, validator=ContentTypeValidator()
+        ),
+    ]
 
 
 #######################################################
 # HTML-type validations
 #######################################################
-val = html_validations = ValidationManager("html")
-val.add_directive("title", TitleCSSValidator(), active=True)
+
+title_validation = ValidationDirective(
+    "title", active=True, validator=TitleCSSValidator()
+)
 
 
 class HTMLValidationMixin(HTTPValidationMixin):
-    """ 
-        - we now our content type now
-        - and we always want to validate titles, by default 
-          but, again, we don't yet know what to expect here.
-
-        add/qualify the expectations on HTTPValidationMixin 
-        mixing and matching validations is done by the metaclass that is connected
-        to LazyMixin
+    """ set `content_type` expectations
+        always want to validate `title`, by default 
     """
 
-    cls_validators = [html_validations, ValidationDirective("content_type", exp="html")]
+    cls_validators = [title_validation, ValidationDirective("content_type", exp="html")]
 
 
 class JSONValidationMixin(HTTPValidationMixin):
