@@ -61,8 +61,18 @@ rpdb = breakpoints = cpdb
 
 
 class DataMatcher(object):
+
+    selector = name = None
+
     def __repr__(self):
-        return "%s.%s:%s" % (self.__module__, self.__class__.__name__, self.name)
+
+        try:
+            return f"{self.__class__.__name__:30.30} selector:{self.selector} name:{self.name}"
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            pdb.set_trace()
+            return "%s.%s:%s" % (self.__module__, self.__class__.__name__, self.name)
 
     def __init__(self, selector, name):
         self.selector = selector
@@ -316,6 +326,16 @@ class FilterDirective:
     name = filter_ = active = callback = None
 
     def __repr__(self):
+
+        try:
+            return f"{self.__class__.__name__:30.30} active:{self.active} filter:{str(self.filter_):30.30}"
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            pdb.set_trace()
+            return "%s.%s" % (self.__class__.__name__, self.name)
+            # raise
+
         return "%s:%s active:%s callback=%s with %s\n" % (
             self.__class__.__name__,
             self.name,
@@ -554,11 +574,13 @@ class FilterManager:
 
         try:
             padder = "⚙️" * 6 + "  lazy-tests configuration  " + "⚙️" * 6
-            print(f"\n{padder}\n{self}  validators:")
+            print(f"\n{padder}\n{self}  filters:")
 
             for key in self.filters:
                 value = self.filters[key]
-                print(f"  {key:20.20}: active:{value.active} ")
+                print(
+                    f"  {key:20.20}: active:{str(value.active):5.5} filter:{str(value.filter_):30.30}"
+                )
 
             li_revmro = list(reversed(testee.__class__.mro()))
 
@@ -568,45 +590,21 @@ class FilterManager:
 
             li = [tu_ for tu_ in li if tu_[1]]
 
+            print(
+                "\n\n ⚙️class-level inheritance:\n%s\n"
+                % "\n".join([tu[0].__name__ for tu in li])
+            )
+
             actual = None
             for cls, filt_ in li:
-                # pdb.set_trace()
                 oi = filt_.filters
-                print(f"{cls.__name__:30.30} {filt_} filters.id:{id(filt_.filters)}")
+                # print(f"\n{cls.__name__:30.30} {filt_} filters.id:{id(filt_.filters)}")
 
                 for key, actual in oi.items():
-                    print(f"  {key:20.20} : {str(actual):40.40} id actual:{id(actual)}")
-
-            pdb.set_trace()
-            ppp(actual, actual)
-            # raise NotImplementedError("%s.debug(%s)" % (self, locals()))
-
-            # li_info = [
-            #     f"{cls.__module__}.{cls.__name__}"
-            #     for cls in li_revmro
-            #     if getattr(cls, "cls_validators", None)
-            # ]
-
-            # print("\n\n ⚙️class-level inheritance:\n%s\n" % "\n".join(li_info))
-
-            # for cls in li_revmro:
-            #     cls_validators = getattr(cls, "cls_validators", None)
-            #     # print(f" {cls.__name__}:{cls_validators}")
-            #     if cls_validators:
-            #         print(f"\nfrom class {cls.__name__}:")
-            #         if isinstance(cls_validators, list):
-
-            #             for item in cls_validators:
-            #                 if hasattr(item, "validators"):
-            #                     print(f"   {item.validators:60.60}")
-            #                 else:
-            #                     print(f"   {item}")
-
-            #             # print(f"   {cls_validators}")
-            #         elif hasattr(cls_validators, "validators"):
-            #             print(f"   {cls_validators.validators:60.60}")
-            #         else:
-            #             print(f"   {cls_validators:60.60}")
+                    filter_ = getattr(actual, "filter_", actual)
+                    print(
+                        f"  {key:20.20} : active:{actual.active} {str(filter_):40.40} id actual:{id(actual)}"
+                    )
 
             print(f"\n{padder}\n")
 
