@@ -4,6 +4,7 @@ test lazy-regression-tests
 """
 import sys
 import os
+import re
 
 import unittest
 
@@ -93,10 +94,10 @@ class LazyMixinBasic(LazyMixin):
             # like content_type, status_code, headers...
             response = ResponseHTML(http_response)
 
-            response.status_code = 404
-            pdb.set_trace()
-            pdb.set_trace()
-            self.validationmgr.debug()
+            # response.status_code = 404
+            # pdb.set_trace()
+            # self.validationmgr.debug()
+            # pdb.set_trace()
 
             # Check validation such as content_type and status code
             self.check_expectations(response=response)
@@ -154,6 +155,92 @@ const csrf_token = '{{csrf}}';
     </ul>
 </body>
     """
+
+
+# @unittest.skipUnless(False, "this is an intentional failure")
+class Test_Features_Regex(Test_Features):
+    """ This should fail """
+
+    cls_validators = [  # 👇                      #👇
+        ValidationDirective(
+            "item", exp=re.compile("^Item"), validator=CSSValidator("li.orderline")
+        )
+    ]
+
+    name = "Mr. Rabbit"
+    line1 = "Item 1"
+    line2 = "Item 2"
+    line3 = "Bad line 3"
+
+
+class Test_Features_CustomLineValidation(Test_Features_Regex):
+    """ This should pass, we are re-using the CSSValidation lookup for `item`"""
+
+    #   👇
+    def check_lineitems(testee: "unittest.TestCase", got, validator: "Validator"):
+        """
+        `got` will be a list of strings here 
+        """
+        try:
+            for igot in got:
+                if not igot.endswith("3"):
+                    testee.assertTrue(igot.startswith("Item"))
+
+            pdb.set_trace()
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            raise
+
+    cls_validators = [ValidationDirective("item", exp=check_lineitems)]  #   👇
+
+    name = "Mr. Rabbit"
+    line1 = "Item 1"
+    line2 = "Item 2"
+    line3 = "Bad line 3"
+
+
+class Test_Turning_ThingsOff(Test_Features):
+    """ we don't have a title or a greeting anymore
+        and we don't need to filter out the timestamp either
+        as it is fixed.
+    """
+
+    def test_it(self, data={}):
+        """ fetch data, run validations, regression test """
+        try:
+
+            self.set_expectation("title", active=False)
+            self.set_expectation("name", active=False)
+
+            self.filters["html"].set_filter("timestamp", active=False)
+            http_response = get_fake_html_response(self, data=data)
+            response = ResponseHTML(http_response)
+
+            pdb.set_trace()
+
+            filter_ = self.filters["html"]
+            ppp(filter_, filter_)
+
+            timefilter = filter_.filters.get("timestamp")
+
+            ppp(timefilter, timefilter)
+
+            self.check_expectations(response=response)
+            tmp = self.assert_exp(response.content, "html")
+
+            # 👆 lazy-testing 👆
+
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    # the template used to generate the fake html
+    template = """
+<body>
+    It is now<span class="timestamp">fake, fixed, timestamp</span>.<br/>
+</body>
+"""
 
 
 if __name__ == "__main__":
