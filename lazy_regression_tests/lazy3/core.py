@@ -166,7 +166,9 @@ class LazyMixin(metaclass=_LazyMeta):
                     )
                 return None
 
-            dirname2 = os.path.join(dirname, subber.get("classname"))
+            dirname2 = os.path.join(
+                dirname, self.lazy_filename, subber.get("classname")
+            )
 
             return dirname2
 
