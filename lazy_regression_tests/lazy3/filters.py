@@ -267,7 +267,7 @@ class RegexRemoveSaver(RegexMatcher):
 
 
 class CSSRemoveFilter(RawFilter, DataMatcher):
-    pass
+    """ this belongs in the http_validators module """
 
     def __init__(self, pattern, name, scalar=False, *args):
         self.selector = pattern
@@ -474,10 +474,9 @@ class FilterManager:
     def filter(self, options, tmp, data):
         """applies its filters to incoming data"""
         try:
-
             callbacks = getattr(options, "reg_callbacks", {})
 
-            for directive in self.filters.values():
+            for name, directive in self.filters.items():
 
                 if not directive.active:
                     continue
