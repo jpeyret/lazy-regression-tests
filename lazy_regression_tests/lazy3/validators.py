@@ -458,13 +458,22 @@ NamedTesteeAttributeValidator = DirectValidator
 
 class ValidationDirective:
     def __repr__(self):
-        return "%s:%s active:%s exp=%s with %s\n" % (
-            self.__class__.__name__,
-            self.name,
-            self.active,
-            (str(self.exp) if self.exp is not undefined else "undefined"),
-            self.validator,
-        )
+
+        try:
+
+            exp = getattr(self, "exp", undefined)
+            if exp is undefined:
+                exp = "undefined"
+            elif isinstance(exp, type):
+                exp = exp.__name__
+            else:
+                exp = str(exp)
+
+            return f"{self.__class__.__name__:20.20}:{self.name:30.30} active:{self.active} exp:{exp:30.30}"
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            return self.__class__.__name__
 
     def __init__(
         self,
@@ -914,14 +923,48 @@ class ValidationManager:
 
     def debug(self):
         try:
-            print(f"\n\n{self}:")
+            padder = "⚙️" * 6 + "  lazy-tests configuration  " + "⚙️" * 6
+            print(f"\n{padder}\n{self}  validators:")
             for key in self.validators:
                 value = self.validators[key]
-                print(f"  {key} : {value}")
+                print(
+                    f"  {key:20.20}: active:{value.active} exp:{str(value.exp) if not isinstance(value.exp, type) else value.exp.__name__:10.10} {value.validator.__class__.__name__:30.30}"
+                )
+
+            li_revmro = list(reversed(self.testee.__class__.mro()))
+
+            li_info = [
+                f"{cls.__module__}.{cls.__name__}"
+                for cls in li_revmro
+                if getattr(cls, "cls_validators", None)
+            ]
+
+            print("\n\n ⚙️class-level inheritance:\n%s\n" % "\n".join(li_info))
+
+            for cls in li_revmro:
+                cls_validators = getattr(cls, "cls_validators", None)
+                # print(f" {cls.__name__}:{cls_validators}")
+                if cls_validators:
+                    print(f"\nfrom class {cls.__name__}:")
+                    if isinstance(cls_validators, list):
+
+                        for item in cls_validators:
+                            if hasattr(item, "validators"):
+                                print(f"   {item.validators:60.60}")
+                            else:
+                                print(f"   {item}")
+
+                        # print(f"   {cls_validators}")
+                    elif hasattr(cls_validators, "validators"):
+                        print(f"   {cls_validators.validators:60.60}")
+                    else:
+                        print(f"   {cls_validators:60.60}")
+
+            print(f"\n{padder}\n")
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
-            if cpdb():
+            if 1 or cpdb():
                 pdb.set_trace()
             raise
 
