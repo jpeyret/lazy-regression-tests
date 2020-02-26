@@ -100,50 +100,21 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-# from lazy_regression_tests.core import (
-#     lzrt_default_t_basename,
-#     lzrt_default_t_subdir,
-#     LazyMixin,
-#     LazyIOErrorCodes,
-#     OnAssertionError,
-#     DiffFormatter,
-#     lzrt_default_t_basename,
-# )
-
-# from lazy_regression_tests.utils import (
-#     DictionaryKeyFilter,
-#     _Filter,
-#     RemoveTextFilter,
-#     RegexRemoveSaver,
-#     KeepTextFilter,
-# )
-
 from lazy_regression_tests.lazy3 import LazyMixin
 
 ##########################################################
 # tests
 ##########################################################
 
-lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
+
+from lazy_regression_tests.lazy3.helper_tst import get_mock_env
 
 
-dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
+di_mock_env = get_mock_env()
 
+lzrt_template_dirname_got = di_mock_env["lzrt_template_dirname_got"]
+lzrt_template_dirname_exp = di_mock_env["lzrt_template_dirname_exp"]
 
-lzrt_template_dirname = os.path.join(dirtemp, "out")
-lzrt_template_dirname_got = os.path.join(dirtemp, "got")
-lzrt_template_dirname_exp = os.path.join(dirtemp, "exp")
-
-
-lzrt_template_basename = lzrt_default_t_basename
-
-
-di_mock_env = dict(
-    lzrt_template_dirname=lzrt_template_dirname,
-    lzrt_template_dirname_got=lzrt_template_dirname_got,
-    lzrt_template_dirname_exp=lzrt_template_dirname_exp,
-    lzrt_template_basename=lzrt_template_basename,
-)
 
 di_mock_env_baseline = di_mock_env.copy()
 di_mock_env_baseline.update(lzrt_directive=OPT_DIRECTIVE_BASELINE)
@@ -231,12 +202,13 @@ var2
         👇 exp and got files are written to $lzrt_template_dirname_exp, $lzrt_template_dirname_got 
            environment variables
         <root dir exp/got>
-        |  👇 the class name is the last directory
-        └──TestBasic/
-           ├── test_lazymixin.TestBasic.test_001_equal_string.txt
-           └── test_lazymixin.TestBasic.test_002_naming_convention.txt
-                           👆        👆                         👆 
-            the            class name, method name and extension are in the filename
+        |  
+        └──test_core/        👈 module 
+            └──TestBasic/    👈 class
+               ├── test_core.TestNamingConventions.test_001_base_naming_convention.txt
+               └── test_core.TestNamingConventions.test_002_suffix.mysuffix.txt
+                             👆                    👆                       👆 
+                              class                method                   extension
 
 
         It is also possible to inject one or more extra parts into the directory,
@@ -250,6 +222,9 @@ var2
             def test_site(self):
                 self.site = "example.com"
     
+        TestNamingConventions/
+        ├── example.com
+            └── test_core.TestNamingConventions.test_003_dirname_extras_list.txt    
 
         """
         try:
@@ -265,7 +240,11 @@ var2
 
                 self.assertTrue(fnp.startswith(dir_root))
 
+                # check that the module name is in the directories
                 dirname, fname = os.path.split(fnp)
+                dirs_hierarchy = dirname.split(os.path.sep)
+                msg = f"filename:{self.lazy_filename}: not found in hierarchy: {dirs_hierarchy}"
+                self.assertTrue(self.lazy_filename in dirs_hierarchy, msg)
 
                 if getattr(self, "lazy_dirname_extras", None):
                     li = self._handle_dirname_extras([])
