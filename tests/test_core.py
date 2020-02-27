@@ -1252,50 +1252,8 @@ class Test_Direct_AutoExpectations(
             raise
 
 
-def debug_expgot(exp, got, testee=None):
-
-    li = ["\n"]
-    if testee:
-        li.append(str(testee))
-    li.append("exp:%s:" % (exp))
-    li.append("got:%s:" % (got))
-
-    logger.info("\n  ".join(li))
-
-
 if __name__ == "__main__":
 
     cpdb = set_cpdb()
-    rpdb = set_rpdb()
-    breakpoints = set_breakpoints3() or breakpoints
-    rc = 0
 
-    tmpl_source = """
-alias _lcdgot=1
-alias _lcdexp=2
-alias _ldiffexpgot=3
-
-unalias _lcdgot
-unalias _lcdexp
-unalias _ldiffexpgot
-alias _lcdexp='cd %(lzrt_template_dirname_exp)s'
-alias _lcdgot='cd %(lzrt_template_dirname_got)s'
-alias _ldiffexpgot='ksdiff %(lzrt_template_dirname_exp)s %(lzrt_template_dirname_got)s'
-"""
-
-    try:
-        rc = unittest.main()
-    finally:
-        with open("/Users/jluc/kds2/wk/bin/lsource.sh", "w") as fo:
-
-            fo.write(
-                fill_template(
-                    tmpl_source,
-                    dict(
-                        lzrt_template_dirname_exp=lzrt_template_dirname_exp,
-                        lzrt_template_dirname_got=lzrt_template_dirname_got,
-                    ),
-                )
-            )
-
-        sys.exit(rc)
+    sys.exit(unittest.main())

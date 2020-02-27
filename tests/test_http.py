@@ -541,28 +541,5 @@ class Test_Validation_Fail(HTMLBase):
 if __name__ == "__main__":
 
     cpdb = set_cpdb()
-    rpdb = set_rpdb()
-    breakpoints = set_breakpoints3() or breakpoints
-    rc = 0
 
-    tmpl_source = """
-alias _lcdgot=1
-alias _lcdexp=2
-alias _ldiffexpgot=3
-
-unalias _lcdgot
-unalias _lcdexp
-unalias _ldiffexpgot
-alias _lcdexp='cd %(lzrt_template_dirname_exp)s'
-alias _lcdgot='cd %(lzrt_template_dirname_got)s'
-alias _ldiffexpgot='ksdiff %(lzrt_template_dirname_exp)s %(lzrt_template_dirname_got)s'
-"""
-
-    try:
-        rc = unittest.main()
-    finally:
-        with open("/Users/jluc/kds2/wk/bin/lsource.sh", "w") as fo:
-
-            fo.write(fill_template(tmpl_source, di_mock_env))
-
-        sys.exit(rc)
+    sys.exit(unittest.main())
