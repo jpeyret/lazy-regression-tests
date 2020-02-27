@@ -1,6 +1,9 @@
 """ support jsonschema based validations 
 
 see https://pypi.org/project/jsonschema/
+
+This is still somewhat experimental
+
 """
 
 #################################################################
@@ -68,7 +71,10 @@ from lazy_regression_tests.lazy3.validators import DictValidator
 
 
 class JsonSchemaValidator(DictValidator):
-    """ implements jsonchema based validations """
+    """
+    This is still somewhat experimental
+   Implements jsonchema based validations 
+    """
 
     def __init__(self, sourcename: str = "data", selector: str = None, cargo=None):
         """ init """
