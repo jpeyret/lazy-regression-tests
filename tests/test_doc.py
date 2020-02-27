@@ -37,8 +37,11 @@ from lazy_regression_tests.lazy3.http_validators import CSSValidator
 #################################################################
 
 from lazy_regression_tests.lazy3.filters import (
+    # a filter class that operates on dictionaries
+    DictFilter,
     FilterDirective,
-    # takes effect
+    # works on data, once it has been converted to
+    # text and before it gets saved to file or compared
     RegexRemoveSaver,
 )
 
@@ -117,6 +120,27 @@ filter_variables = [
 ]
 
 
+#################################################################
+# PYLINT:
+#################################################################
+# With this style of Mixin coding where filters and validators
+# are composed onto the unittest.TestCase subclasses
+# there WILL be many ancestors.  That's the point.
+#################################################################
+
+# pylint: disable=too-many-ancestors
+
+#################################################################
+# These however are just disabled to make the sample code
+# easier to paste into documentation.
+#################################################################
+
+# pylint: disable=attribute-defined-outside-init
+# pylint: disable=import-outside-toplevel
+
+#################################################################
+
+
 # 👇⚙️This enables the lazy-test framework
 class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCase):
     """ this is the test we are running here """
@@ -176,6 +200,8 @@ class Test_Features_Regex(Test_Features):
 def check_lineitems(testee: "unittest.TestCase", got, validator: "Validator"):
     """
     `got` will be a list of strings here 
+    👉keeping this as stand alone function, rather a method of your TestCase
+    means it can be used anywhere.  It still behaves just like a test method
     """
     try:
         for igot in got:
@@ -183,6 +209,8 @@ def check_lineitems(testee: "unittest.TestCase", got, validator: "Validator"):
                 testee.assertTrue(igot.startswith("Item"))
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
+        if cpdb():
+            pdb.set_trace()
         raise
 
 
@@ -215,7 +243,7 @@ class Test_Turning_ThingsOff(Test_Features):
 """
 
     def test_it(self):
-        """ fetch data, run validations, regression test """
+        """ turn off tests manually """
         try:
 
             # 👇 turn these off to avoid validation errors
@@ -234,11 +262,44 @@ class Test_Turning_ThingsOff(Test_Features):
                 pdb.set_trace()
             raise
 
+    def test_404(self):
+        """ if you have a lot of config to access a particular URL
+        you don't want to duplicate it all over again to simulate a 
+        404.  Yet, your 404 page may not at all have the same contents
+        or title.
+        """
+        try:
 
-# pylint: disable=import-outside-toplevel
+            http_response = get_fake_html_response(self)
+            response = ResponseHTML(http_response)
+
+            # fake a 404
+            response.content = "<div>404, to you, buddy!</div>"
+            response.status_code = 404
+
+            # This handles the 404, however, the title and name would error out
+            self.set_expectation("status_code", 404)
+
+            # 👇 turn off what you don't need
+            constants_keep_on_404 = ["status_code", "content_type"]
+            self.check_expectations(
+                response=response, lazy_skip_except=constants_keep_on_404
+            )
+
+            tmp = self.assert_exp(response.content, "html")
+
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
 
-@unittest.expectedFailure
+#################################################################
+# Test JSON and YAML
+#################################################################
+
+
+# @unittest.expectedFailure
 class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
     """ just connect it to the appropriate filter manager for 
     the extension type
@@ -250,7 +311,7 @@ class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
     extension = "json"
 
     def test_it(self):
-        """ fetch data, run validations, regression test """
+        """ simulate data changes """
         try:
             data = dict(var1="the_same", var2="will_change")
             tmp = self.assert_exp(data, self.extension)
@@ -260,6 +321,20 @@ class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
             if cpdb():
                 pdb.set_trace()
             raise
+
+
+class Test_JSON_Filter(Test_JSON_Too):
+    """ let's fix the above error by filtering out the changing key"""
+
+    cls_filters = dict(
+        json=FilterDirective(
+            "changing",
+            # DictFilter work by looking for matching keys in the target dictionary.
+            # and then call their value if it's a callable.
+            # value=None is the default behavior and just deletes the key in the target
+            DictFilter(dict(var2=None), "changing"),
+        )
+    )
 
 
 class Test_YAML(Test_JSON_Too):
@@ -272,26 +347,43 @@ class Test_YAML(Test_JSON_Too):
     cls_filters = dict(yaml=YAMLFilter())
 
 
-# pylint: enable=import-outside-toplevel
+#################################################################
+# Test arbitrary object graphs
+#################################################################
 
 
 class Subvar:
+    "dummy class"
+
     def __init__(self, value):
+        """ init """
         self.value = value
 
 
 class SomethingToTest:
+    "dummy class"
+
     def __init__(self):
+        """ init """
         self.var1 = 11
         self.var2 = 12
         self.var4 = dict(FF="Fantastic")
 
 
 class Test_YAML_Graphs(Test_YAML):
+    """ we can look at arbitrary serializable objects 
+        For example, if our Order object is always
+        intended to have order.customer populated this
+        would catch a case where a particular testcase did
+        originally have this result, but a latter run
+        did not.
+    """
+
     @unittest.expectedFailure
     def test_down_the_rabbit_hole(self):
-        """ fetch data, run validations, regression test """
+        """ simulate a changed object graph """
         try:
+
             from yaml import dump as ydump, load as yload
 
             somethingtotest = SomethingToTest()

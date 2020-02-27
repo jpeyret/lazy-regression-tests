@@ -5,6 +5,7 @@ test lazy-regression-tests
 
 import sys
 import os
+import re
 
 import unittest
 
@@ -12,12 +13,6 @@ try:
     import unittest.mock as mock
 except (ImportError,) as ei:
     import mock  # python 2?
-
-import json
-import tempfile
-
-
-import re
 
 
 # pylint: disable=unused-import
@@ -71,7 +66,6 @@ from lazy_regression_tests.utils import InvalidConfigurationException
 from lazy_regression_tests.lazy3 import (
     DictValidator,
     ValidationDirective,
-    ValidationManager,
     DirectValidator,
     AutoExp,
 )
@@ -170,6 +164,8 @@ var2
     def seed(self, exp, extension=None, suffix=""):
         try:
 
+            tmp = getattr(self, "lazytemp", None)
+
             exception = None
             try:
 
@@ -178,17 +174,10 @@ var2
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e:
                 pass
-            # pragma: no cover pylint: disable=unused-variable
-            except (Exception,) as e:
-                exception = e
-                raise
-            finally:
-                if exception:
-                    raise exception
 
-                tmp = self.lazytemp
-                self.lazytemp = None
-                return tmp
+            tmp = tmp or getattr(self, "lazytemp", None)
+            self.lazytemp = None
+            return tmp
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -921,7 +910,6 @@ class Test_JSON_DictFilter(Test_JSON):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                ppp(di_debug, "\ndebug")
                 pdb.set_trace()
             raise
 
