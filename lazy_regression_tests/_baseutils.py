@@ -1009,8 +1009,6 @@ def set_breakpoints3(recurse=True, fnp_config=None):
         print("_:", _)
         print("sys.argv:%s" % (sys.argv))
 
-    # from bemyerp.lib.breakpoints import Breakpoints
-
     breakpoints = Breakpoints.factory(fnp_config=fnp_config, active=True)
     if breakpoints.active:
         if recurse:

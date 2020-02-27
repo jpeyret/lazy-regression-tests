@@ -13,7 +13,7 @@ import pdb
 from traceback import print_exc as xp
 from pprint import pprint as xpp
 
-from lazy_regression_tests.utils import first, ppp
+from lazy_regression_tests._baseutils import first, ppp, getpath
 
 
 def cpdb(*args, **kwargs):
@@ -45,6 +45,7 @@ from typing import (
 
 try:
     from jsonschema import validate
+    import jsonschema.exceptions
 # pragma: no cover pylint: disable=unused-variable
 except (ImportError,) as e:
 
@@ -54,6 +55,8 @@ except (ImportError,) as e:
     # this will throw an InvalidConfigurationError on any access to ydump
     # telling you to install yaml
     from .common import UnavailableLibrary
+
+    ValidationError = Exception
 
     validate = UnavailableLibrary(name=Foo.__module__, missing="jsonschema")
 
@@ -67,28 +70,30 @@ from lazy_regression_tests.lazy3.validators import DictValidator
 class JsonSchemaValidator(DictValidator):
     """ implements jsonchema based validations """
 
-    # def __init__(self, sourcename: str = "data", cargo=None):
-    #     """ init """
-    #     try:
-    #         self.sourcename = sourcename
-    #         self.cargo = cargo
-    #         assert isinstance(sourcename, str)
-    #         self.selector = None
-    #     except (
-    #         Exception,
-    #     ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-    #         if cpdb():
-    #             pdb.set_trace()
-    #         raise
+    def __init__(self, sourcename: str = "data", selector: str = None, cargo=None):
+        """ init """
+        try:
+            self.sourcename = sourcename
+            self.cargo = cargo
+            assert isinstance(sourcename, (str, None.__class__))
+            self.selector = selector
+        except (
+            Exception,
+        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+            if cpdb():
+                pdb.set_trace()
+            raise
 
-    # def get_value(self, source_):
-    #     return source_
+    def get_value(self, source_):
+
+        if self.selector is None:
+            return source_
+        else:
+            return getpath(source_, self.selector)
 
     def check(self, name: str, testee: "LazyMixin", exp: dict, sources: dict):
+        """ validate using the schema """
 
-        # def check(
-        #     self, testee: "LazyMixin", exp: dict, t_message: str = None, source_: Any = None
-        # ):
         try:
 
             igot = None
@@ -99,7 +104,11 @@ class JsonSchemaValidator(DictValidator):
                 got = [got]
 
             for igot in got:
-                validate(instance=igot, schema=exp)
+                try:
+                    validate(instance=igot, schema=exp)
+                # pragma: no cover pylint: disable=unused-variable
+                except (jsonschema.exceptions.ValidationError,) as e:
+                    testee.fail(e)
 
         except (
             Exception,
