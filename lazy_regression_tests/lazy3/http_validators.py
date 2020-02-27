@@ -5,7 +5,22 @@ import json
 # Dependencies
 #######################################################
 
-from bs4 import BeautifulSoup as bs
+
+from .common import UnavailableLibrary
+
+try:
+    from bs4 import BeautifulSoup as bs
+
+# pragma: no cover pylint: disable=unused-variable
+except (ImportError,) as e:
+
+    class Foo:
+        pass
+
+    # this will throw an InvalidConfigurationError on any access to bs
+    # telling you to install BeautifulSoup
+    bs = UnavailableLibrary(name=Foo.__module__, missing="Beautifulsoup")
+
 
 from .validators import (
     ValidationManager,

@@ -891,9 +891,18 @@ class DictFormatter:
 class InvalidConfigurationException(ValueError):
     """ indicates that some configuration is missing or invalid """
 
-    def __init__(self, msg, **kwargs):
-        super(InvalidConfigurationException, self).__init__(msg)
-        self.__dict__.update(kwargs)
+    def __init__(self, msg, *args, **kwargs):
+
+        new_message = f"""
+⚙️⚙️⚙️⚙️⚙️⚙️⚙️
+
+{msg}
+
+⚙️⚙️⚙️⚙️⚙️⚙️⚙️
+"""
+        super(InvalidConfigurationException, self).__init__(
+            new_message, *args, **kwargs
+        )
 
 
 class Breakpoints(object):
@@ -1013,3 +1022,43 @@ def set_breakpoints3(recurse=True, fnp_config=None):
                 except AttributeError:  # pragma: no cover
                     pass
     return breakpoints
+
+
+class UnavailableLibrary:
+    """ throws error messages whenever something hasnt been installed 
+
+    usage:
+        try:
+            from yaml import dump as ydump
+        #use this to get a path to the client module
+        except (ImportError,) as e: 
+            class Foo:
+                pass
+
+            #anything calling on ydump will now blow up
+            ydump = Unavailable(name = Foo.__module__, missing="yaml")    
+    """
+
+    exception_cls = InvalidConfigurationException
+
+    def __init__(self, name: str, missing: str):
+        """
+        :param missing: the name of the missing package, i.e. BeautifulSoup
+        :param name: the name of the missing package
+        """
+
+        self.missing = missing
+        self.name = name
+
+    def __repr__(self):
+        """ error message """
+        return f"""
+Third party package/library '{self.missing}' has not been installed.  
+You need to install it before using {self.name}"""
+
+    def __getattr__(self, *args, **kwargs):
+        """ throw errors on any access """
+        raise self.exception_cls(self)
+
+    # and reroute call
+    __call__ = __getattr__

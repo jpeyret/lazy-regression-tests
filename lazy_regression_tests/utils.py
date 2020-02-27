@@ -19,7 +19,9 @@ from lazy_regression_tests._baseutils import (
     nested_dict_pop,
     first,
     DictFormatter,
+    UnavailableLibrary as BaseUnavailableLibrary,
 )
+
 
 from traceback import print_exc as xp  # pylint: disable=unused-import
 
@@ -684,7 +686,7 @@ def simple_subber(match, *args, **kwds):
 class InvalidConfigurationException(ValueError):
     """ indicates that some configuration is missing or invalid """
 
-    def __init__(self, msg, **kwargs):
+    def __init__(self, msg, *args, **kwargs):
 
         new_message = f"""
 ❌⚙️❌⚙️❌⚙️❌
@@ -693,9 +695,21 @@ class InvalidConfigurationException(ValueError):
 
 ❌⚙️❌⚙️❌⚙️❌
 """
+        super(InvalidConfigurationException, self).__init__(
+            new_message, *args, **kwargs
+        )
 
-        super(InvalidConfigurationException, self).__init__(new_message)
-        self.__dict__.update(kwargs)
+
+class UnavailableLibrary(BaseUnavailableLibrary):
+
+    exception_cls = InvalidConfigurationException
+
+    def __getattr__(self, *args, **kwargs):
+        """ throw errors on any access """
+        raise self.exception_cls(self)
+
+    # and reroute call
+    __call__ = __getattr__
 
 
 def debug_write_validation_log(fnp_val_log, seen):

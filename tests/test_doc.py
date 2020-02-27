@@ -278,7 +278,7 @@ class Test_404(Test_Features):
 #################################################################
 
 
-@unittest.expectedFailure
+# @unittest.expectedFailure
 class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
     """ just connect it to the appropriate filter manager for 
     the extension type
@@ -316,7 +316,7 @@ class Test_JSON_Filter(Test_JSON_Too):
     )
 
 
-@unittest.expectedFailure
+# @unittest.expectedFailure
 class Test_YAML(Test_JSON_Too):
     """ hey, most of the work was done by the JSON guys already
     """

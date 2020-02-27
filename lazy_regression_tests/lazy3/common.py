@@ -17,7 +17,11 @@ OPT_DIRECTIVE_SKIP = "skip"
 OPT_DIRECTIVE_BASELINE = "baseline"
 OPT_DIRECTIVE_NODIFF = "nodiff"
 
-from lazy_regression_tests.utils import InvalidConfigurationException, ppp
+from lazy_regression_tests.utils import (
+    InvalidConfigurationException,
+    ppp,
+    UnavailableLibrary,
+)
 
 
 def cpdb(*args, **kwargs):
