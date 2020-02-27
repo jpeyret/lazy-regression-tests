@@ -76,12 +76,6 @@ from .validators import ValidationManager
 
 from lazy_regression_tests.utils import Subber, fill_template
 
-#######################################################
-# extract to secondary
-#######################################################
-
-# 🔬LazyCheckerOptions2 in v2
-
 
 from .core_assist import LazyChecker, LazyTemp, MediatedEnvironDict, _Control, _LazyMeta
 

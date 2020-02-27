@@ -141,7 +141,7 @@ filter_variables = [
 #################################################################
 
 
-# 👇⚙️This enables the lazy-test framework
+#  ⚙️   This enables the lazy-test framework     👇
 class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCase):
     """ this is the test we are running here """
 
@@ -177,10 +177,6 @@ const csrf_token = '{{csrf}}';
     """
 
 
-@unittest.skipUnless(
-    DO_SKIPPED_TESTS,
-    "flagging this as expectedFailure causes Unexpected success on its subclass",
-)
 @unittest.expectedFailure
 class Test_Features_Regex(Test_Features):
     """ This should fail """
@@ -229,12 +225,7 @@ class Test_Features_CustomLineValidation(Test_Features_Regex):
 class Test_Turning_ThingsOff(Test_Features):
     """ we don't have a title or a greeting anymore
         and we don't need to filter out the timestamp either
-        as it is fixed.
     """
-
-    # the template used to generate the fake html
-    # 🧨 we're missing a title, the greeting and there is no
-    # good reason to be aggressive about the timestamp, or the csrf
 
     template = """
 <body>
@@ -242,27 +233,15 @@ class Test_Turning_ThingsOff(Test_Features):
 </body>
 """
 
+    def setUp(self):
+        # 👇 turn these off to avoid validation errors
+        self.set_expectation("title", active=False)
+        self.set_expectation("name", active=False)
+        self.filters["html"].set_filter("timestamp", active=False)  # 👈 keep it
+
+
+class Test_404(Test_Features):
     def test_it(self):
-        """ turn off tests manually """
-        try:
-
-            # 👇 turn these off to avoid validation errors
-            self.set_expectation("title", active=False)
-            self.set_expectation("name", active=False)
-            self.filters["html"].set_filter("timestamp", active=False)
-
-            http_response = get_fake_html_response(self)
-            response = ResponseHTML(http_response)
-
-            self.check_expectations(response=response)
-            tmp = self.assert_exp(response.content, "html")
-
-        except (Exception,) as e:
-            if cpdb():
-                pdb.set_trace()
-            raise
-
-    def test_404(self):
         """ if you have a lot of config to access a particular URL
         you don't want to duplicate it all over again to simulate a 
         404.  Yet, your 404 page may not at all have the same contents
@@ -299,7 +278,7 @@ class Test_Turning_ThingsOff(Test_Features):
 #################################################################
 
 
-# @unittest.expectedFailure
+@unittest.expectedFailure
 class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
     """ just connect it to the appropriate filter manager for 
     the extension type
@@ -337,6 +316,7 @@ class Test_JSON_Filter(Test_JSON_Too):
     )
 
 
+@unittest.expectedFailure
 class Test_YAML(Test_JSON_Too):
     """ hey, most of the work was done by the JSON guys already
     """

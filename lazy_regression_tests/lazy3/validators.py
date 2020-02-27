@@ -671,31 +671,6 @@ class ValidationManager:
 
             self.prep_validation(testee, names)
 
-            if verbose:
-                print("🔬🧟‍♂️🧟‍♂️🧟‍♂️049.lazy.026.lazy3")
-
-                if not hasattr(self, "fnp_val_log"):
-
-                    dn_o = os.path.join(
-                        os.environ["lzrt_template_dirname_got"], "v3.validations"
-                    )
-
-                    if not os.path.exists(dn_o):
-                        os.makedirs(dn_o)
-
-                    filename = testee.lazy_filename
-                    # pdb.set_trace()
-                    di_sub = dict(
-                        filename=filename.rstrip("v3"),
-                        dn_o=dn_o,
-                        classname=testee.__class__.__name__,
-                    )
-
-                    t_fnp = "%(filename)s.%(classname)s.%(_testMethodName)s.txt"
-                    self.fnp_val_log = os.path.join(
-                        dn_o, fill_template(t_fnp, di_sub, testee)
-                    )
-
             for name in names:
                 directive = self.validators[name]
 
