@@ -35,10 +35,6 @@ from typing import (
     Any,
     cast,
 )
-from bemyerp.pssystem.typing_ import T_options
-
-# if TYPE_CHECKING:
-#    from bemyerp.xxx import yyy
 
 #######################################################
 # pylint: enable=unused-import
