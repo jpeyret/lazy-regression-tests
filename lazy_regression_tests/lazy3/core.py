@@ -430,14 +430,12 @@ class LazyMixin(metaclass=_LazyMeta):
 
             # pragma: no cover pylint: disable=unused-variable
             except (IOError,) as e:
-                # by default we just want to write the received data as our expectation
-                if control.write_exp_on_ioerror():
-                    tmp.message = message = "no check because IOError on %s" % (fnp_exp)
-                    with open(fnp_exp, "w") as fo:
-                        fo.write(formatted_got)
-                    return tmp
-                else:
-                    raise
+                # we just want to write the received data as our expectation
+                tmp.execinfo.ioerror_exp = fnp_exp
+                tmp.message = message = "no check because IOError on %s" % (fnp_exp)
+                with open(fnp_exp, "w") as fo:
+                    fo.write(formatted_got)
+                return tmp
 
             # the environment requests only equality is checked, without trying to show details
             # typically indicated by setting environment variable `lzrt_directive=nodiff`

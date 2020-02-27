@@ -585,7 +585,6 @@ def build_filters_for_class(cls, li_ancestor_filter):
     try:
 
         classname = cls.__name__
-        print("cls.__name__:%s" % (classname))
 
         # breakpoints dont work for now as the class defs are an import time execution
         # not a call time execution
@@ -608,11 +607,7 @@ def build_filters_for_class(cls, li_ancestor_filter):
             for di in li_ancestor_filter:
                 s_extension |= set(di.keys())
 
-            print(f"👉s_extension:{s_extension}")
-
             finals = getattr(cls, "cls_filters", {})
-
-            print(f"👉finals:cls.cls_filters:{finals}")
 
             ancestors = li_ancestor_filter
 
@@ -621,14 +616,11 @@ def build_filters_for_class(cls, li_ancestor_filter):
             for extension in s_extension:
                 li = [di.get(extension) for di in ancestors]
                 li = [di for di in li if di]
-                print(f"  {extension}:mro:{li}")
 
                 mgr_cls = None
                 mgr = finals.get(extension)
 
                 if not isinstance(mgr, FilterManager):
-                    print(f"\n\n\n👉 {classname} mgr_cls:{mgr} not a FilterManager")
-                    # pdb.set_trace()
 
                     mgr = None
                     for cand in li:
@@ -640,13 +632,8 @@ def build_filters_for_class(cls, li_ancestor_filter):
                 else:
                     mgr_cls = mgr.__class__
 
-                    # raise NotImplementedError("%s.build_filters_for_class(%s)" % (cls, locals()))
-
                 mgr_cls = mgr_cls or FilterManager
 
-                # print(
-                #     f"👉serious business@{extension}:mgr_cls:{mgr_cls} w input:{li}"
-                # )
                 newfilter = mgr_cls()
                 for directive3 in li:
                     if not isinstance(directive3, list):
@@ -657,7 +644,6 @@ def build_filters_for_class(cls, li_ancestor_filter):
                     for directive in directive2:
                         newfilter.set_filter(directive)
 
-                # print(f"  👉{extension}:reset to {newfilter}")
                 res[extension] = newfilter
 
             return res

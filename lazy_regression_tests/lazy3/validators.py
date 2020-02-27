@@ -265,20 +265,12 @@ class Validator:
 
             if isinstance(exp, type_regex_hack):
                 self.test_regex(testee, exp, got, message, name=name)
-                if verbose:
-                    logger.info("%s checked %s" % (testee, self))
 
             elif not callable(exp):
-                if "-v" in sys.argv:
-                    print("\n\nvalidator.%s.checking(exp=%s,got=%s)" % (self, exp, got))
                 self.test(testee, exp, got, message, name=name)
-                if verbose:
-                    logger.info("%s checked %s" % (testee, self))
                 return got
             else:
                 exp(testee=testee, got=got, validator=self)
-                if verbose:
-                    logger.info("%s checked %s" % (testee, self))
                 return got
         except (AssertionError,) as e:  # pragma: no cover
             raise
@@ -414,8 +406,6 @@ class MixinExpInGot:
                     pass
 
             testee.assertTrue(str(exp) in str(got), message)
-            if verbose:
-                logger.info("%s checked %s" % (testee, self))
 
         # pragma: no cover pylint: disable=unused-variable
         except (AssertionError,) as e:
@@ -681,7 +671,6 @@ class ValidationManager:
                 validator = directive.validator
 
                 if not directive.active or directive.active is undefined:
-                    logger.info("inactive %s" % (directive))
                     seen.add("%s.inactive" % (logname))
                     continue
 
@@ -694,14 +683,8 @@ class ValidationManager:
                     )[0]
 
                     if sourcename and not sourcename in sources:
-                        logger.info("unsourced %s" % directive)
                         seen.add("%s.unsourced" % (logname))
                         continue
-
-                if breakpoints(
-                    "check_expectations", {"name": directive.name}
-                ):  # pragma: no cover
-                    pdb.set_trace()
 
                 exp = directive.exp
 
@@ -747,10 +730,6 @@ class ValidationManager:
             existing = self.validators.get(name)
             if existing:
 
-                if verbose:
-                    logger.info("_add_baseline:existing.ante:%s" % (directive))
-                    # logger.info("                  directive:%s" % (override))
-
                 if directive.active is not None:
                     existing.active = directive.active
 
@@ -760,15 +739,11 @@ class ValidationManager:
                 if directive.validator is not None:
                     existing.validator = directive.validator
 
-                if verbose:
-                    logger.info("_add_baseline:existing.post:%s" % (directive))
-
             else:
                 self.validators[name] = directive
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -813,20 +788,6 @@ class ValidationManager:
 
             a test method has the final say, via `set_expectation`
 
-            for example:
-
-            # class SuperClass(LazyMixin):
-            # #we want to check the title, but we don't know yet what any request is expected to return
-            #     cls_validators = ValidationDirective("title", active=True, validator=CSSTitleValidator())
-
-            # class Test_1(Superclass):
-            #     cls_validators = ValidationDirective("title", exp="Always Test1!")
-
-            #     def test_different_after_all(self):
-            #         self.set_expectation("title","different title")
-
-            # class Test_DontWannaTestTitle(Superclass):
-            #     cls_validators = ValidationDirective("title", active=False)
 
         """
 
@@ -929,7 +890,6 @@ class ValidationManager:
                             else:
                                 print(f"   {item}")
 
-                        # print(f"   {cls_validators}")
                     elif hasattr(cls_validators, "validators"):
                         print(f"   {cls_validators.validators:60.60}")
                     else:
@@ -948,18 +908,7 @@ def build_validators_for_class(cls, li_revmro):
     """build filters for class, before instance overrides"""
     try:
 
-        if rpdb():  # pragma: no cover
-            pdb.set_trace()
-
         classname = cls.__name__
-        print("\n\n👉build_validators_for_class cls.__name__:%s" % (classname))
-
-        # breakpoints dont work for now as the class defs are an import time execution
-        # not a call time execution
-        if breakpoints(
-            "build_filters_for_class", dict(classname=classname)
-        ):  # pragma: no cover
-            pdb.set_trace()
 
         final = []
 
@@ -970,8 +919,6 @@ def build_validators_for_class(cls, li_revmro):
             validators = getattr(cls_, "cls_validators", None)
 
             if validators:
-                # pdb.set_trace()
-                print("validators:%s" % (validators))
 
                 # now, what do we accept?
                 if not isinstance(validators, list):
@@ -997,6 +944,6 @@ def build_validators_for_class(cls, li_revmro):
 
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
-        if 1 or cpdb():
+        if cpdb():
             pdb.set_trace()
         raise

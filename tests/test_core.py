@@ -848,6 +848,10 @@ class Test_JSON_DictFilter(Test_JSON):
 
     """
 
+    def setUp(self):
+        self.j_data = self.j_data.copy()
+        self.lazy_environ.acquired = False
+
     di_varying = dict(var1=None, var2=dict(var22=None))
 
     cls_filters = dict(

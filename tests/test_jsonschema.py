@@ -2,9 +2,8 @@
 """
 test lazy-regression-tests for json_schema
 """
-
+import pdb
 import sys
-import os
 
 import unittest
 
@@ -42,45 +41,16 @@ logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp  # pylint: disable=unused-import
 
 
-from lazy_regression_tests._baseutils import (
-    set_cpdb,
-    set_rpdb,
-    ppp,
-    debugObject,
-    fill_template,
-    Subber,
-    RescueDict,
-    Dummy,
-    set_breakpoints3,
-)
-
-from lazy_regression_tests.utils import InvalidConfigurationException
+from lazy_regression_tests._baseutils import set_cpdb
 
 
-from lazy_regression_tests.lazy3 import (
-    DictValidator,
-    ValidationDirective,
-    ValidationManager,
-    DirectValidator,
-    AutoExp,
-)
+from lazy_regression_tests.lazy3 import LazyMixin
+
+from lazy_regression_tests.lazy3 import ValidationDirective
+
 
 from lazy_regression_tests.lazy3.json_schema_validators import JsonSchemaValidator
-
-from lazy_regression_tests.lazy3.filters import (
-    RegexRemoveSaver,
-    DictFilter,
-    FilterDirective,
-    FilterManager,
-    JsonFilterManager,
-)
-
-from lazy_regression_tests.lazy3.core import OPT_DIRECTIVE_BASELINE
-
-
-rescuedict = RescueDict()
-
-import pdb
+from lazy_regression_tests.lazy3.filters import JsonFilterManager
 
 
 def cpdb(*args, **kwargs):
@@ -90,24 +60,9 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests.lazy3 import LazyMixin
-
 ##########################################################
-# tests
+# a Basic JSON Schema validation
 ##########################################################
-
-
-lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
-
-
-di_mock_env = get_mock_env()
-
-di_mock_env_baseline = di_mock_env.copy()
-di_mock_env_baseline.update(lzrt_directive=OPT_DIRECTIVE_BASELINE)
-
-module_ = "builtins"
-module_ = module_ if module_ in sys.modules else "__builtin__"
-
 
 valid_auth_display = {
     "type": "object",
@@ -123,6 +78,8 @@ valid_auth_display = {
 class LazyMixinBasic(LazyMixin):
 
     """
+    bring in basic lazytest behavior 
+    not testing with assert_exp however.
     """
 
     data = dict(authorizedactions=3, displayonly=0)
@@ -135,7 +92,15 @@ class LazyMixinBasic(LazyMixin):
     exp_fail = False
 
     def test_it(self):
-        """ simulate data changes """
+        """ call the validations
+
+        - if exp_fail is set, 
+          -  make sure you get an AssertionError 
+          -  and that `exp_fail` appears in the assertion error message
+
+        - otherwise behave as usual, i.e. fail on an assertion error
+
+        """
         try:
             data = self.data.copy()
 
@@ -148,7 +113,7 @@ class LazyMixinBasic(LazyMixin):
                 # pragma: no cover pylint: disable=unused-variable
                 except (AssertionError,) as e:
                     self.assertTrue(
-                        self.exp_fail in str(e), f"expected {self.exp_fail} in {e}"
+                        str(self.exp_fail) in str(e), f"expected {self.exp_fail} in {e}"
                     )
 
         except (Exception,) as e:

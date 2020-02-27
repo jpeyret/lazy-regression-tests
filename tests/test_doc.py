@@ -68,6 +68,8 @@ from lazy_regression_tests.lazy3.helper_tst import (
 
 di_mock_env = get_mock_env()
 
+verbose = "-v" in sys.argv
+
 
 DO_SKIPPED_TESTS = False
 
@@ -177,7 +179,6 @@ const csrf_token = '{{csrf}}';
     """
 
 
-@unittest.expectedFailure
 class Test_Features_Regex(Test_Features):
     """ This should fail """
 
@@ -191,6 +192,13 @@ class Test_Features_Regex(Test_Features):
     line1 = "Item 1"
     line2 = "Item 2"
     line3 = "Bad line 3"
+
+    def test_it(self):
+        try:
+            Test_Features.test_it(self)
+        # pragma: no cover pylint: disable=unused-variable
+        except (AssertionError,) as e:
+            self.assertTrue("Bad" in str(e))
 
 
 def check_lineitems(testee: "unittest.TestCase", got, validator: "Validator"):
@@ -220,6 +228,9 @@ class Test_Features_CustomLineValidation(Test_Features_Regex):
     line1 = "Item 1"
     line2 = "Item 2"
     line3 = "Bad line 3"
+
+    def test_it(self):
+        Test_Features.test_it(self)
 
 
 class Test_Turning_ThingsOff(Test_Features):
@@ -278,7 +289,6 @@ class Test_404(Test_Features):
 #################################################################
 
 
-# @unittest.expectedFailure
 class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
     """ just connect it to the appropriate filter manager for 
     the extension type
@@ -289,13 +299,27 @@ class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
     cls_filters = dict(json=JsonFilterManager())
     extension = "json"
 
+    exp_fail = "told"
+
     def test_it(self):
         """ simulate data changes """
         try:
             data = dict(var1="the_same", var2="will_change")
             tmp = self.assert_exp(data, self.extension)
             data.update(var2="told you so")
-            tmp = self.assert_exp(data, self.extension)
+
+            if self.exp_fail:
+                try:
+                    tmp = self.assert_exp(data, self.extension)
+                    self.fail(f"should failed with {self.exp_fail}")
+                except (AssertionError,) as e:
+                    self.assertTrue(
+                        str(self.exp_fail) in str(e),
+                        f"should have failed with {self.fail} in {e}",
+                    )
+            else:
+                tmp = self.assert_exp(data, self.extension)
+
         except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
@@ -316,7 +340,6 @@ class Test_JSON_Filter(Test_JSON_Too):
     )
 
 
-# @unittest.expectedFailure
 class Test_YAML(Test_JSON_Too):
     """ hey, most of the work was done by the JSON guys already
     """
@@ -359,7 +382,6 @@ class Test_YAML_Graphs(Test_YAML):
         did not.
     """
 
-    @unittest.expectedFailure
     def test_down_the_rabbit_hole(self):
         """ simulate a changed object graph """
         try:
@@ -374,15 +396,24 @@ class Test_YAML_Graphs(Test_YAML):
             # probably not a good idea with untrusted data
             data = yload(yaml_)
 
+            somevar = "somevalue"
+
             self.assert_exp(data, self.extension)
-            somethingtotest.added_this = dict(somevar="somevalue")
+            somethingtotest.added_this = dict(somevar=somevar)
             somethingtotest.var3.value = "3++"
 
             yaml_ = ydump(somethingtotest)
 
             # probably not a good idea with untrusted data
             data = yload(yaml_)
-            self.assert_exp(data, self.extension)
+
+            try:
+                self.assert_exp(data, self.extension)
+            # pragma: no cover pylint: disable=unused-variable
+            except (AssertionError,) as e:
+                self.assertTrue(somevar in str(e))
+                if verbose:
+                    show_expected_fail(e)
 
         except (Exception,) as e:
             if cpdb():

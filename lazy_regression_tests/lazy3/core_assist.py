@@ -55,16 +55,13 @@ class LazyChecker:
         extension: str,
         rawfiltermgr=None,
         textfiltermgr=None,
-        write_exp_on_ioerror: bool = True,
+        # write_exp_on_ioerror: bool = True,
     ):
         self.lazy_extension = self.extension = extension
 
-        self.write_exp_on_ioerror = write_exp_on_ioerror
+        # self.write_exp_on_ioerror = write_exp_on_ioerror
         self.rawfiltermgr = rawfiltermgr
         self.textfiltermgr = textfiltermgr
-
-        if verbose:
-            ppp(self, self)
 
         self.filterhash = None
 
@@ -123,6 +120,11 @@ class LazyChecker:
             raise
 
 
+class ExecInfo:
+    def __init__(self):
+        self.ioerror_exp = self.ioerror_got = None
+
+
 class LazyTemp(object):
     def __repr__(self):
         return "LazyTemp[id=%s]" % (id(self))
@@ -134,6 +136,8 @@ class LazyTemp(object):
         self.message = ""
         self.filtered = Dummy()
         self.testee = testee
+
+        self.execinfo = ExecInfo()
 
     def add_filtered(self, name, value, scalar):
         """ each filter saves what it finds here """
@@ -190,8 +194,8 @@ class _Control(object):
         self.env = env
         self.options = options
 
-    def write_exp_on_ioerror(self):
-        return getattr(self.options, "write_exp_on_ioerror", True)
+    # def write_exp_on_ioerror(self):
+    #     return getattr(self.options, "write_exp_on_ioerror", True)
 
     _directive = undefined
 
@@ -249,10 +253,6 @@ class _LazyMeta(type):
                     li_ancestor_filter.append(cls_filters)
 
             cls.cls_validators = build_validators_for_class(cls, li_bases2current)
-            if verbose:
-                print(
-                    f"👉 class:{classname}.cls_validators:{cls.cls_validators}, cls_validators:{cls.cls_validators}"
-                )
 
             cls.cls_filters = build_filters_for_class(cls, li_ancestor_filter)
 

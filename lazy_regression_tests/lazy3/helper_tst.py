@@ -23,14 +23,6 @@ from django.http import HttpResponse, JsonResponse
 from jinja2 import Template
 
 
-#################################################################
-# 💀💀💀💀💀 GUARD SINGLETON THIS OR ELSE CREATES THESE EVERYTIME
-
-
-# 💀💀💀💀💀
-#################################################################
-
-
 from lazy_regression_tests.lazy3.http_validators import ResponseHTML
 
 
@@ -97,6 +89,7 @@ choice_csrf = string.ascii_letters + string.digits
 
 
 def get_fake_html_response(testee, data={}):
+    """ return a pretend HttpResponse"""
     try:
 
         data = testee.get_data(seed=data)
@@ -110,6 +103,14 @@ def get_fake_html_response(testee, data={}):
         if cpdb():
             pdb.set_trace()
         raise
+
+
+exp_fail_padder = "✅" * 40
+
+
+def show_expected_fail(exc):
+    """ show the error details on expected failures"""
+    print(f"{exp_fail_padder}{exc}{exp_fail_padder}")
 
 
 class Helper:
