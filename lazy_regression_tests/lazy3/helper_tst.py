@@ -6,6 +6,49 @@ import random
 import string
 
 
+from lazy_regression_tests.utils import ppp, getpath, UnavailableLibrary
+
+#################################################################
+# Depencies for test
+#################################################################
+
+
+class Foo:
+    pass
+
+
+dep_message = "👉 This is only requiry for lazy self-testing on http contents, not for normal use. 👈"
+
+
+try:
+    import responses
+except (ImportError,) as e:
+    # this will throw an InvalidConfigurationError on any access to bs
+    # telling you to install BeautifulSoup
+    responses = UnavailableLibrary(
+        name=Foo.__module__, missing="responses", message=dep_message
+    )
+
+
+try:
+    import requests
+except (ImportError,) as e:
+    # this will throw an InvalidConfigurationError on any access to bs
+    # telling you to install BeautifulSoup
+    requests = UnavailableLibrary(
+        name=Foo.__module__, missing="requests", message=dep_message
+    )
+
+try:
+    import jinja2
+except (ImportError,) as e:
+    # this will throw an InvalidConfigurationError on any access to bs
+    # telling you to install BeautifulSoup
+    jinja2 = UnavailableLibrary(
+        name=Foo.__module__, missing="requests", message=dep_message
+    )
+
+
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
@@ -18,12 +61,6 @@ def cpdb(*args, **kwargs):
 
 rpdb = breakpoints = cpdb
 
-
-from django.http import HttpResponse, JsonResponse
-
-from jinja2 import Template
-
-from lazy_regression_tests.utils import ppp, getpath
 
 from lazy_regression_tests.lazy3.http_validators import ResponseHTML
 
@@ -90,28 +127,7 @@ def get_mock_env(seed={}):
 choice_csrf = string.ascii_letters + string.digits
 
 
-def get_fake_html_response(testee, data={}):
-    """ return a pretend HttpResponse"""
-    try:
-
-        data = testee.get_data(seed=data)
-
-        tmpl = Template(testee.template)
-        text = tmpl.render(**data)
-        return HttpResponse(text)
-
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
-        if cpdb():
-            pdb.set_trace()
-        raise
-
-
-import responses
-import requests
-
-
-def get_fake_html_response2(
+def get_fake_html_response(
     testee,
     data={},
     url="http://example.com/",
@@ -126,7 +142,9 @@ def get_fake_html_response2(
             # responses.add(responses.GET, 'http://twitter.com/api/1/foobar',
             #               json={'error': 'not found'}, status=404)
 
-            responses.add(responses.GET, url, body=html, status=status)
+            responses.add(
+                responses.GET, url, body=html, status=status, content_type=content_type
+            )
 
             resp = requests.get(url)
 
@@ -134,7 +152,7 @@ def get_fake_html_response2(
 
         data = testee.get_data(seed=data)
 
-        tmpl = Template(testee.template)
+        tmpl = jinja2.Template(testee.template)
         text = tmpl.render(**data)
 
         return faker(html=text, url=url, status=status)
