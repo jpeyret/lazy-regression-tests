@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-test lazy-regression-tests
+test core behavior - does not need any third party libraries
 """
 
 import sys

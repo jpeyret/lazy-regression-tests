@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-test lazy-regression-tests
+test http behavior - requires BeautifulSoup, requests and responses (a mock for requests)
 """
 
 import sys

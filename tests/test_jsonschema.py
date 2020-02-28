@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-test lazy-regression-tests for json_schema
+test json_schema  - requires `jsonschema`
 """
 import pdb
 import sys
