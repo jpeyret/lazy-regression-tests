@@ -194,14 +194,48 @@ class _Control(object):
         self.env = env
         self.options = options
 
-    # def write_exp_on_ioerror(self):
-    #     return getattr(self.options, "write_exp_on_ioerror", True)
+    _save_raw = undefined
+
+    @property
+    def save_raw(self):
+        """ this depend on 2 environmental settings:
+            :param lzrt_save_raw_received_data : if it it's set we can do it
+            :param lzrt_template_dirname_report : where to put it
+        """
+
+        if self._save_raw is undefined:
+            res = bool(self.env.get("template_dirname_report"))
+            self._save_raw = bool(res and self.env.get("save_raw_received_data"))
+        return self._save_raw
 
     _directive = undefined
 
     @property
     def directive(self) -> str:
-        """ note that  """
+        """
+        This value is obtained from the environment variable, type `lzrt_directive`
+
+        To set it on the command line, use standard Unix procedures, i.e. to use baseline behavior:
+
+        `lzrt_directive=baseline pytest ....`
+        `lzrt_directive=baseline python ....`
+
+        3 mutually exclusive ways for lazy tests to behave, with an additional
+        being unset i.e. the default behavior:
+
+        :baseline: this will take any received data, write it to expectations file and return a success
+        :nodiff  : a `assertTrue(exp==got)` comparison will be run, rather than an `assertEqual`
+        :skip    : lazytesting will not be performed at at all and success is automatic since no asserts
+        are run
+
+        default behavior, when unset:
+
+        - `exp` file is loaded and compared to `got` data
+        - if the `exp` file is missing: 
+            - the `got` data is written to both the `exp` and `got` file
+            - return success
+        """
+
         if self._directive is undefined:
             res = self._directive = self.env.get("directive", "").strip().lower()
             assert res in (

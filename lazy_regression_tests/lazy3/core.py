@@ -368,10 +368,11 @@ class LazyMixin(metaclass=_LazyMeta):
             raise
 
     def _get_fnp_raw(self, options, suffix, control, tmp, got):
+        """ where do we save the raw received data,
+        after formatting, but before filtering ? 
+        """
 
         try:
-            control.save_raw = True
-
             if not control.save_raw:
                 return
 
