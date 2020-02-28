@@ -384,6 +384,7 @@ class Test_YAML_Graphs(Test_YAML):
         did not.
     """
 
+    @unittest.expectedFailure
     def test_down_the_rabbit_hole(self):
         """ simulate a changed object graph """
         try:
@@ -409,13 +410,7 @@ class Test_YAML_Graphs(Test_YAML):
             # probably not a good idea with untrusted data
             data = yload(yaml_)
 
-            try:
-                self.assert_exp(data, self.extension)
-            # pragma: no cover pylint: disable=unused-variable
-            except (AssertionError,) as e:
-                self.assertTrue(somevar in str(e))
-                if verbose:
-                    show_expected_fail(e)
+            self.assert_exp(data, self.extension)
 
         except (Exception,) as e:
             if cpdb():

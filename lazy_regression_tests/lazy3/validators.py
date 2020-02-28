@@ -40,13 +40,7 @@ from typing import (
 )
 
 
-from lazy_regression_tests.utils import (
-    nested_dict_get,
-    first,
-    fill_template,
-    ppp,
-    debug_write_validation_log,
-)
+from lazy_regression_tests.utils import nested_dict_get, first, fill_template, ppp
 
 
 #######################################################
@@ -706,9 +700,6 @@ class ValidationManager:
 
                 seen.add(logname)
                 validator.check(name, testee, exp, sources)
-
-            if verbose:
-                debug_write_validation_log(self.fnp_val_log, seen)
 
         except (AssertionError,) as assert_exc:  # pragma: no cover
             format_assertion_error(self, assert_exc, validator=validator, name=name)

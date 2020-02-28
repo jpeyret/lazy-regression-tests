@@ -5,6 +5,7 @@ test lazy-regression-tests
 
 import sys
 import os
+import pdb
 
 import unittest
 
@@ -13,14 +14,7 @@ try:
 except (ImportError,) as ei:
     import mock  # python 2?
 
-import json
-import tempfile
-
-
-from django.http import HttpResponse
-
 import datetime
-
 import re
 
 
@@ -52,45 +46,18 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp  # pylint: disable=unused-import
 
+from lazy_regression_tests._baseutils import RescueDict, set_cpdb
 
-from lazy_regression_tests._baseutils import (
-    set_cpdb,
-    set_rpdb,
-    ppp,
-    debugObject,
-    fill_template,
-    Subber,
-    RescueDict,
-    Dummy,
-    set_breakpoints3,
-)
-
-from lazy_regression_tests.utils import InvalidConfigurationException
+from lazy_regression_tests.lazy3 import ValidationDirective, AutoExp
 
 
-from lazy_regression_tests.lazy3 import (
-    DictValidator,
-    ValidationDirective,
-    ValidationManager,
-    DirectValidator,
-    AutoExp,
-)
+from lazy_regression_tests.lazy3.filters import FilterDirective, RegexRemoveSaver
 
-
-from lazy_regression_tests.lazy3.filters import (
-    RegexRemoveSaver,
-    DictFilter,
-    FilterDirective,
-    FilterManager,
-    JsonFilterManager,
-)
 
 from lazy_regression_tests.lazy3.core import OPT_DIRECTIVE_BASELINE
 
 
 rescuedict = RescueDict()
-
-import pdb
 
 
 def cpdb(*args, **kwargs):
@@ -111,9 +78,7 @@ lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy
 
 
 from lazy_regression_tests.lazy3.helper_tst import (
-    Helper,
     get_mock_env,
-    get_fake_response_from_html,
     get_fake_response_from_template,
     HelperHTML,
     CheckitMixin,
@@ -143,10 +108,6 @@ from lazy_regression_tests.lazy3.http_validators import (
 )
 
 
-def debug_env(self):
-    ppp(self.lazy_environ, "lazyenv")
-
-
 # pylint: disable=no-member
 class LazyMixinBasic(LazyMixin, unittest.TestCase):
 
@@ -157,8 +118,6 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
     """
 
     cls_filters = dict(html=HtmlFilterManager())
-
-    debug_env = debug_env
 
     lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
 
@@ -197,21 +156,21 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
                 pdb.set_trace()
             raise
 
-    def get_data(self, seed={}):
+    def get_data(self, seed: dict = None):
+
+        seed = seed or {}
 
         res = getattr(self, "data", {})
         res.update(**seed)
 
         return res
 
-    def get(self, url=None, data={}):
+    def get(self, url=None, data: dict = None):
         try:
 
+            data = data or {}
+
             self.data = data
-            # tmpl = Template(self.template)
-            # text = tmpl.render(**data)
-            # subber = Subber(self)
-            # text = tmpl.render(subber )
 
             response = get_fake_response_from_template(testee=self, data=data, url=url)
             return ResponseHTML(response)
@@ -221,6 +180,9 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
             if cpdb():
                 pdb.set_trace()
             raise
+
+
+# pylint: disable=too-many-ancestors
 
 
 class HTMLBase(HTMLValidationMixin, LazyMixinBasic):
@@ -291,7 +253,10 @@ class HTMLCheck(HTMLBase):
 
     extension = "html"
 
-    def get_data(self, seed={}):
+    def get_data(self, seed: dict = None):
+
+        seed = seed or {}
+
         data = getattr(self, "data", {}) or dict(
             name=self.name, now=datetime.datetime.now()
         )
@@ -416,7 +381,7 @@ class Test_ValidationFailLine3(Test_ValidationNonScalar):
     """
 
 
-class Helper(HTMLValidationMixin, HelperHTML, CheckitMixin):
+class Helper2(HTMLValidationMixin, HelperHTML, CheckitMixin):
     """ just some boiler plate code to assist in testing 
         No Lazy-related features on bases yet
     """
@@ -424,7 +389,7 @@ class Helper(HTMLValidationMixin, HelperHTML, CheckitMixin):
     extension = "html"
 
 
-class Test_Features(Helper, LazyMixinBasic):
+class Test_Features(Helper2, LazyMixinBasic):
 
     name = "Mr. Rabbit"
     line1 = "Item 1"
