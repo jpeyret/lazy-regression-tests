@@ -220,8 +220,8 @@ class _Control(object):
         `lzrt_directive=baseline pytest ....`
         `lzrt_directive=baseline python ....`
 
-        3 mutually exclusive ways for lazy tests to behave, with an additional
-        being unset i.e. the default behavior:
+        The directive defines 3 mutually exclusive ways for lazy tests to behave, with an additional
+        behavior when it is unset i.e. the default behavior:
 
         :baseline: this will take any received data, write it to expectations file and return a success
         :nodiff  : a `assertTrue(exp==got)` comparison will be run, rather than an `assertEqual`
