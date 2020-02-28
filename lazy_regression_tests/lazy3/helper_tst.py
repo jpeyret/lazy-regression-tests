@@ -5,6 +5,8 @@ import datetime
 import random
 import string
 
+from traceback import print_exc as xp
+
 
 from lazy_regression_tests.utils import ppp, getpath, UnavailableLibrary
 
@@ -25,6 +27,7 @@ try:
 except (ImportError,) as e:
     # this will throw an InvalidConfigurationError on any access to bs
     # telling you to install BeautifulSoup
+
     responses = UnavailableLibrary(
         name=Foo.__module__, missing="responses", message=dep_message
     )
@@ -45,7 +48,7 @@ except (ImportError,) as e:
     # this will throw an InvalidConfigurationError on any access to bs
     # telling you to install BeautifulSoup
     jinja2 = UnavailableLibrary(
-        name=Foo.__module__, missing="requests", message=dep_message
+        name=Foo.__module__, missing="jinja2", message=dep_message
     )
 
 
@@ -127,18 +130,15 @@ def get_mock_env(seed={}):
 choice_csrf = string.ascii_letters + string.digits
 
 
-def get_fake_html_response(
-    testee,
-    data={},
-    url="http://example.com/",
-    status=200,
-    content_type="text/html; charset=utf8",
+def get_fake_response_from_html(
+    html, url=None, status=200, content_type="text/html; charset=utf8"
 ):
-    """ return a pretend HttpResponse"""
     try:
 
+        url = url or "http://example.com/"
+
         @responses.activate
-        def faker(html, url, status=200):
+        def faker(html):
             # responses.add(responses.GET, 'http://twitter.com/api/1/foobar',
             #               json={'error': 'not found'}, status=404)
 
@@ -147,17 +147,37 @@ def get_fake_html_response(
             )
 
             resp = requests.get(url)
-
             return resp
+
+        response = faker(html)
+        assert response
+        return response
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            pdb.set_trace()
+        raise
+
+
+def get_fake_response_from_template(
+    testee, data={}, url=None, status=200, content_type="text/html; charset=utf8"
+):
+    """ return a pretend HttpResponse"""
+    try:
+
+        url = url or "http://example.com/"
 
         data = testee.get_data(seed=data)
 
         tmpl = jinja2.Template(testee.template)
         text = tmpl.render(**data)
 
-        return faker(html=text, url=url, status=status)
+        response = get_fake_response_from_html(html=text, url=url, status=status)
 
-        return HttpResponse(text)
+        assert response
+
+        return response
 
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
@@ -191,9 +211,11 @@ class Helper:
 
             data = self.get_data(seed=data)
 
-            tmpl = Template(self.template)
-            text = tmpl.render(**data)
-            return HttpResponse(text)
+            tmpl = jinja2.Template(self.template)
+            html = tmpl.render(**data)
+
+            response = get_fake_response_from_html(html, url=url)
+            return response
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:

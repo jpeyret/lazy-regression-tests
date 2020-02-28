@@ -63,8 +63,10 @@ from lazy_regression_tests.lazy3.http_validators import (
 from lazy_regression_tests.lazy3.helper_tst import (
     Helper,
     get_mock_env,
-    get_fake_html_response,
+    get_fake_response_from_template,
 )
+
+get_fake_html_response = get_fake_response_from_template
 
 di_mock_env = get_mock_env()
 

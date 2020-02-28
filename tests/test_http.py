@@ -19,7 +19,6 @@ import tempfile
 
 from django.http import HttpResponse
 
-from jinja2 import Template
 import datetime
 
 import re
@@ -111,27 +110,14 @@ from lazy_regression_tests.lazy3 import LazyMixin
 lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
 
 
-# dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
-
-
-# lzrt_template_dirname = os.path.join(dirtemp, "out")
-# lzrt_template_dirname_got = os.path.join(dirtemp, "got")
-# lzrt_template_dirname_exp = os.path.join(dirtemp, "exp")
-# lzrt_template_dirname_report = os.path.join(dirtemp, "report")
-
-
-# lzrt_template_basename = lzrt_default_t_basename
-
-
-# di_mock_env = dict(
-#     lzrt_template_dirname=lzrt_template_dirname,
-#     lzrt_template_dirname_got=lzrt_template_dirname_got,
-#     lzrt_template_dirname_exp=lzrt_template_dirname_exp,
-#     lzrt_template_basename=lzrt_template_basename,
-#     lzrt_template_dirname_report = lzrt_template_dirname_report,
-# )
-
-from lazy_regression_tests.lazy3.helper_tst import *
+from lazy_regression_tests.lazy3.helper_tst import (
+    Helper,
+    get_mock_env,
+    get_fake_response_from_html,
+    get_fake_response_from_template,
+    HelperHTML,
+    CheckitMixin,
+)
 
 di_mock_env = get_mock_env()
 
@@ -211,15 +197,24 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
                 pdb.set_trace()
             raise
 
+    def get_data(self, seed={}):
+
+        res = getattr(self, "data", {})
+        res.update(**seed)
+
+        return res
+
     def get(self, url=None, data={}):
         try:
 
-            tmpl = Template(self.template)
-            text = tmpl.render(**data)
+            self.data = data
+            # tmpl = Template(self.template)
+            # text = tmpl.render(**data)
             # subber = Subber(self)
             # text = tmpl.render(subber )
 
-            return ResponseHTML(HttpResponse(text))
+            response = get_fake_response_from_template(testee=self, data=data, url=url)
+            return ResponseHTML(response)
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -296,11 +291,13 @@ class HTMLCheck(HTMLBase):
 
     extension = "html"
 
-    def get_data(self):
+    def get_data(self, seed={}):
         data = getattr(self, "data", {}) or dict(
             name=self.name, now=datetime.datetime.now()
         )
-        return data.copy()
+        res = data.copy()
+        res.update(**seed)
+        return res
 
     def get_response(self):
         return self.get(data=self.get_data())

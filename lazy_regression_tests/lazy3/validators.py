@@ -297,7 +297,10 @@ class Validator:
                 testee.assertTrue(exp.search(str(got)), message)
             else:
                 for igot in got:
-                    testee.assertTrue(exp.search(str(igot)), message)
+                    hit = exp.search(str(igot))
+                    if hit is None:
+                        message = f"validation:{name or ''} failure: data:'{str(igot)}': does not match regex:'{exp.pattern}':"
+                        testee.fail(message)
 
         except (
             Exception,

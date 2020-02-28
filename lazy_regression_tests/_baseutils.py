@@ -1039,7 +1039,7 @@ class UnavailableLibrary:
 
     exception_cls = InvalidConfigurationException
 
-    def __init__(self, name: str, missing: str):
+    def __init__(self, name: str, missing: str, message: str = ""):
         """
         :param missing: the name of the missing package, i.e. BeautifulSoup
         :param name: the name of the missing package
@@ -1047,6 +1047,7 @@ class UnavailableLibrary:
 
         self.missing = missing
         self.name = name
+        self.message = message
 
     def __repr__(self):
         """ error message """
@@ -1056,6 +1057,7 @@ You need to install it before using {self.name}"""
 
     def __getattr__(self, *args, **kwargs):
         """ throw errors on any access """
+
         raise self.exception_cls(self)
 
     # and reroute call
