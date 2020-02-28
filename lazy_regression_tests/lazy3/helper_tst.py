@@ -5,6 +5,7 @@ import datetime
 import random
 import string
 
+
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
@@ -22,6 +23,7 @@ from django.http import HttpResponse, JsonResponse
 
 from jinja2 import Template
 
+from lazy_regression_tests.utils import ppp, getpath
 
 from lazy_regression_tests.lazy3.http_validators import ResponseHTML
 
@@ -96,6 +98,47 @@ def get_fake_html_response(testee, data={}):
 
         tmpl = Template(testee.template)
         text = tmpl.render(**data)
+        return HttpResponse(text)
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            pdb.set_trace()
+        raise
+
+
+import responses
+import requests
+
+
+def get_fake_html_response2(
+    testee,
+    data={},
+    url="http://example.com/",
+    status=200,
+    content_type="text/html; charset=utf8",
+):
+    """ return a pretend HttpResponse"""
+    try:
+
+        @responses.activate
+        def faker(html, url, status=200):
+            # responses.add(responses.GET, 'http://twitter.com/api/1/foobar',
+            #               json={'error': 'not found'}, status=404)
+
+            responses.add(responses.GET, url, body=html, status=status)
+
+            resp = requests.get(url)
+
+            return resp
+
+        data = testee.get_data(seed=data)
+
+        tmpl = Template(testee.template)
+        text = tmpl.render(**data)
+
+        return faker(html=text, url=url, status=status)
+
         return HttpResponse(text)
 
     # pragma: no cover pylint: disable=unused-variable
@@ -233,3 +276,30 @@ class CheckitMixin:
             if cpdb():
                 pdb.set_trace()
             raise
+
+
+def main():
+    @responses.activate
+    def test_simple():
+        # responses.add(responses.GET, 'http://twitter.com/api/1/foobar',
+        #               json={'error': 'not found'}, status=404)
+
+        responses.add(
+            responses.GET,
+            "http://twitter.com/api/1/foobar",
+            body="<div>coucou</div>",
+            status=200,
+        )
+
+        resp = requests.get("http://twitter.com/api/1/foobar")
+
+        return resp
+
+    response = test_simple()
+    ppp(response, "response")
+
+    pdb.set_trace()
+
+
+if __name__ == "__main__":
+    main()

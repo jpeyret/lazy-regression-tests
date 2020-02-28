@@ -46,7 +46,7 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests.utils import first, fill_template, ppp
+from lazy_regression_tests.utils import first, fill_template, ppp, getpath
 
 #################################################################
 # the Filters
@@ -286,12 +286,33 @@ class ResponseHTML:
             self._selectable = bs(self.content)
         return self._selectable
 
+    wanteds = dict(headers=["headers", "_headers"])
+
     def __init__(self, response):
         try:
             self._response = response
             self.content = response.content
             self.status_code = response.status_code
-            self.headers = response._headers
+
+            for attrname, paths in self.wanteds.items():
+                if isinstance(paths, str):
+                    paths = [paths]
+
+                # pdb.set_trace()
+                for path in paths:
+                    try:
+                        value = getpath(response, path)
+                        setattr(self, attrname, value)
+                        break
+                    # pragma: no cover pylint: disable=unused-variable
+                    except (AttributeError,) as e:
+                        pass
+                else:
+                    raise AttributeError(attrname)
+
+            # pdb.set_trace()
+            if rpdb():  # pragma: no cover
+                pdb.set_trace()
 
         except (
             Exception,

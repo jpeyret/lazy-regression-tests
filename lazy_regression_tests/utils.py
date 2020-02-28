@@ -18,6 +18,7 @@ from lazy_regression_tests._baseutils import (
     nested_dict_get,
     nested_dict_pop,
     first,
+    getpath,
     DictFormatter,
     UnavailableLibrary as BaseUnavailableLibrary,
 )
