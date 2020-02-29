@@ -1,10 +1,22 @@
-pip==19.2.2
-bumpversion==0.5.3
-wheel==0.33.1
-watchdog==0.8.3
-tox==2.9.1
-coverage==4.5.3
-Sphinx==1.7.1
-twine==1.13.0
+#pip==19.2.2
+#bumpversion==0.5.3
+#wheel==0.33.1
+#watchdog==0.8.3
+#tox==2.9.1
+#coverage==4.5.3
+#Sphinx==1.7.1
+#twine==1.13.0
 
+##############################################
+# we'll if the stuff above is required by 
+# pypi and co.
+##############################################
+
+pytest==5.*
+jsonschema==3.*
+beautifulsoup4==4.*
+PyYAML==5.*
+Jinja2==2.*
+requests==2.*
+responses==0.10.*
 

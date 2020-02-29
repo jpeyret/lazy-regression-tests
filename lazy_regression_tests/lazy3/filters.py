@@ -14,7 +14,7 @@ from traceback import print_exc as xp
 # Dependencies
 #######################################################
 
-from bs4 import BeautifulSoup as bs
+# from bs4 import BeautifulSoup as bs
 
 #######################################################
 # Typing

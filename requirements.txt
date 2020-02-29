@@ -1,9 +1,9 @@
-#use this to limit assertEqual time
-timeout_decorator
+###########################################
+# use timeout-decorator to limit maximum rutimes on assertEqual
+# this is optional, but large diffs DO time out on assertEqual
+# this has nothing to do with lazy tests themselves except that 
+# regularly throw large files with plenty of diffs at the system
+#########################################
 
-#for black and git
-pre-commit
-
-#really only needed on html: find a way to isolate it
-beautifulsoup4
+timeout-decorator==0.4.*
 

@@ -10,6 +10,11 @@ import unittest
 
 import pdb
 
+try:
+    import unittest.mock as mock
+except (ImportError,) as ei:
+    import mock  # python 2?
+
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -87,6 +92,7 @@ class LazyMixinBasic(LazyMixin):
     # 👇 ⚙️ Tells the framework what extensions/content to expect
     cls_filters = dict(html=HtmlFilterManager())
 
+    @mock.patch.dict(os.environ, di_mock_env)
     def test_it(self):
         """ fetch data, run validations, regression test """
         try:
@@ -254,6 +260,7 @@ class Test_Turning_ThingsOff(Test_Features):
 
 
 class Test_404(Test_Features):
+    @mock.patch.dict(os.environ, di_mock_env)
     def test_it(self):
         """ if you have a lot of config to access a particular URL
         you don't want to duplicate it all over again to simulate a 
@@ -303,6 +310,7 @@ class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
 
     exp_fail = "told"
 
+    @mock.patch.dict(os.environ, di_mock_env)
     def test_it(self):
         """ simulate data changes """
         try:
@@ -385,6 +393,7 @@ class Test_YAML_Graphs(Test_YAML):
     """
 
     @unittest.expectedFailure
+    @mock.patch.dict(os.environ, di_mock_env)
     def test_down_the_rabbit_hole(self):
         """ simulate a changed object graph """
         try:
