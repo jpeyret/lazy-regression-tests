@@ -1,4 +1,4 @@
-Welcome to lazy-regression-tests's documentation!
+Welcome to Lazy Regression Tests's documentation!
 ======================================
 
 .. toctree::

@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/jpeyret/lazy-regression-tests/issues.
+Report bugs at https://github.com/jpeyret/lazy-regression-tests/issues
 
 If you are reporting a bug, please include:
 
@@ -38,8 +38,8 @@ and "help wanted" is open to whoever wants to implement it.
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-lazy-regression-tests could always use more documentation, whether as part of the
-official lazy-regression-tests docs, in docstrings, or even on the web in blog posts,
+Lazy Regression Tests could always use more documentation, whether as part of the
+official Lazy Regression Tests docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 
 Submit Feedback
@@ -80,7 +80,7 @@ Ready to contribute? Here's how to set up `lazy_regression_tests` for local deve
    tests, including testing other Python versions with tox::
 
     $ flake8 lazy_regression_tests tests
-    $ python setup.py test or py.test
+    $ python setup.py test or pytest
     $ tox
 
    To get flake8 and tox, just pip install them into your virtualenv.
@@ -121,7 +121,7 @@ A reminder for the maintainers on how to deploy.
 Make sure all your changes are committed (including an entry in HISTORY.rst).
 Then run::
 
-$ bumpversion patch # possible: major / minor / patch
+$ bump2version patch # possible: major / minor / patch
 $ git push
 $ git push --tags
 

@@ -48,9 +48,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"lazy-regression-tests"
-copyright = u"2018, JL Peyret"
-author = u"JL Peyret"
+project = "Lazy Regression Tests"
+copyright = "2020, JL Peyret"
+author = "JL Peyret"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -129,8 +129,8 @@ latex_documents = [
     (
         master_doc,
         "lazy_regression_tests.tex",
-        u"lazy-regression-tests Documentation",
-        u"JL Peyret",
+        "Lazy Regression Tests Documentation",
+        "JL Peyret",
         "manual",
     )
 ]
@@ -144,7 +144,7 @@ man_pages = [
     (
         master_doc,
         "lazy_regression_tests",
-        u"lazy-regression-tests Documentation",
+        "Lazy Regression Tests Documentation",
         [author],
         1,
     )
@@ -160,7 +160,7 @@ texinfo_documents = [
     (
         master_doc,
         "lazy_regression_tests",
-        u"lazy-regression-tests Documentation",
+        "Lazy Regression Tests Documentation",
         author,
         "lazy_regression_tests",
         "One line description of project.",
