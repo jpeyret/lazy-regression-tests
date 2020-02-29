@@ -62,24 +62,20 @@ rpdb = breakpoints = cpdb
 
 class DataMatcher(object):
 
-    selector = name = None
+    name: str = None
+    scalar = False
+    selector: str = None
 
     def __repr__(self):
-
         try:
             return f"{self.__class__.__name__:30.30} selector:{self.selector} name:{self.name}"
-
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            pdb.set_trace()
+        except (Exception,):
             return "%s.%s:%s" % (self.__module__, self.__class__.__name__, self.name)
 
     def __init__(self, selector, name):
         self.selector = selector
         self.name = name
-
-    name = None
-    scalar = False
 
     def format_filtered_hook(self, value):
         return value
@@ -90,9 +86,8 @@ class DataMatcher(object):
             value = self.format_filtered_hook(value)
 
             tmp.add_filtered(self.name, value, self.scalar)
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
