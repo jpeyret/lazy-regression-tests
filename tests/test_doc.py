@@ -24,24 +24,21 @@ from lazy_regression_tests._baseutils import set_cpdb, ppp
 
 rpdb = breakpoints = cpdb
 
-from lazy_regression_tests.lazy3.http_validators import (
-    HTMLValidationMixin,
-    ResponseHTML,
-)
+from lazy_regression_tests.http_validators import HTMLValidationMixin, ResponseHTML
 
 
-from lazy_regression_tests.lazy3 import LazyMixin
+from lazy_regression_tests import LazyMixin
 
-from lazy_regression_tests.lazy3 import ValidationDirective, AutoExp
+from lazy_regression_tests import ValidationDirective, AutoExp
 
 
-from lazy_regression_tests.lazy3.http_validators import CSSValidator
+from lazy_regression_tests.http_validators import CSSValidator
 
 #################################################################
 # Pre-defined lazy-testing
 #################################################################
 
-from lazy_regression_tests.lazy3.filters import (
+from lazy_regression_tests.filters import (
     # a filter class that operates on dictionaries
     DictFilter,
     FilterDirective,
@@ -50,7 +47,7 @@ from lazy_regression_tests.lazy3.filters import (
     RegexRemoveSaver,
 )
 
-from lazy_regression_tests.lazy3.http_validators import (
+from lazy_regression_tests.http_validators import (
     # provides save-to-file, load-from-file functionality
     # and calls BeautifulSoup to get a DOM
     HtmlFilterManager,
@@ -65,7 +62,7 @@ from lazy_regression_tests.lazy3.http_validators import (
 # simulate a Django-style HTMLResponse.
 #################################################################
 
-from lazy_regression_tests.lazy3.helper_tst import (
+from lazy_regression_tests.helper_tst import (
     Helper,
     get_mock_env,
     get_fake_response_from_template,
@@ -303,7 +300,7 @@ class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
     the extension type
     """
 
-    from lazy_regression_tests.lazy3.filters import JsonFilterManager
+    from lazy_regression_tests.filters import JsonFilterManager
 
     cls_filters = dict(json=JsonFilterManager())
     extension = "json"
@@ -354,7 +351,7 @@ class Test_YAML(Test_JSON_Too):
     """ hey, most of the work was done by the JSON guys already
     """
 
-    from lazy_regression_tests.lazy3.yaml_validators import YAMLFilter
+    from lazy_regression_tests.yaml_validators import YAMLFilter
 
     extension = "yaml"
     cls_filters = dict(yaml=YAMLFilter())

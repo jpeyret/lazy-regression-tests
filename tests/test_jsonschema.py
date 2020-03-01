@@ -31,7 +31,7 @@ verbose = "-v" in sys.argv
 # pylint: disable=missing-function-docstring,missing-class-docstring  #🧨🧨🧨🧨 turn this back on later 🧨🧨🧨🧨
 
 
-from lazy_regression_tests.lazy3.helper_tst import get_mock_env
+from lazy_regression_tests.helper_tst import get_mock_env
 
 
 import logging
@@ -44,13 +44,13 @@ from traceback import print_exc as xp  # pylint: disable=unused-import
 from lazy_regression_tests._baseutils import set_cpdb
 
 
-from lazy_regression_tests.lazy3 import LazyMixin
+from lazy_regression_tests import LazyMixin
 
-from lazy_regression_tests.lazy3 import ValidationDirective
+from lazy_regression_tests import ValidationDirective
 
 
-from lazy_regression_tests.lazy3.json_schema_validators import JsonSchemaValidator
-from lazy_regression_tests.lazy3.filters import JsonFilterManager
+from lazy_regression_tests.json_schema_validators import JsonSchemaValidator
+from lazy_regression_tests.filters import JsonFilterManager
 
 
 def cpdb(*args, **kwargs):

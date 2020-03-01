@@ -65,7 +65,7 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests.lazy3.http_validators import ResponseHTML
+from lazy_regression_tests.http_validators import ResponseHTML
 
 
 def get_mock_env(seed={}):

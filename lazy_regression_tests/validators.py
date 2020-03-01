@@ -486,7 +486,7 @@ class ValidationDirective:
         except (
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
-            if cpdb():
+            if 1 or cpdb():
                 pdb.set_trace()
             raise
 

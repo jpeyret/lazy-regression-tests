@@ -48,13 +48,13 @@ from traceback import print_exc as xp  # pylint: disable=unused-import
 
 from lazy_regression_tests._baseutils import RescueDict, set_cpdb
 
-from lazy_regression_tests.lazy3 import ValidationDirective, AutoExp
+from lazy_regression_tests import ValidationDirective, AutoExp
 
 
-from lazy_regression_tests.lazy3.filters import FilterDirective, RegexRemoveSaver
+from lazy_regression_tests.filters import FilterDirective, RegexRemoveSaver
 
 
-from lazy_regression_tests.lazy3.core import OPT_DIRECTIVE_BASELINE
+from lazy_regression_tests.core import OPT_DIRECTIVE_BASELINE
 
 
 rescuedict = RescueDict()
@@ -67,7 +67,7 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests.lazy3 import LazyMixin
+from lazy_regression_tests import LazyMixin
 
 ##########################################################
 # tests
@@ -77,7 +77,7 @@ from lazy_regression_tests.lazy3 import LazyMixin
 lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
 
 
-from lazy_regression_tests.lazy3.helper_tst import (
+from lazy_regression_tests.helper_tst import (
     get_mock_env,
     get_fake_response_from_template,
     HelperHTML,
@@ -99,7 +99,7 @@ di_mock_env_no_extras = dict(
 module_ = "builtins"
 module_ = module_ if module_ in sys.modules else "__builtin__"
 
-from lazy_regression_tests.lazy3.http_validators import (
+from lazy_regression_tests.http_validators import (
     HtmlFilterManager,
     HTMLValidationMixin,
     ResponseHTML,

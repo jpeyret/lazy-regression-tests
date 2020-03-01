@@ -59,7 +59,7 @@ from lazy_regression_tests._baseutils import (
 from lazy_regression_tests.utils import InvalidConfigurationException
 
 
-from lazy_regression_tests.lazy3 import (
+from lazy_regression_tests import (
     DictValidator,
     ValidationDirective,
     DirectValidator,
@@ -67,7 +67,7 @@ from lazy_regression_tests.lazy3 import (
 )
 
 
-from lazy_regression_tests.lazy3.filters import (
+from lazy_regression_tests.filters import (
     RegexRemoveSaver,
     DictFilter,
     FilterDirective,
@@ -75,7 +75,7 @@ from lazy_regression_tests.lazy3.filters import (
     JsonFilterManager,
 )
 
-from lazy_regression_tests.lazy3.core import OPT_DIRECTIVE_BASELINE
+from lazy_regression_tests.core import OPT_DIRECTIVE_BASELINE
 
 
 rescuedict = RescueDict()
@@ -90,14 +90,14 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests.lazy3 import LazyMixin
+from lazy_regression_tests import LazyMixin
 
 ##########################################################
 # tests
 ##########################################################
 
 
-from lazy_regression_tests.lazy3.helper_tst import get_mock_env
+from lazy_regression_tests.helper_tst import get_mock_env
 
 
 di_mock_env = get_mock_env()

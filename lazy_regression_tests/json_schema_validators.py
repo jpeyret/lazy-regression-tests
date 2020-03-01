@@ -67,7 +67,7 @@ except (ImportError,) as e:
 undefined = NotImplemented
 
 
-from lazy_regression_tests.lazy3.validators import DictValidator
+from lazy_regression_tests.validators import DictValidator
 
 
 class JsonSchemaValidator(DictValidator):
