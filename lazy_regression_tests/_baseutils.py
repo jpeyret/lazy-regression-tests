@@ -1034,7 +1034,7 @@ class UnavailableLibrary:
                 pass
 
             #anything calling on ydump will now blow up
-            ydump = Unavailable(name = Foo.__module__, missing="yaml")    
+            ydump = UnavailableLibrary(name = Foo.__module__, missing="yaml")    
     """
 
     exception_cls = InvalidConfigurationException
@@ -1053,11 +1053,12 @@ class UnavailableLibrary:
         """ error message """
         return f"""
 Third party package/library '{self.missing}' has not been installed.  
-You need to install it before using {self.name}"""
+You need to install it before using {self.name}
+{self.message}
+"""
 
     def __getattr__(self, *args, **kwargs):
         """ throw errors on any access """
-
         raise self.exception_cls(self)
 
     # and reroute call
