@@ -10,7 +10,7 @@ Let's take a simple web page that has some variable data.
 
 Driving it is some simplistic markup, and a mocked up http unittest that varies some data like the time stamp and a hidden csrf token.
 
-![](/lazytests/001.first_run.png) 
+![](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/docs/screenshots/01.different.png) 
 
 
 ### Goals 
