@@ -1,10 +1,12 @@
+Travis CI: [![Build Status](https://travis-ci.org/jpeyret/lazy-regression-tests.svg?branch=master)](https://travis-ci.org/jpeyret/lazy-regression-tests)
+
 ## Automated regression tests
 
 Let's take a simple web page that has some variable data.
 
 Driving it is some simplistic markup, and a mocked up http unittest that varies some data like the time stamp and a hidden csrf token.
 
-![](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/docs/screenshots/001.first_run.png)
+![screenshot of page with constantly-changing elements](https://raw.githubusercontent.com/jpeyret/lazy-regression-tests/049.lazy.000.packaging/docs/screenshots/001.first_run.png)
 
 
 ### Goals 
@@ -611,9 +613,11 @@ E           ❌❌❌
 FAILED test_doc.py::Test_JSON_Too::test_it - AssertionError:
 ````
 
-You can, of course, view differences in diff-type tools:
+#### You can, of course, view differences in diff-type tools:
 
-![](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/docs/screenshots/002.diff_json.png)
+![view via a GUI diff](https://raw.githubusercontent.com/jpeyret/lazy-regression-tests/049.lazy.000.packaging/docs/screenshots/002.diff_json.png)
+
+
 
 
 #### YAML: 
