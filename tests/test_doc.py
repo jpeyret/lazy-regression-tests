@@ -395,7 +395,7 @@ class Test_YAML_Graphs(Test_YAML):
         """ simulate a changed object graph """
         try:
 
-            from yaml import dump as ydump, load as yload
+            from yaml import dump as ydump, safe_load as yload
 
             somethingtotest = SomethingToTest()
             somethingtotest.var3 = Subvar("3")

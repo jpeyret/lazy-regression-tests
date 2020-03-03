@@ -44,8 +44,7 @@ setup(
     long_description=readme + "\n\n" + history,
     include_package_data=True,
     keywords="lazy_regression_tests",
-    # JLP may bring it back later
-    # long_description_content_type="text/markdown",
+    long_description_content_type="text/markdown",
     name="lazy_regression_tests",
     packages=find_packages(
         include=["lazy_regression_tests", "lazy_regression_tests.*"]
