@@ -23,7 +23,7 @@ setup(
     python_requires=">=3.6",
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers, QA",
+        "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         # 2.x could come back, valuable for migrations,

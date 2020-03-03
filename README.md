@@ -1,9 +1,3 @@
----
-title: Easier, DRY, automated, testing
-lang: en-US
----
-
-
 ## Automated regression tests
 
 Let's take a simple web page that has some variable data.
@@ -44,7 +38,7 @@ If anything else changes, we want to fail the test automatically.  The tester ca
             tmp = self.assert_exp(response.content, "html")
 
 ````
-[full test code](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/tests/test_doc.py)
+[full test code, under `class Test_Features`](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/tests/test_doc.py)
 
 ### Getting started - fail the test
 
