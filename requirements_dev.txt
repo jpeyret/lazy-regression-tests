@@ -1,8 +1,11 @@
 Jinja2==2.11.1
 jsonschema==3.2.0
-#pip==20.0.*
+
+# these dont look like they work here.
+pip==20.0.*
+pytest==5.*
+
 tox-travis==0.*
-#pytest==5.*
 beautifulsoup4==4.*
 PyYAML==5.*
 requests==2.*
