@@ -1,24 +1,9 @@
-pip==20.0.*
-tox-travis==0.*
-#wheel==0.33.6
-#watchdog==0.9.0
-#flake8==3.7.8
-#tox==3.14.0
-#coverage==4.5.4
-#Sphinx==1.8.5
-#twine==1.14.0
-
-##############################################
-# we'll if the stuff above is required by 
-# pypi and co.
-##############################################
-
-pytest==5.*
 Jinja2==2.11.1
 jsonschema==3.2.0
-
+pip==20.0.*
+tox-travis==0.*
+pytest==5.*
 beautifulsoup4==4.*
 PyYAML==5.*
 requests==2.*
 responses==0.10.*
-
