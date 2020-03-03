@@ -9,8 +9,8 @@ before_install:
   - pip install -U pytest
   # - pip install codecov
 install:
-  - pip install -U requirements.txt
-  - pip install -U requirements_dev.txt
+  - pip install -U -r requirements.txt
+  - pip install -U -r requirements_dev.txt
   - pip install ".[test]" . # install package + test dependencies
   - pip list
 script: 
