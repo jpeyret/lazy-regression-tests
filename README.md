@@ -10,7 +10,7 @@ Let's take a simple web page that has some variable data.
 
 Driving it is some simplistic markup, and a mocked up http unittest that varies some data like the time stamp and a hidden csrf token.
 
-![](/lazytests/001.first_run.png) 
+![](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/docs/screenshots/001.first_run.png)
 
 
 ### Goals 
@@ -27,6 +27,24 @@ Obviously, both the csrf token and the time stamp need to be disregarded from ru
 
 If anything else changes, we want to fail the test automatically.  The tester can then examine what changed and determine whether to accept the new HTML as the new baseline.  **Cosmetic HTML changes are for designers to worry about, test code shouldn't have to change.**
 
+### What a test looks like, once written:
+
+````
+            # anything returning an HTML response would do
+            http_response = ...
+
+            #ResponseHTML "adapts" the standard http_response by tracking attributes
+            #like content_type, status_code, headers...
+            response = ResponseHTML(http_response)
+            
+            #Check validation such as content_type and status code
+            self.check_expectations(response=response)
+            
+            #Regression test - did we get the same contents as the last time?
+            tmp = self.assert_exp(response.content, "html")
+
+````
+[full test code](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/tests/test_doc.py)
 
 ### Getting started - fail the test
 
@@ -102,6 +120,7 @@ Most of the behavior is built-in, once you inherit from a base class.  Filters, 
 
 
 ````
+
 def my_test_method(self):
     """ this is what a typical lazy-test looks like """
 
@@ -124,10 +143,11 @@ def my_test_method(self):
     tmp = self.assert_exp(response.content, "html")
 
     #.... 👇your unit testing code goes here 👇....
- ````
+    
+````
 
 
-[To see the actual test code](#full_test_code).
+[full test code](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/tests/test_doc.py)
 
 
 ### The actual test class: `Test_Features`
@@ -599,7 +619,7 @@ FAILED test_doc.py::Test_JSON_Too::test_it - AssertionError:
 
 You can, of course, view differences in diff-type tools:
 
-![](/lazytests/002.diff_json.png)
+![](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/docs/screenshots/002.diff_json.png)
 
 
 #### YAML: 
