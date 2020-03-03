@@ -61,6 +61,10 @@ except (ImportError,) as e:
 
     ValidationError = Exception
 
+    jsonschema = Foo
+    jsonschema.exceptions = Foo
+    jsonschema.exceptions.ValidationError = NotImplementedError
+
     validate = UnavailableLibrary(name=Foo.__module__, missing="jsonschema")
 
 
