@@ -27,6 +27,7 @@ Obviously, both the csrf token and the time stamp need to be disregarded from ru
 
 If anything else changes, we want to fail the test automatically.  The tester can then examine what changed and determine whether to accept the new HTML as the new baseline.  **Cosmetic HTML changes are for designers to worry about, test code shouldn't have to change.**
 
+[full test code](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/tests/test_doc.py)
 
 ### Getting started - fail the test
 
