@@ -1,0 +1,49 @@
+[run]
+omit =
+    # omit anything in a .local directory anywhere
+
+    # for now, don't ignore /tests/ as that is handled by the run directives: ... 👉--cov=$bme_home/tests/👈 (or nor) --cov=$bme_home/lib/...
+
+    */tests/*
+    *utils*
+
+include=
+  lazy_regression_tests
+
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+
+    # No worries on std exception catching:
+    except Exception, e: 
+    except Exception as e:
+
+    #bit aggressive, but exception coverage is mostly pointless
+    except\s
+
+    #and no pdb stuff either...
+    USE_PDB
+    if cpdb():
+    if rpdb():
+    def cpdb():
+    def rpdb():
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+    if self\.debug
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+    except AssertionError:
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if False[ ] 
+    if __name__ == .__main__.:
+
+    
