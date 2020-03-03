@@ -4,6 +4,7 @@ jsonschema==3.2.0
 # these dont look like they work here.
 pip==20.0.*
 pytest==5.*
+pytest-cov==2.*
 
 tox-travis==0.*
 beautifulsoup4==4.*

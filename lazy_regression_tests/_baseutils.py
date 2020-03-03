@@ -1,3 +1,10 @@
+""" base utilities package, shared among libraries
+
+    do not expect much coverage of it in any library because
+    most libraries won't use much of its functionality.
+
+"""
+
 import sys
 import types
 import re
@@ -67,6 +74,9 @@ def cast_bytes2str(fn):
     return decorated
 
 
+#################################
+
+
 def _pseudo_decor(fn, attrname):
     """decorator to cast the an attribute with a function result to a str if and only if it's bytes
 
@@ -112,7 +122,7 @@ def real_rpdb() -> bool:  # pragma: no cover
 
     try:
         from django.core.cache import cache
-    except (Exception,) as e:
+    except (ImportError,):
         cache = {}
     import sys
 

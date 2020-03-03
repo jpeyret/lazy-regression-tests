@@ -5,7 +5,7 @@ omit =
     # for now, don't ignore /tests/ as that is handled by the run directives: ... 👉--cov=$bme_home/tests/👈 (or nor) --cov=$bme_home/lib/...
 
     */tests/*
-    *utils*
+    */_baseutils.py
 
 include=
   lazy_regression_tests
