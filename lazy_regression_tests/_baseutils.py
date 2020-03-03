@@ -30,6 +30,9 @@ undefined = NotImplemented
 
 from typing import List, Any, Tuple, Iterable
 
+# for isinstance tests...
+type_regex_hack = re.compile("").__class__
+
 verbose = "-v" in sys.argv
 
 try:
@@ -794,7 +797,7 @@ class DictFormatter:
 
                 func_fmt = func_fmt or f_default
 
-                if isinstance(key, re._pattern_type):
+                if isinstance(key, type_regex_hack):
                     di_keys = di_keys or list(di.keys())
                     for di_key in di_keys:
 
