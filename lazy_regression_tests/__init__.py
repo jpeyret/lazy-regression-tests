@@ -7,7 +7,7 @@ __version__ = "0.5.1"
 
 from .core import LazyMixin, ValidationManager
 
-from .filters import FilterManager
+from .filters import FilterManager, FilterDirective, RegexRemoveSaver
 
 from .validators import (
     NamedTesteeAttributeValidator,
