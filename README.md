@@ -16,31 +16,81 @@ We want to do the following, *with less than 10 lines of code*:
 - regression test that the page HTML is the same from run to run
 - validate basic HTML behavior, like `title`, 200 `status_code` and http `content_type`
 - check that `name` in the greeting corresponds to what's set on the unittest configuration
-- check that the order items always start with "Item".
 - an additional feature is the presence of a **csrf** random token.
 
 Obviously, both the csrf token and the time stamp need to be disregarded from run to run.  
 
 If anything else changes, we want to fail the test automatically.  The tester can then examine what changed and determine whether to accept the new HTML as the new baseline.  **Cosmetic HTML changes are for designers to worry about, test code shouldn't have to change.**
 
-### What a test looks like, once written:
+
+### What the full test will look like, minus server mocking:
 
 ````
-            # anything returning an HTML response would do
-            http_response = ...
+# generic lazy functionality
+from lazy_regression_tests import (
+    LazyMixin,
+    ValidationDirective,
+    FilterDirective,
+    AutoExp,
+    RegexRemoveSaver,
+)
 
-            #ResponseHTML "adapts" the standard http_response by tracking attributes
-            #like content_type, status_code, headers...
+# specific to HTTP/HTML validations
+from lazy_regression_tests.http_validators import (
+    HTMLValidationMixin,
+    ResponseHTML,
+    HtmlFilterManager,
+    CSSRemoveFilter,
+    CSSValidator,
+)
+
+class LazyMixinBasic(LazyMixin):
+    """ base Mixin class for the lazy test framework """
+
+    lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
+    cls_filters = dict(html=HtmlFilterManager())
+
+
+filter_variables = [
+    FilterDirective(
+        "timestamp", filter_=CSSRemoveFilter("span.timestamp", "timestamp", scalar=True)
+    ),
+    FilterDirective("csrf", filter_=RegexRemoveSaver("csrf_token", "csrf_token")),
+]
+
+
+class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCase):
+
+    cls_filters = dict(html=filter_variables)  # 👈 This is how we add the filters
+
+    name = "Mr. Rabbit"  # picked up by `AutoExp` below
+
+    # 👇 setting up the validations
+    cls_validators = [
+        ValidationDirective("title", exp="Your order"),
+        ValidationDirective("name", exp=AutoExp, validator=CSSValidator("#name")),
+    ]
+
+    @mock.patch.dict(os.environ, di_mock_env)
+    def test_it(self):
+        try:
+            # could come from Django test server, requests....
+            http_response = get_fake_response_from_template(self)
+
+            # "adapt" standard http_response by tracking content_type, status_code, headers...
             response = ResponseHTML(http_response)
-            
-            #Check validation such as content_type and status code
+            # Check validation such as content_type and status code
             self.check_expectations(response=response)
-            
-            #Regression test - did we get the same contents as the last time?
+            # Regression test - did we get the same contents as the last time?
             tmp = self.assert_exp(response.content, "html")
 
+        except (Exception,) as e:
+            raise
+
 ````
-[full test code, under `class Test_Features`](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/tests/test_doc.py)
+
+
+[full test code, under `class Test_Features`](https://github.com/jpeyret/lazy-regression-tests/blob/master/tests/test_usage.py)
 
 ### Getting started - fail the test
 
