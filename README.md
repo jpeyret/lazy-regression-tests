@@ -2,7 +2,7 @@ Travis CI: [![Build Status](https://travis-ci.org/jpeyret/lazy-regression-tests.
 
 ## Automated regression tests
 
-Let's take a simple web page that has some variable data.
+### Let's take a simple web page that has some variable data.
 
 Driving it is some simplistic markup, and a mocked up http unittest that varies some data like the time stamp and a hidden csrf token.
 
@@ -23,7 +23,7 @@ Obviously, both the csrf token and the time stamp need to be disregarded from ru
 If anything else changes, we want to fail the test automatically.  The tester can then examine what changed and determine whether to accept the new HTML as the new baseline.  **Cosmetic HTML changes are for designers to worry about, test code shouldn't have to change.**
 
 
-### What the full test will look like, minus server mocking:
+### What a full test looks like, minus server/response mocking:
 
 ````
 # generic lazy functionality
@@ -51,6 +51,7 @@ class LazyMixinBasic(LazyMixin):
     cls_filters = dict(html=HtmlFilterManager())
 
 
+# 👇  🥦🥦 filter changing contents
 filter_variables = [
     FilterDirective(
         "timestamp", filter_=CSSRemoveFilter("span.timestamp", "timestamp", scalar=True)
@@ -65,7 +66,7 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
 
     name = "Mr. Rabbit"  # picked up by `AutoExp` below
 
-    # 👇 setting up the validations
+    # 👇 setting up the validations 🥦🥦
     cls_validators = [
         ValidationDirective("title", exp="Your order"),
         ValidationDirective("name", exp=AutoExp, validator=CSSValidator("#name")),
@@ -74,8 +75,11 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
     @mock.patch.dict(os.environ, di_mock_env)
     def test_it(self):
         try:
-            # could come from Django test server, requests....
+            # this comes from `requests`, could be a Django testserver, your code...
             http_response = get_fake_response_from_template(self)
+
+            # if we re-use filters and validations, yes, we use a lot less than
+            # 10 lines of code 👇 🍰🍰🍰🍰
 
             # "adapt" standard http_response by tracking content_type, status_code, headers...
             response = ResponseHTML(http_response)
@@ -92,9 +96,11 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
 
 [full test code, under `class Test_Features`](https://github.com/jpeyret/lazy-regression-tests/blob/master/tests/test_usage.py)
 
-### Getting started - fail the test
+## THE DETAILS...
 
-Trigger a failure by running the test twice.
+### Trigger a failure by running the test twice.
+
+Note:  This is assuming we **didn't** have the filters configured yet.
 
 ````
 pytest -q test_doc::Test_Features::test_it
@@ -165,35 +171,6 @@ The actual test code to use in each test method is very limited.  Yes, you will 
 Most of the behavior is built-in, once you inherit from a base class.  Filters, and validators which we will see later, are inherited from class to class via Python's standard MRO and some metaclass tweaking.  No `setUp/tearDown` are needed, but you use yours as usual.
 
 
-````
-
-def my_test_method(self):
-    """ this is what a typical lazy-test looks like """
-
-    http_response = testserver.get(someurl)
-    
-    self.assertEqual(... your usual unit test code ...)
-    
-    #.... 👆your unit testing code goes here 👆....
-
-    # 👇 lazy-testing, in 3 lines of code 👇
-
-    # ResponseHTML "adapts" the standard http_response by tracking attributes
-    # like content_type, status_code, headers...
-    response = ResponseHTML(http_response)
-
-    # Check validations such as content_type and status code
-    self.check_expectations(response=response)
-
-    #Regression test - did we get the same contents as the last time?
-    tmp = self.assert_exp(response.content, "html")
-
-    #.... 👇your unit testing code goes here 👇....
-    
-````
-
-
-[full test code](https://github.com/jpeyret/lazy-regression-tests/blob/049.lazy.000.packaging/tests/test_doc.py)
 
 
 ### The actual test class: `Test_Features`

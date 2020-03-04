@@ -48,6 +48,7 @@ class LazyMixinBasic(LazyMixin):
     cls_filters = dict(html=HtmlFilterManager())
 
 
+# 👇  🥦🥦 filter changing contents
 filter_variables = [
     FilterDirective(
         "timestamp", filter_=CSSRemoveFilter("span.timestamp", "timestamp", scalar=True)
@@ -62,7 +63,7 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
 
     name = "Mr. Rabbit"  # picked up by `AutoExp` below
 
-    # 👇 setting up the validations
+    # 👇 setting up the validations 🥦🥦
     cls_validators = [
         ValidationDirective("title", exp="Your order"),
         ValidationDirective("name", exp=AutoExp, validator=CSSValidator("#name")),
@@ -71,8 +72,11 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
     @mock.patch.dict(os.environ, di_mock_env)
     def test_it(self):
         try:
-            # could come from Django test server, requests....
+            # this comes from `requests`, could be a Django testserver, your code...
             http_response = get_fake_response_from_template(self)
+
+            # if we re-use filters and validations, yes, we use a lot less than
+            # 10 lines of code 👇 🍰🍰🍰🍰
 
             # "adapt" standard http_response by tracking content_type, status_code, headers...
             response = ResponseHTML(http_response)
@@ -85,7 +89,7 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
             raise
 
     #################################################################
-    # template and configuration
+    # template and configuration to fake an http response
     #################################################################
 
     line1 = "Item 1"
