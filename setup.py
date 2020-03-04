@@ -11,14 +11,14 @@ with open("README.md") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-requirements = []
+requirements = ["timeout-decorator"]
 
 setup_requirements = []
 
-test_requirements = []
+test_requirements = ["requests", "responses", "Jinja2", "jsonschema", "beautifulsoup4"]
 
 setup(
-    version="0.5.2",
+    version="0.5.3",
     author="JL Peyret",
     author_email="jpeyret@gmail.com",
     python_requires=">=3.6",
