@@ -168,9 +168,7 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
 
 The actual test code to use in each test method is very limited.  Yes, you will need to declare those filters and validations, but they are designed to be shared across multiple test classes.
 
-Most of the behavior is built-in, once you inherit from a base class.  Filters, and validators which we will see later, are inherited from class to class via Python's standard MRO and some metaclass tweaking.  No `setUp/tearDown` are needed, but you use yours as usual.
-
-
+Most of the behavior is built-in, once you inherit from a base class.  Filters, and validators which we will see later, are inherited from class to class via Python's standard MRO and some metaclass tweaking.  No `setUp/tearDown` are needed, but you can use yours as usual.
 
 
 ### The actual test class: `Test_Features`
