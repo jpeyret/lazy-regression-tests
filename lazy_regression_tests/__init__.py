@@ -2,7 +2,7 @@
 
 __author__ = """JL Peyret"""
 __email__ = "jpeyret@gmail.com"
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 
 from .core import LazyMixin, ValidationManager
