@@ -25,6 +25,9 @@ If anything else changes, we want to fail the test automatically.  The tester ca
 
 ### What a full test looks like, minus server/response mocking:
 
+[full test code, under `class Test_Features`](https://github.com/jpeyret/lazy-regression-tests/blob/master/tests/test_usage.py)
+
+
 ````
 # generic lazy functionality
 from lazy_regression_tests import (
@@ -94,13 +97,15 @@ class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCa
 ````
 
 
-[full test code, under `class Test_Features`](https://github.com/jpeyret/lazy-regression-tests/blob/master/tests/test_usage.py)
 
 ## THE DETAILS...
 
-### Trigger a failure by running the test twice.
+Let's start out by assuming we **didn't** have the filters configured yet, so data changes from run to run.
 
-Note:  This is assuming we **didn't** have the filters configured yet.
+[full test code, with more examples, under `class Test_Features`](https://github.com/jpeyret/lazy-regression-tests/blob/master/tests/test_doc.py)
+
+
+### Trigger a failure by running the test twice.
 
 ````
 pytest -q test_doc::Test_Features::test_it
@@ -768,32 +773,8 @@ class LazyMixinBasic(LazyMixin):
     # 👇 ⚙️ Tells the framework what extensions/content to expect
     cls_filters = dict(html=HtmlFilterManager())
 
-    def test_it(self):
-        """ fetch data, run validations, regression test """
-        try:
+	#.... cut out the test_it() method... we've seen it befor...
 
-            # this is a pretend server, could have been the Django test server for example
-            # could be `requests` against a real site
-            # anything returning an HTML response would do
-            http_response = get_fake_html_response(self, data=data)
-
-
-            # 👇 lazy-testing, in 3 lines of code 👇
-
-            #ResponseHTML "adapts" the standard http_response by tracking attributes
-            #like content_type, status_code, headers...
-            response = ResponseHTML(http_response)
-            
-            #Check validation such as content_type and status code
-            self.check_expectations(response=response)
-            
-            #Regression test - did we get the same contents as the last time?
-            tmp = self.assert_exp(response.content, "html")
-
-            # 👆 lazy-testing 👆
-
-        except (Exception,) as e:
-            raise
 
 class Test_Features(Helper, HTMLValidationMixin, LazyMixinBasic, unittest.TestCase):
     """ this is the test we are running here """
