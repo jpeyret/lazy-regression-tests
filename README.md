@@ -1,4 +1,4 @@
-Travis CI: [![Build Status](https://travis-ci.org/jpeyret/lazy-regression-tests.svg?branch=master)](https://travis-ci.org/jpeyret/lazy-regression-tests)
+Travis CI: [![Build Status](https://travis-ci.org/jpeyret/lazy-regression-tests.svg?branch=master)](https://travis-ci.org/jpeyret/lazy-regression-tests)  ![Coverage](https://codecov.io/gh/jpeyret/lazy-regression-tests/branch/master/graph/badge.svg)
 
 ## Automated regression tests
 
