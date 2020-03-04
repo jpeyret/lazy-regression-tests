@@ -24,7 +24,7 @@ History
 
 *  updated README.md
 
-0.6.0 (2020-03-03)
+0.5.4 (2020-03-03)
 ------------------
 
 *  updated README.md
