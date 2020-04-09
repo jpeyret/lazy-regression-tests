@@ -406,7 +406,6 @@ class MixinExpInGot:
 
         # pragma: no cover pylint: disable=unused-variable
         except (AssertionError,) as e:
-            pdb.set_trace()
             raise
         except (
             Exception,

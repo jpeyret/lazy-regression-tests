@@ -1,5 +1,9 @@
 import pdb
 import json
+import sys
+import os
+import copy
+
 
 #######################################################
 # Dependencies
@@ -20,6 +24,11 @@ except (ImportError,) as e:
     # this will throw an InvalidConfigurationError on any access to bs
     # telling you to install BeautifulSoup
     bs = UnavailableLibrary(name=Foo.__module__, missing="Beautifulsoup")
+
+#######################################################
+
+
+verbose = "-v" in sys.argv
 
 
 from .validators import (
@@ -46,7 +55,7 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests.utils import first, fill_template, ppp, getpath
+from lazy_regression_tests.utils import first, fill_template, ppp, getpath, debugObject
 
 #################################################################
 # the Filters
@@ -56,10 +65,11 @@ from lazy_regression_tests.utils import first, fill_template, ppp, getpath
 class CSSRemoveFilter(RawFilter, DataMatcher):
     """ this belongs in the http_validators module """
 
-    def __init__(self, pattern, name, scalar=False, *args):
+    def __init__(self, pattern, name, keep=True, scalar=False, *args):
         self.selector = pattern
         self.name = name
         self.scalar = scalar
+        self.keep = keep
 
     def pre_format(self, data):
         try:
@@ -79,10 +89,13 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
 
             li = []
 
+            keep = self.keep
+
             for hit in data.select(self.selector):
 
-                s_hit = str(hit)
-                self.add_to_filter_hit(tmp, hit)
+                if keep:
+                    hit2 = copy.copy(hit)
+                    self.add_to_filter_hit(tmp, hit2)
                 li.append(hit)
 
             if callback:
@@ -140,6 +153,7 @@ class StatusCodeValidator(NamedTesteeAttributeValidator):
                 exp = [exp]
 
             exp = [int(exp) for exp in exp]
+
             got = int(got)
 
             testee.assertTrue(got in exp, message)
@@ -273,26 +287,70 @@ class HtmlFilterManager(FilterManager):
             raise
 
 
-class ResponseHTML:
-    def __repr__(self):
-        return "%s" % (self.__class__.__name__)
+class Response:
+    def _get_content_type(self, response):
+        try:
 
-    _selectable = undefined
+            # headers ''
+            # content-length=('Content-Length', '11147')
+            # content-type=('Content-Type', 'text/html; charset=utf-8')
+            # vary=('Vary', 'Cookie')
 
-    @property
-    def selectable(self):
+            if verbose:
+                mode = os.getenv("bme_test_fetchmode", "unknownmode")
+                with open("./debug.%s.response.txt" % (mode), "w") as fo:
+                    for k in sorted(vars(response).keys()):
+                        fo.write(f"{k}={str(getattr(response,k)):200.200}" + "\n")
 
-        if self._selectable is undefined:
-            self._selectable = bs(self.content)
-        return self._selectable
+                    fo.write(debugObject(self.headers, "\nheaders:"))
 
-    wanteds = dict(headers=["headers", "_headers"])
+            # pdb.set_trace()
+
+            part1 = self.headers.get("content-type") or self.headers.get(
+                "Content-Type", {}
+            )
+
+            if isinstance(part1, tuple):
+
+                if part1[-1].endswith("/json"):
+                    return "json"
+
+                if part1[-1].endswith("/html"):
+                    return "html"
+
+            elif isinstance(part1, str):
+
+                if part1.endswith("/json"):
+                    return "json"
+
+                if part1.endswith("/html"):
+                    return "html"
+
+            raise NotImplementedError("%s._get_content_type(%s)" % (self, locals()))
+
+            content_type = part1[1].split(";")[0].split("/")[1]
+
+            assert content_type in ("html", "json"), "unknown content_type:%s:" % (
+                content_type
+            )
+
+            return content_type
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    wanteds = dict(
+        headers=["headers", "_headers"],
+        content=["content"],
+        status_code=["status_code"],
+    )
 
     def __init__(self, response):
         try:
             self._response = response
-            self.content = response.content
-            self.status_code = response.status_code
 
             for attrname, paths in self.wanteds.items():
                 if isinstance(paths, str):
@@ -311,12 +369,109 @@ class ResponseHTML:
                     raise AttributeError(attrname)
 
             # pdb.set_trace()
+            self.content_type = self._get_content_type(response)
+            assert self.content_type, "missing self."
+            # pdb.set_trace()
+            self._init()
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def _init(self):
+        """do nothing"""
+
+
+class ResponseJSON(Response):
+    pass
+
+    def _init(self, *args, **kwargs):
+        """do nothing"""
+        try:
+
+            if not self.content_type in ("json"):
+                self.json = None
+                return
+            self.json = json.loads(self.content)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+
+class SnippetHTML(Response):
+    """ supports testing of html snippets rather than full http response """
+
+    def _get_content_type(self, response):
+        return "html"
+
+    wanteds = {}
+
+    def __repr__(self):
+        return "%s" % (self.__class__.__name__)
+
+    _selectable = undefined
+
+    @property
+    def selectable(self):
+
+        if self._selectable is undefined:
+            self._selectable = bs(self.content)
+        return self._selectable
+
+    def _init(self):
+        """do nothing"""
+
+        assert isinstance(self._response, str)
+
+        self.content = self._response
+
+
+class ResponseHTML:
+    def __repr__(self):
+        return "%s" % (self.__class__.__name__)
+
+    _selectable = undefined
+
+    @property
+    def selectable(self):
+
+        if self._selectable is undefined:
+            self._selectable = bs(self.content)
+        return self._selectable
+
+    wanteds = dict(headers=["headers", "_headers"])
+
+    def __init__(self, response):
+        try:
+            self._response = response
+            self.html = self.content = response.content
+            self.status_code = response.status_code
+
+            for attrname, paths in self.wanteds.items():
+                if isinstance(paths, str):
+                    paths = [paths]
+
+                # pdb.set_trace()
+                for path in paths:
+                    try:
+                        value = getpath(response, path)
+                        setattr(self, attrname, value)
+                        break
+                    # pragma: no cover pylint: disable=unused-variable
+                    except (AttributeError,) as e:
+                        pass
+                else:
+                    raise AttributeError(attrname)
+
             if rpdb():  # pragma: no cover
                 pdb.set_trace()
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise

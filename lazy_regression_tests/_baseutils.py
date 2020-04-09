@@ -791,6 +791,8 @@ class DictFormatter:
         try:
             di = di_in if in_place else di_in.copy()
 
+            assert di, "assert 1"
+
             di_formatter = di_formatter or self.di_default_formatter
 
             assert isinstance(
@@ -801,14 +803,21 @@ class DictFormatter:
 
             li_tu_key_func = list(di_formatter.items())
 
+            assert di, "assert 2"
+
             di_keys = None
 
             for key, func_fmt in li_tu_key_func:
 
+                if verbose:
+                    print(f"key:{key}, func_fmt:{func_fmt}")
+
                 func_fmt = func_fmt or f_default
 
+                assert di, "assert 3"
+
                 if isinstance(key, type_regex_hack):
-                    di_keys = di_keys or list(di.keys())
+                    di_keys = di_keys or list(di_in.keys())
                     for di_key in di_keys:
 
                         if not isinstance(di_key, str):
@@ -818,16 +827,20 @@ class DictFormatter:
                         if hit:
                             v = di.get(di_key, undefined)
                             if callable(func_fmt):
+
                                 if keep is not None:
                                     keep[di_key] = v
 
-                                di = func_fmt(di, di_key, v)
+                                func_fmt(di, di_key, v)
+                                assert di, "assert 4"
+
                             elif isinstance(func_fmt, dict):
                                 if keep is not None:
 
                                     childkeep = keep[di_key] = {}
                                 else:
                                     childkeep = None
+
                                 di = self.process(
                                     di,
                                     di_formatter=func_fmt,
@@ -835,6 +848,7 @@ class DictFormatter:
                                     in_place=True,
                                     keep=childkeep,
                                 )
+                                assert di, "assert 5"
                             else:
                                 raise NotImplementedError(
                                     "%s.process(%s)" % (self, locals())
@@ -866,6 +880,8 @@ class DictFormatter:
                             in_place=True,
                             keep=childkeep,
                         )
+                        assert di, "assert 6"
+
                     else:
                         if keep is not None:
                             keep[key] = v.copy()
@@ -873,6 +889,8 @@ class DictFormatter:
                             di[key] = func_fmt(di, key, v)
                         else:
                             del di[key]
+
+                        assert di, "assert 7"
 
                 else:
                     # if the formatter is a dict, then only a value
@@ -886,9 +904,12 @@ class DictFormatter:
                         keep[key] = v
 
                     if callable(func_fmt):
-                        di = func_fmt(di, key, v)
+                        func_fmt(di, key, v)
+                        assert di, "assert 8"
                     else:
                         del di[key]
+
+            assert di, "assert 9"
 
             return di
 

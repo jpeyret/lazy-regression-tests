@@ -300,6 +300,11 @@ class LazyMixin(metaclass=_LazyMeta):
                 **sources,
             )
         # pragma: no cover pylint: disable=unused-variable
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (AssertionError,) as e:
+            raise
+
         except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()

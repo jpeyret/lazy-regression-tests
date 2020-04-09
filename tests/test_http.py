@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp  # pylint: disable=unused-import
 
-from lazy_regression_tests._baseutils import RescueDict, set_cpdb
+from lazy_regression_tests._baseutils import RescueDict, set_cpdb, ppp
 
 from lazy_regression_tests import ValidationDirective, AutoExp
 
@@ -218,7 +218,10 @@ class Test_Basic(HTMLBase):
             data["now"] = "a bit later"
             response = self.get(data=data)
 
-            tmp = self.assert_exp(response.content, "html")
+            self.assertTrue(
+                "timestamp" in str(tmp.filtered.timestamp),
+                "expected :'timestamp' in %s" % (tmp.filtered.timestamp),
+            )
 
         except (Exception,) as e:
             if cpdb():

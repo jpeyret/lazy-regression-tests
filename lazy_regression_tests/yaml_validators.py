@@ -6,7 +6,12 @@ import pdb
 from traceback import print_exc as xp
 
 try:
-    from yaml import dump as ydump
+    # from yaml import dump as ydump
+    import yaml
+
+    ydump = yaml.dump
+    # import yaml
+
 
 # pragma: no cover pylint: disable=unused-variable
 except (ImportError,) as e:
@@ -44,6 +49,8 @@ class YAMLFilter(FilterManager):
 
             if isinstance(data, str):
                 raise NotImplementedError("%s.to_text(data is a string)" % (self))
+
+            yaml.Dumper.ignore_aliases = lambda *args: True
 
             return ydump(data, default_flow_style=False)
 

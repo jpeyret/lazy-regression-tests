@@ -203,7 +203,6 @@ class RegexSubstitHardcoded(RegexFilter):
 
     def process_line(self, hit, line):
         try:
-
             for from_, to_ in self.subs:
                 if isinstance(from_, str):
                     line = line.replace(from_, to_)
@@ -676,7 +675,13 @@ class JsonFilterManager(FilterManager):
 
     def to_text(self, tmp, data):
         try:
-            return json.dumps(data, sort_keys=True, indent=4)
+            # pdb.set_trace()
+            return json.dumps(
+                data,
+                sort_keys=True,
+                indent=4,
+                ensure_ascii=getattr(tmp.testee, "lazy_ensure_ascii", True),
+            )
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
