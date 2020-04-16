@@ -658,8 +658,10 @@ class JsonFilterManager(FilterManager):
 
     def prep(self, tmp, data):
         try:
-            if isinstance(data, dict):
+            if isinstance(data, (dict,)):
                 return data
+            elif isinstance(data, (list,)):
+                return dict(list=data)
             elif isinstance(data, str):
                 return json.loads(data)
             else:
