@@ -91,7 +91,15 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
 
             keep = self.keep
 
-            for hit in data.select(self.selector):
+            hits = data.select(self.selector)
+
+            if not hits:
+
+                # if it's an empty list, it can be assigned as a scalar.  if None, ditto
+                tmp.add_filtered(self.name, hits, scalar=True)
+                return data
+
+            for hit in hits:
 
                 if keep:
                     hit2 = copy.copy(hit)
@@ -312,10 +320,10 @@ class Response:
 
             if isinstance(part1, tuple):
 
-                if part1[-1].endswith("/json"):
+                if "/json" in part1[-1]:
                     return "json"
 
-                if part1[-1].endswith("/html"):
+                if "text/html" in part1[-1]:
                     return "html"
 
             elif isinstance(part1, str):
