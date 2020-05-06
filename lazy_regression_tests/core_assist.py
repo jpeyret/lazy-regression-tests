@@ -82,7 +82,7 @@ class LazyChecker:
     def filter_text(self, tmp, data):
         return self.textfiltermgr.filter(self, tmp, data).strip()
 
-    def format(self, tmp, data, fnp_raw):
+    def format(self, tmp, data, fnp_raw=None):
         try:
             # used to only format once
             if (
