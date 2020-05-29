@@ -5,8 +5,21 @@
 
 """
 
-import pdb
 
+#######################################################
+# Typing
+#######################################################
+
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    import unittest
+
+#######################################################
+
+
+import pdb
 import sys
 
 verbose = "-v" in sys.argv
@@ -24,7 +37,7 @@ from lazy_regression_tests.utils import (
 )
 
 
-def cpdb(*args, **kwargs):
+def cpdb(*args, **kwargs) -> bool:
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
 
@@ -32,8 +45,11 @@ rpdb = breakpoints = cpdb
 
 
 def format_assertion_error(
-    testee: "TestCase", assert_exc: AssertionError, validator=None, name: str = None
-):
+    testee: "unittest.TestCase",
+    assert_exc: AssertionError,
+    validator=None,
+    name: str = None,
+) -> None:
     """ enhance AssertionError's message, if possible """
 
     try:

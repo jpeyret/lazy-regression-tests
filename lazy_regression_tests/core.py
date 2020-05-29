@@ -19,12 +19,15 @@ verbose = "-v" in sys.argv
 #######################################################
 # Typing
 #######################################################
-from typing import (
-    Optional,
-    # TYPE_CHECKING,
-    Any,
-    Union,
-)
+from typing import Optional, TYPE_CHECKING, Any, Union, Dict, List
+
+if TYPE_CHECKING:
+    from .filters import FilterManager
+    from unittest import TestCase
+
+    _Base = TestCase
+else:
+    _Base = object
 
 
 #######################################################
@@ -51,7 +54,7 @@ except (ImportError,) as e:  # pragma: no cover
     timeout = None
     TIMEOUT_MAXTIME_TO_ALLOW = 0
 
-    class CustomTimeoutError(Exception):
+    class CustomTimeoutError(Exception):  # type: ignore
         """we'll never see this """
 
 
@@ -80,7 +83,7 @@ from lazy_regression_tests.utils import Subber, fill_template
 from .core_assist import LazyChecker, LazyTemp, MediatedEnvironDict, _Control, _LazyMeta
 
 
-class LazyMixin(metaclass=_LazyMeta):
+class LazyMixin(_Base, metaclass=_LazyMeta):
     """ Intended as a Mixin to unittest classes it provides a number of services automatically
 
         - validations via cls_validators and set_expectation
@@ -99,8 +102,8 @@ class LazyMixin(metaclass=_LazyMeta):
             
     """
 
-    cls_filters = {}
-    cls_validators = []
+    cls_filters: Dict[str, "FilterManager"] = {}
+    cls_validators: List[ValidationManager] = []
     add_lazy_dirname = []
 
     lazy_dirname_extras = []
@@ -209,10 +212,7 @@ class LazyMixin(metaclass=_LazyMeta):
             raise
 
     def _get_fnp_save(
-        self,
-        exp_got: Union["got", "exp"],
-        options: "LazyChecker",
-        suffix: Optional[str],
+        self, exp_got: str, options: "LazyChecker", suffix: Optional[str]
     ):
         """ get the save path """
 

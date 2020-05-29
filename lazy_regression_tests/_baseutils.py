@@ -42,10 +42,8 @@ type_regex_hack = re.compile("").__class__
 
 verbose = "-v" in sys.argv
 
-try:
-    from cStringIO import StringIO  # 223ed
-except (ImportError,) as e:
-    from io import StringIO  # 223ed
+
+from io import StringIO  # 223ed
 
 import json
 import copy
@@ -178,10 +176,6 @@ def real_cpdb(**kwds):  # pragma: no cover
 
 
 real_cpdb.count = 3
-
-
-def cpdb():
-    "disabled"
 
 
 def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):

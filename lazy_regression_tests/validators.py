@@ -9,6 +9,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+#######################################################
+# Typing
+#######################################################
+from typing import Optional, TYPE_CHECKING, Any, Union
+
+if TYPE_CHECKING:
+    from unittest import TestCase
+
+
 from lazy_regression_tests._baseutils import (
     debugObject,
     ppp,
@@ -20,24 +29,6 @@ from lazy_regression_tests._baseutils import (
 from traceback import print_exc as xp
 
 from .common import *
-
-
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
-
-
-#######################################################
-# Typing
-#######################################################
-from typing import (
-    Optional,
-    # TYPE_CHECKING,
-    Any,
-    Union,
-)
 
 
 from lazy_regression_tests.utils import nested_dict_get, first, fill_template, ppp
@@ -54,13 +45,6 @@ undefined = NotImplemented
 # https://stackoverflow.com/questions/6102019/type-of-compiled-regex-object-in-python
 # yeah, it is what it is, so be it...
 type_regex_hack = re.compile("").__class__
-
-
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
 
 
 class DoNotCheck:
@@ -87,7 +71,7 @@ class AutoExp:
     required = True
 
     @classmethod
-    def get_exp_by_name(cls, testee, name):
+    def get_exp_by_name(cls, testee: "TestCase", name: str) -> Any:
         try:
             return getpath(testee, name)
 
@@ -106,7 +90,7 @@ class AutoExp:
                 pdb.set_trace()
             raise
 
-    def get_exp(self, testee):
+    def get_exp(self, testee: "TestCase"):
         try:
 
             for path in self.paths:
@@ -116,7 +100,7 @@ class AutoExp:
                 except (AttributeError,) as e:
                     pass
             else:
-                # raise AttributeError(self.paths)
+                # pragma: no cover
                 raise InvalidConfigurationException(
                     "Attribute/Key %s not found on %s but expected via AutoExp.  either disable the validation or add this attribute"
                     % (self.paths, testee)
@@ -233,7 +217,7 @@ class Validator:
             pdb.set_trace()
         return res
 
-    def check(self, name: str, testee: "LazyMixin", exp: Any, sources: dict):
+    def check(self, name: str, testee: "TestCase", exp: Any, sources: dict):
         """
 
         """
@@ -418,7 +402,7 @@ class MixinExpInGot:
 class DirectValidator(AttributeValidator):
     """ this is intended to check attributes/data on unittest.Testcase instance """
 
-    sourcename = None
+    sourcename: Optional[str] = None
 
     def __init__(self, selector=None):
 
@@ -892,7 +876,7 @@ class ValidationManager:
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
-            if 1 or cpdb():
+            if cpdb():
                 pdb.set_trace()
             raise
 
