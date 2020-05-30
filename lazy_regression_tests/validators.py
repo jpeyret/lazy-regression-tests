@@ -28,7 +28,7 @@ from lazy_regression_tests._baseutils import (
 
 from traceback import print_exc as xp
 
-from .common import *
+from lazy_regression_tests.common import *
 
 
 from lazy_regression_tests.utils import nested_dict_get, first, fill_template, ppp
@@ -614,7 +614,7 @@ class ValidationManager:
 
     def check_expectations(
         self,
-        testee: "unittest.TestCase",
+        testee: "TestCase",
         lazy_skip=None,
         lazy_skip_except=None,
         lazy_sourced_only: bool = True,

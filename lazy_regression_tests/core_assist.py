@@ -8,29 +8,27 @@ for this reason auxiliary classes have been moved to core_assist.py
 
 import pdb
 import os
+from traceback import print_exc as xp
 
-# pylint: disable=unused-wildcard-import,wildcard-import,unused-import
-from .common import *
 
 #######################################################
 # Typing
 #######################################################
-from typing import (
-    Optional,
-    # TYPE_CHECKING,
-    Any,
-    Union,
-)
+from typing import Optional, TYPE_CHECKING, Any, Union, Callable
 
+if TYPE_CHECKING:
+    f_to_text: Callable[[Any, Any], str]
+    f_prep: Callable[[Any, Any], Any]
+
+
+# pylint: disable=unused-wildcard-import,wildcard-import,unused-import
+from lazy_regression_tests.common import *
 from lazy_regression_tests._baseutils import ppp, Dummy
-
-from traceback import print_exc as xp
-
 
 # pylint: enable=unused-wildcard-import,wildcard-import,unused-import
 
-from .validators import build_validators_for_class
-from .filters import build_filters_for_class
+from lazy_regression_tests.validators import build_validators_for_class
+from lazy_regression_tests.filters import build_filters_for_class
 
 
 #######################################################
@@ -50,12 +48,17 @@ class LazyChecker:
     def __repr__(self):
         return "%s[%s]" % (self.__class__.__name__, self.extension)
 
+    to_text: "f_to_text"
+    prep: "f_prep"
+
     def __init__(
         self,
         extension: str,
         rawfiltermgr=None,
         textfiltermgr=None,
         # write_exp_on_ioerror: bool = True,
+        to_text: Optional["f_to_text"] = None,
+        prep: Optional["f_prep"] = None,
     ):
         self.lazy_extension = self.extension = extension
 
@@ -67,13 +70,23 @@ class LazyChecker:
 
         self.reg_callbacks = {}
 
+        if to_text is None:
+            self.to_text = self._to_text
+        else:
+            self.to_text = to_text
+
+        if prep is None:
+            self.prep = self._prep
+        else:
+            self.prep = prep
+
     def debug(self, ix, lines):
         print("\n".join(lines[ix - 5 : +ix + 5]))
 
-    def prep(self, tmp, data):
+    def _prep(self, tmp: Any, data: Any) -> Any:
         return data
 
-    def to_text(self, tmp, data):
+    def _to_text(self, tmp: Any, data: Any) -> str:
         return str(data)
 
     def filter_raw(self, tmp, data):

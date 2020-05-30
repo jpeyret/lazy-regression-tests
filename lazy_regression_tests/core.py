@@ -22,8 +22,9 @@ verbose = "-v" in sys.argv
 from typing import Optional, TYPE_CHECKING, Any, Union, Dict, List
 
 if TYPE_CHECKING:
-    from .filters import FilterManager
+    from lazy_regression_tests.filters import FilterManager
     from unittest import TestCase
+    from pathlib import Path
 
     _Base = TestCase
 else:
@@ -66,12 +67,12 @@ from traceback import print_exc as xp
 
 
 # pylint: disable=unused-wildcard-import,wildcard-import
-from .common import *
+from lazy_regression_tests.common import *
 
 # pylint: enable=unused-wildcard-import,wildcard-import
 
 
-from .validators import ValidationManager
+from lazy_regression_tests.validators import ValidationManager
 
 
 # aliasing the JSON response filter management to DictFilterManager as there is
@@ -80,7 +81,13 @@ from .validators import ValidationManager
 from lazy_regression_tests.utils import Subber, fill_template
 
 
-from .core_assist import LazyChecker, LazyTemp, MediatedEnvironDict, _Control, _LazyMeta
+from lazy_regression_tests.core_assist import (
+    LazyChecker,
+    LazyTemp,
+    MediatedEnvironDict,
+    _Control,
+    _LazyMeta,
+)
 
 
 class LazyMixin(_Base, metaclass=_LazyMeta):
@@ -102,11 +109,15 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             
     """
 
+    lazy_pa: "Path"
+
     cls_filters: Dict[str, "FilterManager"] = {}
     cls_validators: List[ValidationManager] = []
-    add_lazy_dirname = []
+    # add_lazy_dirname = []
 
-    lazy_dirname_extras = []
+    lazy_filename: str
+
+    lazy_dirname_extras: List[str] = []
 
     lazytemp = None
     lazy_basename_extras = ""
@@ -351,16 +362,18 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
             rawfiltermgr, textfiltermgr = filter_.get_raw_text_filters()
 
+            # use to_text/prep methods from the filter, if they exist
+            di_func = dict(
+                to_text=getattr(filter_, "to_text", None),
+                prep=getattr(filter_, "prep", None),
+            )
+
             checker = LazyChecker(
                 extension=extension,
                 rawfiltermgr=rawfiltermgr,
                 textfiltermgr=textfiltermgr,
+                **di_func,
             )
-
-            if hasattr(filter_, "to_text"):
-                checker.to_text = filter_.to_text
-            if hasattr(filter_, "prep"):
-                checker.prep = filter_.prep
 
             return self._lazycheck(got, checker, suffix)
 
