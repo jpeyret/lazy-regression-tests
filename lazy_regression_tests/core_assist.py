@@ -17,9 +17,10 @@ from traceback import print_exc as xp
 from typing import Optional, TYPE_CHECKING, Any, Union, Callable
 
 if TYPE_CHECKING:
-    f_to_text: Callable[[Any, Any], str]
-    f_prep: Callable[[Any, Any], Any]
+    f_to_text = Callable[[Any, Any], str]
+    f_prep = Callable[[Any, Any], Any]
 
+    from lazy_regression_tests.core import LazyMixin
 
 # pylint: disable=unused-wildcard-import,wildcard-import,unused-import
 from lazy_regression_tests.common import *
@@ -32,13 +33,6 @@ from lazy_regression_tests.filters import build_filters_for_class
 
 
 #######################################################
-
-
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
 
 
 class LazyChecker:
@@ -71,14 +65,14 @@ class LazyChecker:
         self.reg_callbacks = {}
 
         if to_text is None:
-            self.to_text = self._to_text
+            self.to_text = self._to_text  # type: ignore
         else:
-            self.to_text = to_text
+            self.to_text = to_text  # type: ignore
 
         if prep is None:
-            self.prep = self._prep
+            self.prep = self._prep  # type: ignore
         else:
-            self.prep = prep
+            self.prep = prep  # type: ignore
 
     def debug(self, ix, lines):
         print("\n".join(lines[ix - 5 : +ix + 5]))

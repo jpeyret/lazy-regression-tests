@@ -4,13 +4,15 @@ import sys
 import os
 import copy
 
+from traceback import print_exc as xp
+
 
 #######################################################
 # Dependencies
 #######################################################
 
 
-from .common import UnavailableLibrary
+from lazy_regression_tests.common import UnavailableLibrary
 
 try:
     from bs4 import BeautifulSoup as bs
@@ -31,7 +33,7 @@ except (ImportError,) as e:
 verbose = "-v" in sys.argv
 
 
-from .validators import (
+from lazy_regression_tests.validators import (
     ValidationManager,
     ValidationDirective,
     NamedTesteeAttributeValidator,
@@ -41,18 +43,10 @@ from .validators import (
     AttrNamedDictValidator,
 )
 
-from .filters import FilterManager, RawFilter, DataMatcher
+from lazy_regression_tests.filters import FilterManager, RawFilter, DataMatcher
 
-from traceback import print_exc as xp
 
 undefined = NotImplemented
-
-
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
 
 
 from lazy_regression_tests.utils import first, fill_template, ppp, getpath, debugObject
@@ -415,8 +409,6 @@ class SnippetHTML(Response):
 
     def _get_content_type(self, response):
         return "html"
-
-    wanteds = {}
 
     def __repr__(self):
         return "%s" % (self.__class__.__name__)

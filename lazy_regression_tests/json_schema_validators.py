@@ -28,12 +28,12 @@ rpdb = breakpoints = cpdb
 #######################################################
 # and Typing...
 #######################################################
-from typing import (
-    Optional,
-    # TYPE_CHECKING,
-    Any,
-    cast,
-)
+from typing import Optional, TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    # from lazy_regression_tests.core import LazyMixin
+    from unittest import TestCase
+
 
 #######################################################
 
@@ -57,7 +57,7 @@ except (ImportError,) as e:
 
     # this will throw an InvalidConfigurationError on any access to ydump
     # telling you to install yaml
-    from .common import UnavailableLibrary
+    from lazy_regression_tests.common import UnavailableLibrary
 
     ValidationError = Exception
 
@@ -101,7 +101,7 @@ class JsonSchemaValidator(DictValidator):
         else:
             return getpath(source_, self.selector)
 
-    def check(self, name: str, testee: "LazyMixin", exp: dict, sources: dict):
+    def check(self, name: str, testee: "TestCase", exp: dict, sources: dict):
         """ validate using the schema """
 
         try:

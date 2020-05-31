@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 #######################################################
 # Typing
 #######################################################
-from typing import Optional, TYPE_CHECKING, Any, Union
+from typing import Optional, TYPE_CHECKING, Any, Union, Tuple
 
 if TYPE_CHECKING:
     from unittest import TestCase
@@ -65,6 +65,8 @@ class AutoExp:
 
     """
 
+    paths: Tuple[str]
+
     def __repr__(self):
         return "%s[%s]" % (self.__class__.__name__, getattr(self, "paths", ""))
 
@@ -114,7 +116,6 @@ class AutoExp:
     def __init__(self, paths: Union[list, tuple, str]):
         try:
             if isinstance(paths, tuple):
-
                 self.paths = paths
 
             elif isinstance(paths, list):
