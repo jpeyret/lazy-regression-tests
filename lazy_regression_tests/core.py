@@ -138,6 +138,27 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         cls.lazy_pa = pa = Path(file_)
         return pa.stem
 
+    def get_testname(self, include_module=False) -> str:
+        """
+        return a partial filename that can be used 
+        and which includes the filename, the class name and the test method name
+        """
+        try:
+            if include_module:
+                modulename = f"{self.__module__}."
+            else:
+                modulename = ""
+
+            res = f"{modulename}{self.lazy_filename}.{self.__class__.__name__}.{self._testMethodName}"
+
+            return res
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
     def lazy_build_filters(self):
         try:
             res = {}
