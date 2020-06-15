@@ -11,6 +11,17 @@ import re
 
 from traceback import print_exc as xp
 
+from time import time
+
+import os
+import shutil
+import stat
+
+
+undefined = NotImplemented
+from collections import MutableMapping, namedtuple
+
+
 #######################################################
 # Typing
 #######################################################
@@ -42,8 +53,10 @@ type_regex_hack = re.compile("").__class__
 
 verbose = "-v" in sys.argv
 
-
-from io import StringIO  # 223ed
+try:
+    from cStringIO import StringIO  # 223ed
+except (ImportError,) as e:
+    from io import StringIO  # 223ed
 
 import json
 import copy
@@ -135,7 +148,11 @@ def real_rpdb() -> bool:  # pragma: no cover
     return res
 
 
-def set_rpdb(rpdb_in=None, remove=True, recurse=True):
+def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
+    """ swap the dummy rpdb for an active one"""
+
+    # dont expect any coverage: explicitly disabled under pytest
+    # pragma: no cover
 
     rpdb_in = rpdb_in or rpdb
 
@@ -178,7 +195,15 @@ def real_cpdb(**kwds):  # pragma: no cover
 real_cpdb.count = 3
 
 
+def cpdb():
+    "disabled"
+
+
 def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
+    """ swap the dummy cpdb for an active one"""
+
+    # dont expect any coverage: explicitly disabled under pytest
+    # pragma: no cover
 
     single_use_flag = "--cpdb"
 
@@ -225,12 +250,16 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
                     existing = getattr(module, "cpdb", None)
                     if existing:
                         if existing.__doc__ == "disabled":
-                            if verbose:
-                                logger.info("matching cpdb")
+                            # if verbose:
+                            #     logger.info("matching cpdb")
+                            pass
                         else:
-                            # pdb.set_trace()
-                            if verbose:
-                                logger.info("old style cpdb on %s" % (module))
+                            # # pdb.set_trace()
+                            # if 0 and verbose:
+                            #     logger.info("old style cpdb on %s" % (module))
+                            # else:
+                            #     pass
+                            pass
 
                         module.cpdb = real_cpdb
                 except AttributeError:  # pragma: no cover
@@ -243,7 +272,7 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
 #######################################################
 
 
-def ppp(o, header=None):
+def ppp(o, header=None, skip=[]):
     if header is None:
         if isinstance(o, dict):
             header = "[%s %s...]" % (type(o), repr(o)[0:10])
@@ -252,7 +281,7 @@ def ppp(o, header=None):
 
     # header = header or
 
-    msg = debugObject(o, header)
+    msg = debugObject(o, header, li_skipfield=skip)
     print(msg)
 
 
@@ -401,22 +430,25 @@ def debugDict(
             pass
         except AttributeError:  # pragma: no cover
             buf.write("%s=%s%s" % (k, "?", sep))
-        except Exception:
+        except Exception:  # nosec - we'd only miss a debug
             pass
 
     return buf.getvalue()
 
 
 def fill_template(tmpl: str, *args: Any) -> str:
+    """ fill in the template with % and dict based formatting """
     return tmpl % Subber(*args)
 
 
 def sub_template(tmpl: str, *args: Any) -> str:
+    """ substitute the template with $ and Template formatting """
     tmp = Template(tmpl)
     return tmp.substitute(Subber(*args))  # type: ignore
 
 
 def first(li, empty_value=None):
+    """ grab the first item found """
     if not li:
         return empty_value
 
@@ -552,6 +584,25 @@ class Subber(object):
         res = self._get_from_args(keyname)
         self.di_res[keyname] = res
         return res
+
+    def as_dict(self):
+        """ expand contents to a dict for example to pass on to a Jinja template """
+
+        try:
+            di = {}
+            for src in reversed(self.li_arg):
+                if isinstance(src, dict):
+                    di.update(**src)
+                else:
+                    di2 = vars(src)
+                    di.update(**di2)
+
+            return di
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
 
 
 class RescueDict(object):
@@ -711,7 +762,7 @@ class Dummy(object):
             raise KeyError(attrname)
 
 
-def getpath(src, path):
+def getpath(src: Any, path: str) -> Any:
     """get nested path x.y.z against dictorary or object"""
     try:
 
@@ -785,33 +836,25 @@ class DictFormatter:
         try:
             di = di_in if in_place else di_in.copy()
 
-            assert di, "assert 1"
-
             di_formatter = di_formatter or self.di_default_formatter
 
-            assert isinstance(
-                di_formatter, dict
-            ), "%s needs to be called with formatting dictionary or needs to have been initialized with one"
+            if not isinstance(di_formatter, dict):
+                raise TypeError(
+                    f"{self.__class__.__name__}.process needs to be called with formatting dictionary or needs to have been initialized with one"
+                )
 
             f_default = f_default or self.default_processor
 
             li_tu_key_func = list(di_formatter.items())
 
-            assert di, "assert 2"
-
             di_keys = None
 
             for key, func_fmt in li_tu_key_func:
 
-                if verbose:
-                    print(f"key:{key}, func_fmt:{func_fmt}")
-
                 func_fmt = func_fmt or f_default
 
-                assert di, "assert 3"
-
                 if isinstance(key, type_regex_hack):
-                    di_keys = di_keys or list(di_in.keys())
+                    di_keys = di_keys or list(di.keys())
                     for di_key in di_keys:
 
                         if not isinstance(di_key, str):
@@ -821,20 +864,16 @@ class DictFormatter:
                         if hit:
                             v = di.get(di_key, undefined)
                             if callable(func_fmt):
-
                                 if keep is not None:
                                     keep[di_key] = v
 
-                                func_fmt(di, di_key, v)
-                                assert di, "assert 4"
-
+                                di = func_fmt(di, di_key, v)
                             elif isinstance(func_fmt, dict):
                                 if keep is not None:
 
                                     childkeep = keep[di_key] = {}
                                 else:
                                     childkeep = None
-
                                 di = self.process(
                                     di,
                                     di_formatter=func_fmt,
@@ -842,7 +881,6 @@ class DictFormatter:
                                     in_place=True,
                                     keep=childkeep,
                                 )
-                                assert di, "assert 5"
                             else:
                                 raise NotImplementedError(
                                     "%s.process(%s)" % (self, locals())
@@ -874,8 +912,6 @@ class DictFormatter:
                             in_place=True,
                             keep=childkeep,
                         )
-                        assert di, "assert 6"
-
                     else:
                         if keep is not None:
                             keep[key] = v.copy()
@@ -883,8 +919,6 @@ class DictFormatter:
                             di[key] = func_fmt(di, key, v)
                         else:
                             del di[key]
-
-                        assert di, "assert 7"
 
                 else:
                     # if the formatter is a dict, then only a value
@@ -898,12 +932,9 @@ class DictFormatter:
                         keep[key] = v
 
                     if callable(func_fmt):
-                        func_fmt(di, key, v)
-                        assert di, "assert 8"
+                        di = func_fmt(di, key, v)
                     else:
                         del di[key]
-
-            assert di, "assert 9"
 
             return di
 
@@ -1020,6 +1051,11 @@ except NameError:
 
 def set_breakpoints3(recurse=True, fnp_config=None):
 
+    """ swap the dummy breakpoints for an active one"""
+
+    # dont expect any coverage: explicitly disabled under pytest
+    # pragma: no cover
+
     if fnp_config is None:
 
         argv = sys.argv
@@ -1091,3 +1127,121 @@ You need to install it before using {self.name}
 
     # and reroute call
     __call__ = __getattr__
+
+
+#################################################################
+# TimedDict - Expiring dict
+#################################################################
+
+
+TimedValue = namedtuple("TimedValue", "time_in value")
+
+
+class CacheDict(MutableMapping):
+    def __init__(self, timetolive, **kwargs):
+        self.timetolive = timetolive
+        self.mapping = {}
+        self.update(kwargs)
+
+    def _check_age(self, key, res, purge=False):
+        try:
+
+            is_ok = (time() - res.time_in) <= self.timetolive
+
+            if not is_ok and purge:
+                self.mapping.pop(key, None)
+
+            return is_ok
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def __getitem__(self, key):
+        try:
+
+            res = self.mapping[key]
+            if not self._check_age(key, res, True):
+                raise KeyError
+
+            return res.value
+        # pragma: no cover pylint: disable=unused-variable
+        except (KeyError,) as e:
+            raise
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
+
+    def __delitem__(self, key):
+        try:
+            del self.mapping[key]
+        # pragma: no cover pylint: disable=unused-variable
+        except (KeyError,) as e:
+            pass
+
+    def __setitem__(self, key, value):
+        tvalue = TimedValue(time(), value)
+        self.mapping[key] = tvalue
+
+    def __iter__(self):
+
+        keys = iter(self.mapping)
+
+        for key in iter(self.mapping):
+            if self._check_age(key, self.mapping[key]):
+                yield key
+            else:
+                continue
+
+    def __len__(self):
+        cntr = 0
+        for v in self.mapping.values():
+            if self._check_age(None, v):
+                cntr += 1
+        return cntr
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.mapping})"
+
+
+def debug_nested_dict_types(di, path=""):
+    """ mostly used to figure out annoying YAML/JSON dump problems """
+
+    # pragma: no cover
+    for k, v in di.items():
+        if isinstance(v, dict):
+            debug_nested_dict_types(v, f"{path}.{k}")
+        else:
+            print(f"{path}.{k} : {type(v)}")
+
+
+def copytree(src, dst, symlinks=False, ignore=None):
+    """ shamelessly copied from https://stackoverflow.com/a/22331852 """
+
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+        shutil.copystat(src, dst)
+    lst = os.listdir(src)
+    if ignore:
+        excl = ignore(src, lst)
+        lst = [x for x in lst if x not in excl]
+    for item in lst:
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if symlinks and os.path.islink(s):
+            if os.path.lexists(d):
+                os.remove(d)
+            os.symlink(os.readlink(s), d)
+            try:
+                st = os.lstat(s)
+                mode = stat.S_IMODE(st.st_mode)
+                os.lchmod(d, mode)
+            except:
+                pass  # lchmod not available
+        elif os.path.isdir(s):
+            copytree(s, d, symlinks, ignore)
+        else:
+            shutil.copy2(s, d)
