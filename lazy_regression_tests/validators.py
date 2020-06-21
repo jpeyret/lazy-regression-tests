@@ -212,7 +212,7 @@ class Validator:
             pdb.set_trace()
         return res
 
-    def check(self, name: str, testee: "TestCase", exp: Any, sources: dict):
+    def check(self, name: str, testee: "LazyMixin", exp: Any, sources: dict):
         """
 
         """

@@ -6,16 +6,15 @@ test http behavior - requires BeautifulSoup, requests and responses (a mock for 
 import sys
 import os
 import pdb
+import datetime
+import re
 
 import unittest
 
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
-    import mock  # python 2?
-
-import datetime
-import re
+    import mock  # type: ignore
 
 
 # pylint: disable=unused-import

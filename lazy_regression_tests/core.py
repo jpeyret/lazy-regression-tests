@@ -19,7 +19,7 @@ verbose = "-v" in sys.argv
 #######################################################
 # Typing
 #######################################################
-from typing import Optional, TYPE_CHECKING, Any, Union, Dict, List
+from typing import Optional, TYPE_CHECKING, Any, Union, Dict, List, NewType
 
 if TYPE_CHECKING:
     from lazy_regression_tests.filters import FilterManager
@@ -27,6 +27,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     _Base = TestCase
+
+    from lazy_regression_tests.typing_ import T_FilterParam
+
+
 else:
     _Base = object
 
@@ -111,8 +115,8 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
     lazy_pa: "Path"
 
-    cls_filters: Dict[str, "FilterManager"] = {}
-    cls_validators: List[ValidationManager] = []
+    cls_filters: "T_FilterParam" = {}
+    cls_validators: List[Union[ValidationManager, "ValidationDirective"]] = []
     # add_lazy_dirname = []
 
     lazy_filename: str

@@ -19,15 +19,15 @@ except (ImportError,) as ei:
 #######################################################
 # Typing
 #######################################################
-from typing import (
-    Optional,
-    # TYPE_CHECKING,
-    Any,
-    cast,
-)
+from typing import Optional, TYPE_CHECKING, Any, cast, Dict, Union, NewType
 
 #######################################################
 # pylint: enable=unused-import
+
+if TYPE_CHECKING:
+    # T_FilterParam = NewType("T_FilterParam", Dict[str, Union["FilterManager","FilterDirective"]])
+
+    from lazy_regression_tests.typing_ import T_FilterParam
 
 
 verbose = "-v" in sys.argv
@@ -132,11 +132,13 @@ class LazyMixinBasic(LazyMixin):
 
     """
 
-    cls_filters = dict(txt=FilterManager())
+    cls_filters: "T_FilterParam" = dict(txt=FilterManager())
 
     debug_env = debug_env
 
-    lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
+    lazy_filename = LazyMixin.get_basename(
+        __name__, __file__, __module__
+    )  # type: ignore
 
     tmp_formatted_data = None
 
@@ -534,7 +536,7 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
 
     filtername = filtername23
 
-    cls_filters = dict(txt=filter_23)
+    cls_filters: "T_FilterParam" = dict(txt=filter_23)
 
     @mock.patch.dict(os.environ, di_mock_env)
     def test_001_filter(self):
@@ -661,11 +663,11 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
 
 
 class AnyName:
-    cls_filters = dict(txt=filter_23)
+    cls_filters: "T_FilterParam" = dict(txt=filter_23)
 
 
 class AnotherName:
-    cls_filters = dict(txt=filter_1)
+    cls_filters: "T_FilterParam" = dict(txt=filter_1)
 
 
 class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.TestCase):
@@ -771,7 +773,7 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
 
 class BaseForJson:
 
-    cls_filters = dict(json=JsonFilterManager())
+    cls_filters: "T_FilterParam" = dict(json=JsonFilterManager())
 
     j_data = dict(
         var1=1,
@@ -854,7 +856,7 @@ class Test_JSON_DictFilter(Test_JSON):
 
     di_varying = dict(var1=None, var2=dict(var22=None))
 
-    cls_filters = dict(
+    cls_filters: "T_FilterParam" = dict(
         json=FilterDirective("changing", DictFilter(di_varying, "changing"))
     )
 
