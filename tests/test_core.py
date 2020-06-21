@@ -12,7 +12,7 @@ import unittest
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
-    import mock  # python 2?
+    import mock  # type: ignore
 
 
 # pylint: disable=unused-import

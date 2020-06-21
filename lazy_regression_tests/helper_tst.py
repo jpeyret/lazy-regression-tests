@@ -15,6 +15,18 @@ from lazy_regression_tests.utils import ppp, getpath, UnavailableLibrary
 #################################################################
 
 
+#######################################################
+# Typing
+#######################################################
+from typing import Optional, TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    import types
+
+
+#######################################################
+
+
 class Foo:
     pass
 
@@ -38,8 +50,11 @@ try:
 except (ImportError,) as e:
     # this will throw an InvalidConfigurationError on any access to bs
     # telling you to install BeautifulSoup
-    requests = UnavailableLibrary(
-        name=Foo.__module__, missing="requests", message=dep_message
+    requests = cast(
+        types.ModuleType,
+        UnavailableLibrary(
+            name=Foo.__module__, missing="requests", message=dep_message
+        ),
     )
 
 try:
@@ -47,15 +62,16 @@ try:
 except (ImportError,) as e:
     # this will throw an InvalidConfigurationError on any access to bs
     # telling you to install BeautifulSoup
-    jinja2 = UnavailableLibrary(
-        name=Foo.__module__, missing="jinja2", message=dep_message
+    jinja2 = cast(
+        types.ModuleType,
+        UnavailableLibrary(name=Foo.__module__, missing="jinja2", message=dep_message),
     )
 
 
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
-    import mock  # python 2?
+    import mock  # type: ignore
 
 
 def cpdb(*args, **kwargs):

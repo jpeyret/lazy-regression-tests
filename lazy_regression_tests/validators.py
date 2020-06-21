@@ -18,13 +18,7 @@ if TYPE_CHECKING:
     from unittest import TestCase
 
 
-from lazy_regression_tests._baseutils import (
-    debugObject,
-    ppp,
-    Dummy,
-    getpath,
-    InvalidConfigurationException,
-)
+from lazy_regression_tests._baseutils import debugObject, ppp, Dummy, getpath
 
 from traceback import print_exc as xp
 

@@ -30,6 +30,13 @@ except (ImportError,) as e:
 #######################################################
 
 
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
+
+
 verbose = "-v" in sys.argv
 
 
