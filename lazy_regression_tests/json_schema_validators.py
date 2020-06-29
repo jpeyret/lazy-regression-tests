@@ -63,7 +63,7 @@ except (ImportError,) as e:
 
     jsonschema = Foo
     jsonschema.exceptions = Foo
-    jsonschema.exceptions.ValidationError = NotImplementedError
+    jsonschema.exceptions.ValidationError = NotImplementedError  # type: ignore
 
     validate = UnavailableLibrary(name=Foo.__module__, missing="jsonschema")
 
@@ -80,7 +80,9 @@ class JsonSchemaValidator(DictValidator):
    Implements jsonchema based validations 
     """
 
-    def __init__(self, sourcename: str = "data", selector: str = None, cargo=None):
+    def __init__(
+        self, sourcename: Optional[str] = "data", selector: str = None, cargo=None
+    ):
         """ init """
         try:
             self.sourcename = sourcename

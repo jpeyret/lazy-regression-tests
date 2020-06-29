@@ -9,7 +9,12 @@ import sys
 import types
 import re
 
+from yaml import safe_load as yload
+
+
 from traceback import print_exc as xp
+
+from pathlib import Path
 
 from time import time
 
@@ -140,7 +145,13 @@ def real_rpdb() -> bool:  # pragma: no cover
     in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
     if in_celery:
         return False
-    res = bool(cache.get("rpdb_enabled"))
+
+    try:
+        res = bool(cache.get("rpdb_enabled"))
+    except Exception as e:
+        # that's probably a redis.exceptions.ConnectionError, but don't want
+        # to couple this too much at this point
+        res = None
 
     if res and count is None:
         rpdb.count = 3
@@ -270,12 +281,16 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
 
 
 #######################################################
+import builtins
 
 
 def ppp(o, header=None, skip=[]):
     if header is None:
-        if isinstance(o, dict):
-            header = "[%s %s...]" % (type(o), repr(o)[0:10])
+        # if isinstance(o, (dict,list,str,set)):
+        if o.__class__.__name__ in dir(builtins):
+
+            # header = "[%s %s...]" % (type(o), repr(o)[0:10])
+            header = f"{o.__class__.__name__}..."
         else:
             header = "[%s %s]" % (type(o), repr(o))
 
@@ -1221,27 +1236,118 @@ def debug_nested_dict_types(di, path=""):
 def copytree(src, dst, symlinks=False, ignore=None):
     """ shamelessly copied from https://stackoverflow.com/a/22331852 """
 
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-        shutil.copystat(src, dst)
-    lst = os.listdir(src)
+    try:
+
+        # support pathlib.Path
+        src = str(src)
+        dst = str(dst)
+
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+            shutil.copystat(src, dst)
+        lst = os.listdir(src)
+        if ignore:
+            excl = ignore(src, lst)
+            lst = [x for x in lst if x not in excl]
+        for item in lst:
+            s = os.path.join(src, item)
+            d = os.path.join(dst, item)
+            if symlinks and os.path.islink(s):
+                if os.path.lexists(d):
+                    os.remove(d)
+                os.symlink(os.readlink(s), d)
+                try:
+                    st = os.lstat(s)
+                    mode = stat.S_IMODE(st.st_mode)
+                    os.lchmod(d, mode)
+                except:
+                    pass  # lchmod not available
+            elif os.path.isdir(s):
+                copytree(s, d, symlinks, ignore)
+            else:
+                shutil.copy2(s, d)
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            pdb.set_trace()
+        raise
+
+
+def merge(a, b, path=None, ignore=None):
+    """
+    merges b into a
+    https://stackoverflow.com/a/7205107
+    """
+    if path is None:
+        path = []
+
+    keys = list(b.keys())
+
     if ignore:
-        excl = ignore(src, lst)
-        lst = [x for x in lst if x not in excl]
-    for item in lst:
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
-        if symlinks and os.path.islink(s):
-            if os.path.lexists(d):
-                os.remove(d)
-            os.symlink(os.readlink(s), d)
-            try:
-                st = os.lstat(s)
-                mode = stat.S_IMODE(st.st_mode)
-                os.lchmod(d, mode)
-            except:
-                pass  # lchmod not available
-        elif os.path.isdir(s):
-            copytree(s, d, symlinks, ignore)
+        skip = ignore(keys, path, a, b)
+    else:
+        skip = {}
+
+    for key in keys:
+        if key in skip:
+            continue
+
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge(a[key], b[key], path + [str(key)])
+            elif a[key] == b[key]:
+                pass  # same leaf value
+            else:
+                raise Exception("Conflict at %s" % ".".join(path + [str(key)]))
         else:
-            shutil.copy2(s, d)
+            a[key] = b[key]
+    return a
+
+
+class YAMLAncestorLoader:
+    """ 
+    this class can "pull in" configuration data
+    from ancestor config files and merge them.
+
+    """
+
+    ancestor_attr = "_ANCESTOR"
+
+    def __init__(self, pa_yaml):
+
+        if isinstance(pa_yaml, str):
+            pa_yaml = Path(pa_yaml)
+
+        self.pa_yaml = pa_yaml
+
+    def ignore(self, keys, path, a, b):
+        """ default ignore that skips certain keys on merge """
+
+        return {self.ancestor_attr}
+
+    def load(self, ignore_in=None):
+        "load data and merge as necessary"
+        try:
+
+            ignore = ignore_in or self.ignore
+
+            with self.pa_yaml.open() as fi:
+                data = yload(fi)
+
+                pa_ancestor = data.get(self.ancestor_attr)
+
+                if pa_ancestor:
+                    ancestor = self.__class__(pa_ancestor)
+                    data_ancestor = ancestor.load()
+
+                    merge(data_ancestor, data, ignore=ignore)
+                    return data_ancestor
+
+            return data
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise

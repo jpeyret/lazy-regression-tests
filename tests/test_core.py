@@ -137,8 +137,8 @@ class LazyMixinBasic(LazyMixin):
     debug_env = debug_env
 
     lazy_filename = LazyMixin.get_basename(
-        __name__, __file__, __module__
-    )  # type: ignore
+        __name__, __file__, __module__  # type: ignore
+    )
 
     tmp_formatted_data = None
 

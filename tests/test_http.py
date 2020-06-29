@@ -118,7 +118,9 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
 
     cls_filters = dict(html=HtmlFilterManager())
 
-    lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
+    lazy_filename = LazyMixin.get_basename(
+        __name__, __file__, __module__
+    )  # type: ignore
 
     tmp_formatted_data = None
 
@@ -250,8 +252,8 @@ class Test_Validation(Test_Basic):
 
 class HTMLCheck(HTMLBase):
 
-    fail_on_validate = None
-    fail_on_change = None
+    fail_on_validate: Optional[str] = None
+    fail_on_change: Optional[str] = None
 
     extension = "html"
 

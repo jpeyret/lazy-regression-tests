@@ -239,6 +239,8 @@ class HTTPValidationMixin:
         - and has a content_type, which changes depending on end points
     """
 
+    name: str
+
     cls_validators = [
         ValidationDirective("status_code", exp=200, validator=StatusCodeValidator()),
         ValidationDirective(

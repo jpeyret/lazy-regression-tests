@@ -13,11 +13,17 @@ import pdb
 try:
     import unittest.mock as mock
 except (ImportError,) as ei:
-    import mock  # python 2?
+    import mock  # type: ignore
 
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from lazy_regression_tests.validators import Validator
 
 
 from lazy_regression_tests._baseutils import set_cpdb, ppp
@@ -82,7 +88,9 @@ class LazyMixinBasic(LazyMixin):
     """ base Mixin class for the lazy test framework """
 
     # 👇 ⚙️ tracks where expectation and received files are saved
-    lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
+    lazy_filename = LazyMixin.get_basename(
+        __name__, __file__, __module__
+    )  # type: ignore
 
     extension = "html"
 
@@ -429,6 +437,6 @@ if __name__ == "__main__":
     cpdb = set_cpdb()
     rc = 0
     try:
-        rc = unittest.main()
+        rc = unittest.main()  # type: ignore
     finally:
         sys.exit(rc)

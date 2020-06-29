@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     _Base = TestCase
 
     from lazy_regression_tests.typing_ import T_FilterParam
+    from lazy_regression_tests.Validators import ValidationDirective
 
 
 else:

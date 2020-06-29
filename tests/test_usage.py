@@ -44,7 +44,9 @@ from lazy_regression_tests.http_validators import (
 class LazyMixinBasic(LazyMixin):
     """ base Mixin class for the lazy test framework """
 
-    lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
+    lazy_filename = LazyMixin.get_basename(
+        __name__, __file__, __module__
+    )  # type: ignore
     cls_filters = dict(html=HtmlFilterManager())
 
 

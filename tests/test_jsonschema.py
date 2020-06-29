@@ -17,6 +17,7 @@ from typing import (
     # TYPE_CHECKING,
     Any,
     cast,
+    Dict,
 )
 
 #######################################################
@@ -85,7 +86,9 @@ class LazyMixinBasic(LazyMixin):
     data = dict(authorizedactions=3, displayonly=0)
 
     cls_filters = dict(json=JsonFilterManager())
-    lazy_filename = LazyMixin.get_basename(__name__, __file__, __module__)
+    lazy_filename = LazyMixin.get_basename(
+        __name__, __file__, __module__
+    )  # type: ignore
 
     extension = "json"
 
@@ -124,7 +127,7 @@ class LazyMixinBasic(LazyMixin):
 
 class Test_AuthDisplay(LazyMixinBasic, unittest.TestCase):
 
-    data = dict(authorizedactions=3, displayonly=0)
+    data: Dict[str, Any] = dict(authorizedactions=3, displayonly=0)
 
     cls_validators = [
         ValidationDirective(
@@ -140,7 +143,7 @@ class Test_AuthDisplayBad(Test_AuthDisplay):
 
     displayonly = "XXX"
     data = dict(authorizedactions=3, displayonly=displayonly)
-    exp_fail = displayonly
+    exp_fail = displayonly  # type: ignore
 
 
 valid_carrots = {
