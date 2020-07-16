@@ -416,6 +416,9 @@ class ResponseJSON(Response):
 class SnippetHTML(Response):
     """ supports testing of html snippets rather than full http response """
 
+    # this disables things like looking for http headers
+    wanteds = {}
+
     def _get_content_type(self, response):
         return "html"
 
