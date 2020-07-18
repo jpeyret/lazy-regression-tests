@@ -314,7 +314,7 @@ class Validator:
 
 class AttributeValidator(Validator):
     def __init__(self, selector, sourcename):
-        super(AttributeValidator, self).__init__(selector, self.sourcename)
+        super(AttributeValidator, self).__init__(selector, sourcename)
         self.f_getter = attrgetter(selector)
 
     def get_value(self, source_):
@@ -816,6 +816,11 @@ class ValidationManager:
 
             if active is None and exp is not undefined:
                 active = True
+
+            if active and final and validator is None:
+                raise InvalidConfigurationException(
+                    f"{name}. You need to specify a validator. {validator=} {final=} {active=} {exp=}"
+                )
 
             directive = ValidationDirective(name, validator, exp, active)
             self._add_baseline(directive)
