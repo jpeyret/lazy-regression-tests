@@ -134,6 +134,8 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
     ENVIRONMENT_VARNAME_ROOT = "lzrt_"
 
+    lazy_save_exp = lazy_save_got = True
+
     @classmethod
     def get_basename(cls, name_, file_, module_) -> str:
         """ called from mytest.py this returns mytest and is the base for file naming
@@ -464,6 +466,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
             # calculate the paths of the exp/got files
             tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
+            # 🔬 099.integbroker.001.initial_implementation
             tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
 
             fnp_raw = self._get_fnp_raw(options, suffix, control, tmp, got)
@@ -472,27 +475,36 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             formatted_got = options.format(tmp, got, fnp_raw).rstrip()
 
             # at this point, we want to write the received, formatted, data regardless
-            with fnp_got.open("w") as fo:
-                fo.write(formatted_got)
+            # 🔬 099.integbroker.001.initial_implementation
+            if self.lazy_save_got:
+                with fnp_got.open("w") as fo:
+                    fo.write(formatted_got)
 
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
-            if control.baseline():
+            # 🔬 099.integbroker.001.initial_implementation
+            if control.baseline() and self.lazy_save_exp:
                 with fnp_exp.open("w") as fo:
                     fo.write(formatted_got)
                 return tmp
 
-            try:
-                with fnp_exp.open() as fi:
-                    exp = fi.read().rstrip()
+            if external_exp is undefined:
+                try:
+                    # 🔬 099.integbroker.001.initial_implementation
+                    with fnp_exp.open() as fi:
+                        exp = fi.read().rstrip()
 
-            except (IOError,):
-                # we just want to write the received data as our expectation
-                tmp.execinfo.ioerror_exp = fnp_exp
-                tmp.message = message = "no check because IOError on %s" % (fnp_exp)
-                with open(fnp_exp, "w") as fo:
-                    fo.write(formatted_got)
-                return tmp
+                except (IOError,):
+                    # we just want to write the received data as our expectation
+                    tmp.execinfo.ioerror_exp = fnp_exp
+                    tmp.message = message = "no check because IOError on %s" % (fnp_exp)
+                    # 🔬 099.integbroker.001.initial_implementation
+                    if self.lazy_save_got:
+                        with open(fnp_exp, "w") as fo:
+                            fo.write(formatted_got)
+                    return tmp
+            else:
+                raise NotImplementedError(f"{self}._lazycheck:external_exp()")
 
             # the environment requests only equality is checked, without trying to show details
             # typically indicated by setting environment variable `lzrt_directive=nodiff`
