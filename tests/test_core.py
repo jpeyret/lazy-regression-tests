@@ -223,6 +223,7 @@ var2
                 [self.lazytemp.fnp_got, self.lazytemp.fnp_exp],
                 [lzrt_template_dirname_got, lzrt_template_dirname_exp],
             ):
+                fnp = str(fnp)
                 self.assertTrue(fnp.endswith(".%s" % (self.extension)))
 
                 self.assertTrue(fnp.startswith(dir_root))
@@ -906,7 +907,7 @@ class Test_JSON_DictFilter(Test_JSON):
             self.check_naming_convention()
 
             fnp_exp = self.seed(self.data, "txt").fnp_exp
-            self.assertTrue(fnp_exp.endswith(".txt"))
+            self.assertTrue(str(fnp_exp).endswith(".txt"))
             self.assert_exp(self.data, "txt")
 
         # pragma: no cover pylint: disable=unused-variable

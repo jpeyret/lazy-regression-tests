@@ -254,7 +254,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         options: "LazyChecker",
         suffix: Optional[str],
         basename_prefix="",
-    ):
+    ) -> Path:
         """ get the save path """
 
         try:
@@ -279,11 +279,8 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 return None
 
             _litd = t_dirname.split(os.path.sep)
-
             _litd = self._handle_dirname_extras(_litd)
-
             _lid = ["/"] + [fill_template(t_, subber) for t_ in _litd]
-
             dirname = os.path.join(*_lid)
 
             #################################################################
@@ -298,20 +295,17 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 t_basename = basename_prefix + self.T_FILENAME
 
             _litb = t_basename.split()
-
             _lib = [fill_template(t_, subber) for t_ in _litb]
-
             basename = ".".join([i_ for i_ in _lib if i_])
-
             basename = basename.replace(" ", "_")
             basename = basename.replace("/", "_")
 
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
 
-            return os.path.join(dirname, basename)
+            return Path(os.path.join(dirname, basename))
 
-        # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
@@ -379,19 +373,15 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
     # diff-related
     #######################################################
 
-    def assert_exp(self, got: Any, extension: str, suffix: str = "") -> LazyTemp:
+    def assert_exp(
+        self, got: Any, extension: str, suffix: str = "", external_exp: Any = undefined
+    ) -> LazyTemp:
         """
         regression test that `got` is the same as what was last encountered and stored
         in `exp` file.
         """
 
         try:
-
-            if not isinstance(extension, str):
-                raise InvalidConfigurationException(
-                    "%s.extension has to be a string (extension=%s) and one of the existing filters"
-                    % (self, extension)
-                )
 
             try:
                 filter_ = self.filters[extension]
@@ -416,11 +406,11 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 **di_func,
             )
 
-            return self._lazycheck(got, checker, suffix)
+            return self._lazycheck(got, checker, suffix, external_exp)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (AssertionError,) as e:  # pragma: no cover
+        except (AssertionError,):
             raise
+        # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
@@ -448,7 +438,13 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 pdb.set_trace()
             raise
 
-    def _lazycheck(self, got: Any, options: LazyChecker, suffix: str = "") -> LazyTemp:
+    def _lazycheck(
+        self,
+        got: Any,
+        options: LazyChecker,
+        suffix: str = "",
+        external_exp: Any = undefined,
+    ) -> LazyTemp:
 
         try:
             env = self.lazy_environ
@@ -476,23 +472,21 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             formatted_got = options.format(tmp, got, fnp_raw).rstrip()
 
             # at this point, we want to write the received, formatted, data regardless
-            with open(fnp_got, "w") as fo:
+            with fnp_got.open("w") as fo:
                 fo.write(formatted_got)
 
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
             if control.baseline():
-                with open(fnp_exp, "w") as fo:
+                with fnp_exp.open("w") as fo:
                     fo.write(formatted_got)
                 return tmp
 
             try:
-                with open(fnp_exp) as fi:
-                    # linefeeds have a tendency to creep in sometimes
+                with fnp_exp.open() as fi:
                     exp = fi.read().rstrip()
 
-            # pragma: no cover pylint: disable=unused-variable
-            except (IOError,) as e:
+            except (IOError,):
                 # we just want to write the received data as our expectation
                 tmp.execinfo.ioerror_exp = fnp_exp
                 tmp.message = message = "no check because IOError on %s" % (fnp_exp)
@@ -508,7 +502,6 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 if exp != formatted_got():
                     raise self.fail(message)
 
-            # pragma: no cover pylint: disable=unused-variable
             try:
                 # supports a timeout mechanism, if the module is available
                 self.assertEqualTimed(exp, formatted_got)
@@ -518,20 +511,13 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                     % (TIMEOUT_MAXTIME_TO_ALLOW)
                 )
                 self.fail(message)
-            except (AssertionError,) as e:  # pragma: no cover
-                raise
-            except (Exception,) as e:
-                if cpdb():
-                    pdb.set_trace()
-                raise
 
             return self.lazytemp
 
-        except (AssertionError,) as e:  # pragma: no cover
+        except (AssertionError,):
             raise
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
