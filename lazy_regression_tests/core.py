@@ -504,7 +504,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                             fo.write(formatted_got)
                     return tmp
             else:
-                raise NotImplementedError(f"{self}._lazycheck:external_exp()")
+                exp = options.format(tmp, external_exp, None).rstrip()
 
             # the environment requests only equality is checked, without trying to show details
             # typically indicated by setting environment variable `lzrt_directive=nodiff`
@@ -522,7 +522,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                     "exp and got are not equal but comparison timed out after %s seconds"
                     % (TIMEOUT_MAXTIME_TO_ALLOW)
                 )
-                self.fail(message)
+                self.Fail(message)
 
             return self.lazytemp
 
@@ -563,6 +563,10 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
         message = f"""
 
+
+
+
+
 ❌❌❌Regressions found:
 
 Expected contents are in file:
@@ -577,3 +581,49 @@ Original exception:
 """
         exc = ori.__class__(message)
         return exc
+
+
+class NoTstMixin(LazyMixin):
+    """ enables re-use of formatting and filtering outside of
+    unittesting context"""
+
+    lazy_save_got = lazy_save_exp = False
+
+    def _get_fnp_save(
+        self,
+        exp_got: str,
+        options: "LazyChecker",
+        suffix: Optional[str],
+        basename_prefix="",
+    ) -> Path:
+        """ returns a Path you certainly dont want to use """
+        return Path("/")
+
+    def assert_exp(
+        self, got: Any, extension: str, suffix: str = "", external_exp: Any = undefined
+    ) -> LazyTemp:
+        """
+        regression test that `got` is the same as what was last encountered and stored
+        in `exp` file.
+        """
+
+        if external_exp is undefined:
+            raise ValueError("you need to provide `external_exp`")
+
+        super(NoTstMixin, self).assert_exp(got, extension, suffix, external_exp)
+
+    def Fail(self, message=None):
+        "do-nothing replaces unittest.TestCase version"
+
+    def assertEqual(self, exp, got, message):
+        """ replaces unittest.TestCase version """
+        try:
+            self.lazytemp.equal = exp == got
+            self.lazytemp.message = message
+            self.lazytemp.formatted_exp = exp
+            self.lazytemp.formatted_got = got
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                pdb.set_trace()
+            raise
