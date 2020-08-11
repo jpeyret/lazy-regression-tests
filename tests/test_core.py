@@ -1045,13 +1045,9 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         try:
             data = self.j_data.copy()
             data["var3"] = "not3"
-
             # since we know we will fail the var3=3 test, we turn it off
-
             self.set_expectation("var3", active=False)
-
             self.check_expectations(data=data)
-
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
@@ -1064,11 +1060,8 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
             data["var3"] = "not3"
 
             # instead of deactivateing the var3 check, we change its expectations
-
             self.set_expectation("var3", exp="not3")
-
             self.check_expectations(data=data)
-
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
@@ -1077,16 +1070,14 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
 
     def test_007_cant_activate_missing_validation(self):
         try:
-
+            # pdb.set_trace()
             self.set_expectation("no_such_validation", active=True)
-
-            try:
-                self.check_expectations(data=self.j_data)
+            # pdb.set_trace()
+            self.check_expectations(data=self.j_data)
             # pragma: no cover pylint: disable=unused-variable
-            except (Exception,) as e:
-                self.assertTrue(isinstance(e, InvalidConfigurationException))
-                self.assertTrue("no_such_validation" in str(e))
-
+            self.fail("should have gotten InvalidConfigurationException")
+        except (InvalidConfigurationException,) as e:
+            pass
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
@@ -1217,9 +1208,7 @@ class Test_Direct_AutoExpectations(
         """
 
         try:
-
             self.title = "mytitle"
-
             self.check_expectations(data=self.j_data)
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1246,7 +1235,6 @@ class Test_Direct_AutoExpectations(
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e:
                 self.assertTrue(self.http_content_type in str(e))
-
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():

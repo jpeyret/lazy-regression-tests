@@ -818,9 +818,15 @@ class ValidationManager:
                 active = True
 
             if active and final and validator is None:
-                raise InvalidConfigurationException(
-                    f"{name}. You need to specify a validator. {validator=} {final=} {active=} {exp=}"
-                )
+
+                # pdb.set_trace()
+                existing = self.validators.get(name)
+                if existing and existing.validator:
+                    pass
+                else:
+                    raise InvalidConfigurationException(
+                        f"{name}. You need to specify a validator. {validator=} {final=} {active=} {exp=}"
+                    )
 
             directive = ValidationDirective(name, validator, exp, active)
             self._add_baseline(directive)

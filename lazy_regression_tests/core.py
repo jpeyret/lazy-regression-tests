@@ -249,7 +249,11 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             raise
 
     def _get_fnp_save(
-        self, exp_got: str, options: "LazyChecker", suffix: Optional[str]
+        self,
+        exp_got: str,
+        options: "LazyChecker",
+        suffix: Optional[str],
+        basename_prefix="",
     ):
         """ get the save path """
 
@@ -282,10 +286,21 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
             dirname = os.path.join(*_lid)
 
+            #################################################################
             # calculating the filename
-            t_basename = self.T_FILENAME
+            #################################################################
+
+            if not basename_prefix:
+                t_basename = self.T_FILENAME
+            else:
+                if not basename_prefix.endswith("."):
+                    basename_prefix += "."
+                t_basename = basename_prefix + self.T_FILENAME
+
             _litb = t_basename.split()
+
             _lib = [fill_template(t_, subber) for t_ in _litb]
+
             basename = ".".join([i_ for i_ in _lib if i_])
 
             basename = basename.replace(" ", "_")
@@ -421,7 +436,9 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             if not control.save_raw:
                 return
 
-            fnp_raw = self._get_fnp_save("report", options, suffix)
+            fnp_raw = self._get_fnp_save(
+                "report", options, suffix, basename_prefix="raw."
+            )
 
             return fnp_raw
 

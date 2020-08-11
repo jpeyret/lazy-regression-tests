@@ -479,9 +479,6 @@ class ResponseHTML:
                 else:
                     raise AttributeError(attrname)
 
-            if rpdb():  # pragma: no cover
-                pdb.set_trace()
-
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():

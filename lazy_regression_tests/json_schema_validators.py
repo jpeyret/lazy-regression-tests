@@ -89,9 +89,9 @@ class JsonSchemaValidator(DictValidator):
             self.cargo = cargo
             assert isinstance(sourcename, (str, None.__class__))
             self.selector = selector
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 pdb.set_trace()
             raise
@@ -122,12 +122,8 @@ class JsonSchemaValidator(DictValidator):
                 except (jsonschema.exceptions.ValidationError,) as e:
                     testee.fail(e)
 
-        except (
-            Exception,
-        ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
-                ppp(exp, "schema")
-                ppp(igot, "igot")
-
                 pdb.set_trace()
             raise

@@ -144,7 +144,6 @@ class DictFilter(RawFilter, DataMatcher):
             data = self.formatter.process(data, keep=keep, in_place=False)
             self.add_to_filter_hit(tmp, keep)
             return data
-
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
