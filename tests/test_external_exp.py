@@ -33,11 +33,6 @@ verbose = "-v" in sys.argv
 # pylint: disable=missing-function-docstring,missing-class-docstring  #🧨🧨🧨🧨 turn this back on later 🧨🧨🧨🧨
 
 
-from lazy_regression_tests.helper_tst import get_mock_env
-
-from lazy_regression_tests.filters import DictFilter, FilterDirective
-
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,6 +40,8 @@ logging.basicConfig(level=logging.DEBUG)
 from traceback import print_exc as xp  # pylint: disable=unused-import
 
 
+from lazy_regression_tests.helper_tst import get_mock_env
+from lazy_regression_tests.filters import DictFilter, FilterDirective
 from lazy_regression_tests._baseutils import set_cpdb, ppp
 from lazy_regression_tests import NoTstMixin
 from lazy_regression_tests import ValidationDirective
@@ -72,8 +69,6 @@ class LazyMixinBasic(NoTstMixin):
     not testing with assert_exp however.
     """
 
-    # disable IO
-    lazy_save_exp = lazy_save_got = False
     cls_filters = dict(json=JsonFilterManager())
     extension = "json"
 

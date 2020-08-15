@@ -610,12 +610,12 @@ class NoTstMixin(LazyMixin):
         if external_exp is undefined:
             raise ValueError("you need to provide `external_exp`")
 
-        super(NoTstMixin, self).assert_exp(got, extension, suffix, external_exp)
+        return super(NoTstMixin, self).assert_exp(got, extension, suffix, external_exp)
 
     def Fail(self, message=None):
         "do-nothing replaces unittest.TestCase version"
 
-    def assertEqual(self, exp, got, message):
+    def assertEqual(self, exp: str, got: str, message: str):
         """ replaces unittest.TestCase version """
         try:
             self.lazytemp.equal = exp == got
