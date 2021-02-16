@@ -122,7 +122,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
     lazy_filename: str
 
-    lazy_dirname_extras: List[str] = []
+    lazy_dirname_extras: Union[str, List[str]] = []
 
     lazytemp = None
     lazy_basename_extras = ""
@@ -522,7 +522,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                     "exp and got are not equal but comparison timed out after %s seconds"
                     % (TIMEOUT_MAXTIME_TO_ALLOW)
                 )
-                self.Fail(message)
+                self.fail(message)
 
             return self.lazytemp
 

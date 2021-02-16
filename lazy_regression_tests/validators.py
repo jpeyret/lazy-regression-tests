@@ -76,7 +76,7 @@ class AutoExp:
             raise InvalidConfigurationException(
                 "Attribute/Key %s not found on %s but expected via AutoExp.  either disable the validation or add this attribute"
                 % (name, testee),
-                ori=e,
+                e,
             )
 
         # pragma: no cover pylint: disable=unused-variable
