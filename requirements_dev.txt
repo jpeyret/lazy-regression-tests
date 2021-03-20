@@ -1,4 +1,4 @@
-Jinja2==2.11.1
+Jinja2==2.11.3
 jsonschema==3.2.0
 
 # these dont look like they work here.
