@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 
 #######################################################
 
-
-import pdb
 import sys
 
 verbose = "-v" in sys.argv
@@ -29,6 +27,7 @@ undefined = NotImplemented
 OPT_DIRECTIVE_SKIP = "skip"
 OPT_DIRECTIVE_BASELINE = "baseline"
 OPT_DIRECTIVE_NODIFF = "nodiff"
+OPT_DIRECTIVE_NOASSERT = "noassert"
 
 from lazy_regression_tests.utils import (
     InvalidConfigurationException,
@@ -69,5 +68,5 @@ Validation failure @ {name} [{validator}]:
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise assert_exc

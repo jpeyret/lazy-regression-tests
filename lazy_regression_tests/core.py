@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     _Base = TestCase
 
     from lazy_regression_tests.typing_ import T_FilterParam
-    from lazy_regression_tests.Validators import ValidationDirective
+    from lazy_regression_tests.validators import ValidationDirective
 
 
 else:
@@ -462,11 +462,11 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             # the environment requests that no diffing or writing take place
             # typically indicated by setting environment variable `lzrt_directive=skip`
             if control.skip():
+                # 🏷 049.lazy.033.skipdiffdumpgot
                 return tmp
 
             # calculate the paths of the exp/got files
             tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
-            # 🔬 099.integbroker.001.initial_implementation
             tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
 
             fnp_raw = self._get_fnp_raw(options, suffix, control, tmp, got)
@@ -475,22 +475,27 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             formatted_got = options.format(tmp, got, fnp_raw).rstrip()
 
             # at this point, we want to write the received, formatted, data regardless
-            # 🔬 099.integbroker.001.initial_implementation
             if self.lazy_save_got:
+                # 🏷 049.lazy.033.skipdiffdumpgot
                 with fnp_got.open("w") as fo:
                     fo.write(formatted_got)
 
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
-            # 🔬 099.integbroker.001.initial_implementation
             if control.baseline() and self.lazy_save_exp:
+                # 🏷 049.lazy.033.skipdiffdumpgot
                 with fnp_exp.open("w") as fo:
                     fo.write(formatted_got)
                 return tmp
 
+            # the environment requests that no diffing or writing take place
+            # typically indicated by setting environment variable `lzrt_directive=skip`
+            if control.noassert:
+                # 🏷 049.lazy.033.skipdiffdumpgot
+                return tmp
+
             if external_exp is undefined:
                 try:
-                    # 🔬 099.integbroker.001.initial_implementation
                     with fnp_exp.open() as fi:
                         exp = fi.read().rstrip()
 
@@ -498,7 +503,6 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                     # we just want to write the received data as our expectation
                     tmp.execinfo.ioerror_exp = fnp_exp
                     tmp.message = message = "no check because IOError on %s" % (fnp_exp)
-                    # 🔬 099.integbroker.001.initial_implementation
                     if self.lazy_save_got:
                         with open(fnp_exp, "w") as fo:
                             fo.write(formatted_got)
@@ -510,8 +514,9 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             # typically indicated by setting environment variable `lzrt_directive=nodiff`
             # this may be desired if the differences could cause timeouts with `assertEqual`
             if control.nodiff():
+                # 🏷 049.lazy.033.skipdiffdumpgot
                 tmp.message = message = "exp and got are not equal but diffing disabled"
-                if exp != formatted_got():
+                if exp != formatted_got:
                     raise self.fail(message)
 
             try:

@@ -245,13 +245,23 @@ class _Control(object):
 
         if self._directive is undefined:
             res = self._directive = self.env.get("directive", "").strip().lower()
-            assert res in (
-                OPT_DIRECTIVE_SKIP,
-                OPT_DIRECTIVE_BASELINE,
-                OPT_DIRECTIVE_NODIFF,
-                "",
-            )
+            if res:
+                known = {
+                    OPT_DIRECTIVE_SKIP,
+                    OPT_DIRECTIVE_BASELINE,
+                    OPT_DIRECTIVE_NODIFF,
+                    OPT_DIRECTIVE_NOASSERT,
+                }
+                if not res in known:
+                    raise ValueError(
+                        f" unknown directive {res}.  known directives: {known}"
+                    )
+
         return self._directive
+
+    @property
+    def noassert(self):
+        return self.directive == OPT_DIRECTIVE_NOASSERT
 
     def skip(self):
         return self.directive == OPT_DIRECTIVE_SKIP
