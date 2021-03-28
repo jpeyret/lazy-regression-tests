@@ -376,7 +376,12 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
     #######################################################
 
     def assert_exp(
-        self, got: Any, extension: str, suffix: str = "", external_exp: Any = undefined
+        self,
+        got: Any,
+        extension: str,
+        suffix: str = "",
+        external_exp: Any = undefined,
+        header: str = None,
     ) -> LazyTemp:
         """
         regression test that `got` is the same as what was last encountered and stored
@@ -408,7 +413,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 **di_func,
             )
 
-            return self._lazycheck(got, checker, suffix, external_exp)
+            return self._lazycheck(got, checker, suffix, external_exp, header)
 
         except (AssertionError,):
             raise
@@ -466,8 +471,9 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         options: LazyChecker,
         suffix: str = "",
         external_exp: Any = undefined,
+        header: str = None,
     ) -> LazyTemp:
-
+        # 🏷 049.lazy.034.headers
         try:
             env = self.lazy_environ
             if not self.lazy_environ.acquired:
@@ -482,7 +488,6 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             # the environment requests that no diffing or writing take place
             # typically indicated by setting environment variable `lzrt_directive=skip`
             if control.skip():
-                # 🏷 049.lazy.033.skipdiffdumpgot
                 return tmp
 
             # calculate the paths of the exp/got files
@@ -498,6 +503,16 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             if self.lazy_save_got:
                 # 🏷 049.lazy.033.skipdiffdumpgot
                 with fnp_got.open("w") as fo:
+                    # 🏷 049.lazy.034.headers
+
+                    if header:
+                        if isinstance(header, list):
+                            header = "\n".join(header)
+                        data = f"""{header.strip()}
+{LAZY_HEADER_SEPARATOR}
+"""
+                        fo.write(data)
+
                     fo.write(formatted_got)
 
             # the newly received data is to be taken as our expectations
@@ -505,6 +520,15 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             if control.baseline() and self.lazy_save_exp:
                 # 🏷 049.lazy.033.skipdiffdumpgot
                 with fnp_exp.open("w") as fo:
+
+                    if header:
+                        if isinstance(header, list):
+                            header = "\n".join(header)
+                        data = f"""{header.strip()}
+{LAZY_HEADER_SEPARATOR}
+"""
+                        fo.write(data)
+
                     fo.write(formatted_got)
                 return tmp
 
@@ -518,6 +542,9 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 try:
                     with fnp_exp.open() as fi:
                         exp = fi.read().rstrip()
+
+                        if LAZY_HEADER_SEPARATOR in exp:
+                            exp = exp.split(LAZY_HEADER_SEPARATOR)[1].strip()
 
                 except (IOError,):
                     # we just want to write the received data as our expectation
