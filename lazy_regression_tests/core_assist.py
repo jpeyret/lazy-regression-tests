@@ -7,8 +7,8 @@ for this reason auxiliary classes have been moved to core_assist.py
 """
 
 import pdb
+from pathlib import Path
 import os
-from traceback import print_exc as xp
 
 
 #######################################################
@@ -33,6 +33,24 @@ from lazy_regression_tests.filters import build_filters_for_class
 
 
 #######################################################
+
+
+def write(pa_out: Path, data):
+    try:
+        if not pa_out.parent.exists():
+            pa_out.parent.mkdir(parents=True)
+
+        with pa_out.open("w") as fo:
+            # might need decode/encode if bytes... we'll see
+            data_out = data.decode("utf-8") if isinstance(data, bytes) else str(data)
+
+            fo.write(str(data_out))
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            breakpoint()
+        raise
 
 
 class LazyChecker:
@@ -89,7 +107,7 @@ class LazyChecker:
     def filter_text(self, tmp, data):
         return self.textfiltermgr.filter(self, tmp, data).strip()
 
-    def format(self, tmp, data, fnp_raw=None):
+    def format(self, tmp, data, fnp_raw=None, lazy=None):
         try:
             # used to only format once
             if (
@@ -98,6 +116,24 @@ class LazyChecker:
                 and self.filterhash == hash(data)
             ):
                 return data
+
+            # unformatted save
+            # breakpoint()
+            try:
+                fnp_rraw = lazy._get_fnp_rraw(
+                    options=self,
+                    suffix=None,
+                    control=lazy._lazy_control,
+                    tmp=tmp,
+                    got=data,
+                )
+            # pragma: no cover pylint: disable=unused-variable
+            except (AttributeError,) as e:
+                fnp_rraw = None
+
+            if fnp_rraw:
+                write(fnp_rraw, data)
+            # breakpoint()
 
             data = self.prep(tmp, data)
 
@@ -214,6 +250,26 @@ class _Control(object):
             res = bool(self.env.get("template_dirname_report"))
             self._save_raw = bool(res and self.env.get("save_raw_received_data"))
         return self._save_raw
+
+    _save_rraw = undefined
+
+    @property
+    def save_rraw(self):
+        """ 
+            saves Really raw got, before formatting.  
+            
+            For example if you suspect Beautifulsoup formatting is fixing some html errors that trip 
+            up the actual page.
+
+            this depend on 2 environmental settings:
+            :param lzrt_save_rraw_received_data : if it it's set we can do it
+            :param lzrt_template_dirname_report : where to put it
+        """
+
+        if self._save_rraw is undefined:
+            res = bool(self.env.get("template_dirname_report"))
+            self._save_rraw = bool(res and self.env.get("save_rraw_received_data"))
+        return self._save_rraw
 
     _directive = undefined
 

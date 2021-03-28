@@ -429,7 +429,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 return
 
             fnp_raw = self._get_fnp_save(
-                "report", options, suffix, basename_prefix="raw."
+                "report", options, suffix, basename_prefix="unfiltered."
             )
 
             return fnp_raw
@@ -437,7 +437,27 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
+            raise
+
+    def _get_fnp_rraw(self, options, suffix, control, tmp, got):
+        """ 
+        where do we save the raw received data,
+        after formatting, but before filtering ? 
+        """
+
+        try:
+            if not control.save_rraw:
+                return
+
+            fnp = self._get_fnp_save("report", options, suffix, basename_prefix="raw.")
+
+            return fnp
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
             raise
 
     def _lazycheck(
@@ -472,7 +492,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             fnp_raw = self._get_fnp_raw(options, suffix, control, tmp, got)
 
             # linefeeds have a tendency to creep in sometimes
-            formatted_got = options.format(tmp, got, fnp_raw).rstrip()
+            formatted_got = options.format(tmp, got, fnp_raw, lazy=self).rstrip()
 
             # at this point, we want to write the received, formatted, data regardless
             if self.lazy_save_got:
