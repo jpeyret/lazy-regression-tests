@@ -381,7 +381,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         extension: str,
         suffix: str = "",
         external_exp: Any = undefined,
-        header: str = None,
+        metadata_header: str = None,
     ) -> LazyTemp:
         """
         regression test that `got` is the same as what was last encountered and stored
@@ -413,7 +413,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
                 **di_func,
             )
 
-            return self._lazycheck(got, checker, suffix, external_exp, header)
+            return self._lazycheck(got, checker, suffix, external_exp, metadata_header)
 
         except (AssertionError,):
             raise
@@ -471,9 +471,8 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         options: LazyChecker,
         suffix: str = "",
         external_exp: Any = undefined,
-        header: str = None,
+        metadata_header: str = None,
     ) -> LazyTemp:
-        # 🏷 049.lazy.034.headers
         try:
             env = self.lazy_environ
             if not self.lazy_environ.acquired:
@@ -501,14 +500,12 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
             # at this point, we want to write the received, formatted, data regardless
             if self.lazy_save_got:
-                # 🏷 049.lazy.033.skipdiffdumpgot
                 with fnp_got.open("w") as fo:
-                    # 🏷 049.lazy.034.headers
 
-                    if header:
-                        if isinstance(header, list):
-                            header = "\n".join(header)
-                        data = f"""{header.strip()}
+                    if metadata_header:
+                        if isinstance(metadata_header, list):
+                            metadata_header = "\n".join(metadata_header)
+                        data = f"""{metadata_header.strip()}
 {LAZY_HEADER_SEPARATOR}
 """
                         fo.write(data)
@@ -518,13 +515,12 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
             if control.baseline() and self.lazy_save_exp:
-                # 🏷 049.lazy.033.skipdiffdumpgot
                 with fnp_exp.open("w") as fo:
 
-                    if header:
-                        if isinstance(header, list):
-                            header = "\n".join(header)
-                        data = f"""{header.strip()}
+                    if metadata_header:
+                        if isinstance(metadata_header, list):
+                            metadata_header = "\n".join(metadata_header)
+                        data = f"""{metadata_header.strip()}
 {LAZY_HEADER_SEPARATOR}
 """
                         fo.write(data)
@@ -535,7 +531,6 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             # the environment requests that no diffing or writing take place
             # typically indicated by setting environment variable `lzrt_directive=skip`
             if control.noassert:
-                # 🏷 049.lazy.033.skipdiffdumpgot
                 return tmp
 
             if external_exp is undefined:
@@ -561,7 +556,6 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
             # typically indicated by setting environment variable `lzrt_directive=nodiff`
             # this may be desired if the differences could cause timeouts with `assertEqual`
             if control.nodiff():
-                # 🏷 049.lazy.033.skipdiffdumpgot
                 tmp.message = message = "exp and got are not equal but diffing disabled"
                 if exp != formatted_got:
                     raise self.fail(message)

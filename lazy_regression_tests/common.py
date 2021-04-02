@@ -42,7 +42,6 @@ def cpdb(*args, **kwargs) -> bool:
 
 rpdb = breakpoints = cpdb
 
-# 🏷 049.lazy.034.headers
 LAZY_HEADER_SEPARATOR = "<![CDATA[header"
 
 

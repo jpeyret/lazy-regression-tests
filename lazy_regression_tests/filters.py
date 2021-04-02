@@ -200,6 +200,10 @@ class RegexSubstitHardcoded(RegexFilter):
        it's just a match filter or a match & substitution
     """
 
+    def __init__(self, pattern: str, name, subs, scalar=False, *args):
+        super(RegexSubstitHardcoded, self).__init__(pattern, name, scalar)
+        self.subs = subs
+
     def process_line(self, hit, line):
         try:
             for from_, to_ in self.subs:
@@ -220,10 +224,6 @@ class RegexSubstitHardcoded(RegexFilter):
             if cpdb():
                 pdb.set_trace()
             raise
-
-    def __init__(self, pattern, name, subs, scalar=False, *args):
-        super(RegexSubstitHardcoded, self).__init__(pattern, name, scalar)
-        self.subs = subs
 
 
 class RegexRemoveSaver(RegexMatcher):
