@@ -1,10 +1,7 @@
-import pdb
 import json
 import sys
 import os
 import copy
-
-from traceback import print_exc as xp
 
 
 #######################################################
@@ -79,7 +76,7 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def filter(self, options, tmp, data, callback):
@@ -118,7 +115,7 @@ class CSSRemoveFilter(RawFilter, DataMatcher):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -174,7 +171,7 @@ class StatusCodeValidator(NamedTesteeAttributeValidator):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -284,38 +281,23 @@ class HtmlFilterManager(FilterManager):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def to_text(self, tmp, data):
         try:
-            # pdb.set_trace()
+            # breakpoint()
             return data.prettify()
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
 class Response:
     def _get_content_type(self, response):
         try:
-
-            # headers ''
-            # content-length=('Content-Length', '11147')
-            # content-type=('Content-Type', 'text/html; charset=utf-8')
-            # vary=('Vary', 'Cookie')
-
-            if verbose:
-                mode = os.getenv("bme_test_fetchmode", "unknownmode")
-                with open("./debug.%s.response.txt" % (mode), "w") as fo:
-                    for k in sorted(vars(response).keys()):
-                        fo.write(f"{k}={str(getattr(response,k)):200.200}" + "\n")
-
-                    fo.write(debugObject(self.headers, "\nheaders:"))
-
-            # pdb.set_trace()
 
             part1 = self.headers.get("content-type") or self.headers.get(
                 "Content-Type", {}
@@ -339,18 +321,10 @@ class Response:
 
             raise NotImplementedError("%s._get_content_type(%s)" % (self, locals()))
 
-            content_type = part1[1].split(";")[0].split("/")[1]
-
-            assert content_type in ("html", "json"), "unknown content_type:%s:" % (
-                content_type
-            )
-
-            return content_type
-
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     wanteds = dict(
@@ -367,7 +341,6 @@ class Response:
                 if isinstance(paths, str):
                     paths = [paths]
 
-                # pdb.set_trace()
                 for path in paths:
                     try:
                         value = getpath(response, path)
@@ -379,15 +352,15 @@ class Response:
                 else:
                     raise AttributeError(attrname)
 
-            # pdb.set_trace()
+            # breakpoint()
             self.content_type = self._get_content_type(response)
             assert self.content_type, "missing self."
-            # pdb.set_trace()
+            # breakpoint()
             self._init()
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def _init(self):
@@ -409,7 +382,7 @@ class ResponseJSON(Response):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -467,7 +440,7 @@ class ResponseHTML:
                 if isinstance(paths, str):
                     paths = [paths]
 
-                # pdb.set_trace()
+                # breakpoint()
                 for path in paths:
                     try:
                         value = getpath(response, path)
@@ -482,5 +455,5 @@ class ResponseHTML:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise

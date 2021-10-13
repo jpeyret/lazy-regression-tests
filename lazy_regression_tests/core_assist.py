@@ -341,28 +341,19 @@ class _LazyMeta(type):
         ancestral validators and formatters in reverse mro order
         i.e. top of ancestors go first
         """
-
         try:
-
-            classname = cls.__name__
-
             # we want to build out the validators by running the basic ancestral ones first
             # ex:  check status=200 and content_type = html before checking <title>
             li_bases2current = list(reversed(cls.mro()))
-
             li_ancestor_filter = []
 
             for basecls in li_bases2current:
-
                 cls_filters = getattr(basecls, "cls_filters", {})
-
                 if cls_filters:
                     li_ancestor_filter.append(cls_filters)
 
             cls.cls_validators = build_validators_for_class(cls, li_bases2current)
-
             cls.cls_filters = build_filters_for_class(cls, li_ancestor_filter)
-
             super().__init__(name, bases, attrs)
 
         # pragma: no cover pylint: disable=unused-variable
