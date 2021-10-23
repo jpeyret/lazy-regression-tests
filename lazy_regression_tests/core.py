@@ -56,7 +56,7 @@ try:
 
     TIMEOUT_MAXTIME_TO_ALLOW = 5
 except (ImportError,) as e:  # pragma: no cover
-    # pdb.set_trace()
+    # breakpoint()
     timeout = None
     TIMEOUT_MAXTIME_TO_ALLOW = 0
 
@@ -163,14 +163,14 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def lazy_build_filters(self):
         try:
             res = {}
             for extension, filter_ in self.__class__.cls_filters.items():
-                # if cpdb(): pdb.set_trace()
+                # if cpdb(): breakpoint()
                 filter_copy = filter_.copy()
                 assert filter_copy, "filter_copy empty"
                 res[extension] = filter_copy
@@ -180,7 +180,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def _lazy_get_t_dirname(self, exp_got, subber):
@@ -211,7 +211,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def _handle_dirname_extras(self, _litd):
@@ -247,7 +247,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def _get_fnp_save(
@@ -310,7 +310,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     #######################################################
@@ -355,7 +355,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def set_expectation(self, *args, **kwargs):
@@ -365,7 +365,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
 
         name = args[0]
         if breakpoints("set_expectation", {"name": name}):  # pragma: no cover
-            pdb.set_trace()
+            breakpoint()
 
             # put this in your breakpoints.json
 
@@ -420,7 +420,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def _get_fnp_raw(self, options, suffix, control, tmp, got):
@@ -577,7 +577,7 @@ class LazyMixin(_Base, metaclass=_LazyMeta):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     #######################################################
@@ -671,5 +671,5 @@ class NoTstMixin(LazyMixin):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise

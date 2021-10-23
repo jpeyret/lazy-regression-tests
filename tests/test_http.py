@@ -5,7 +5,6 @@ test http behavior - requires BeautifulSoup, requests and responses (a mock for 
 
 import sys
 import os
-import pdb
 import datetime
 import re
 
@@ -21,12 +20,7 @@ except (ImportError,) as ei:
 #######################################################
 # Typing
 #######################################################
-from typing import (
-    Optional,
-    # TYPE_CHECKING,
-    Any,
-    cast,
-)
+from typing import Optional
 
 #######################################################
 # pylint: enable=unused-import
@@ -154,7 +148,7 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def get_data(self, seed: dict = None):
@@ -179,7 +173,7 @@ class LazyMixinBasic(LazyMixin, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -226,7 +220,7 @@ class Test_Basic(HTMLBase):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -315,7 +309,7 @@ class HTMLCheck(HTMLBase):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -472,7 +466,7 @@ class Test_Validation_Fail(HTMLBase):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -496,7 +490,7 @@ class Test_Validation_Fail(HTMLBase):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 

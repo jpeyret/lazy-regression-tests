@@ -6,7 +6,6 @@ for this reason auxiliary classes have been moved to core_assist.py
 
 """
 
-import pdb
 from pathlib import Path
 import os
 
@@ -159,7 +158,7 @@ class LazyChecker:
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
                 ppp(self, self)
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -198,7 +197,7 @@ class LazyTemp(object):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -359,5 +358,5 @@ class _LazyMeta(type):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
