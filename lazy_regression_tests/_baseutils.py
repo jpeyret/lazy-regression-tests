@@ -255,7 +255,7 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
             # set cpdbs on modules that have a stub for it
             for module in list(sys.modules.values()):
                 try:
-                    # pdb.set_trace()
+                    # breakpoint()
                     # print(module)
                     # this checks if it's likely to be cpdb, not something w same name
                     existing = getattr(module, "cpdb", None)
@@ -265,7 +265,7 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
                             #     logger.info("matching cpdb")
                             pass
                         else:
-                            # # pdb.set_trace()
+                            # # breakpoint()
                             # if 0 and verbose:
                             #     logger.info("old style cpdb on %s" % (module))
                             # else:
@@ -616,7 +616,7 @@ class Subber(object):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -689,7 +689,7 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
         Exception,
     ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -721,7 +721,7 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
         Exception,
     ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -802,7 +802,7 @@ def getpath(src: Any, path: str) -> Any:
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -909,14 +909,14 @@ class DictFormatter:
                 elif isinstance(v, dict):
 
                     # if rpdb(): # pragma: no cover
-                    #     pdb.set_trace()
+                    #     breakpoint()
 
                     func_fmt = di_formatter[key]
                     if isinstance(func_fmt, dict):
 
                         if keep is not None:
                             childkeep = keep[key] = {}
-                            # pdb.set_trace()
+                            # breakpoint()
                         else:
                             childkeep = None
 
@@ -956,7 +956,7 @@ class DictFormatter:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     __call__ = process
@@ -1020,7 +1020,7 @@ class Breakpoints(object):
             # logger.debug("caller_variables:%s" % (caller_variables))
             # logger.debug("breakpoints:%s" % (breakpoints.keys()))
             # logger.debug("*" * 80 + "\n")
-            # pdb.set_trace()
+            # breakpoint()
 
             conditions = breakpoints.get(lookup, [])
 
@@ -1050,7 +1050,7 @@ class Breakpoints(object):
         except Exception as e:  # pragma: no cover
             logger.error(repr(e)[:100])
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     __call__ = breakpoint
@@ -1171,7 +1171,7 @@ class CacheDict(MutableMapping):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def __getitem__(self, key):
@@ -1187,7 +1187,7 @@ class CacheDict(MutableMapping):
             raise
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def __delitem__(self, key):
@@ -1270,7 +1270,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -1349,5 +1349,5 @@ class YAMLAncestorLoader:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise

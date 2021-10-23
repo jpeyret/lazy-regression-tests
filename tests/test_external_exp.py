@@ -89,7 +89,7 @@ class NonTst(LazyMixinBasic):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -116,7 +116,7 @@ class Test_Base(unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -166,7 +166,7 @@ class Test_UnequalFiltered(Test_Base):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 

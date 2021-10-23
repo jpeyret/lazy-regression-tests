@@ -89,7 +89,7 @@ class DataMatcher(object):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -147,7 +147,7 @@ class DictFilter(RawFilter, DataMatcher):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -161,7 +161,7 @@ class RegexFilter(RegexMatcher):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def filter(self, options, tmp, data, callback=None):
@@ -187,7 +187,7 @@ class RegexFilter(RegexMatcher):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     __call__ = filter
@@ -222,7 +222,7 @@ class RegexSubstitHardcoded(RegexFilter):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -253,7 +253,7 @@ class RegexRemoveSaver(RegexMatcher):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     __call__ = filter
@@ -278,7 +278,7 @@ class FilterDirective:
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
-            pdb.set_trace()
+            breakpoint()
             return "%s.%s" % (self.__class__.__name__, self.name)
             # raise
 
@@ -318,7 +318,7 @@ class FilterDirective:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def filter(self, *args, **kwargs):
@@ -346,7 +346,7 @@ class FilterManager:
         # pragma: no cover pylint: disable=unused-variable, broad-except
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def to_text(self, tmp, data):
@@ -356,7 +356,7 @@ class FilterManager:
         # pragma: no cover pylint: disable=unused-variable, broad-except
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def __repr__(self):
@@ -414,7 +414,7 @@ class FilterManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def filter(self, options, tmp, data):
@@ -434,7 +434,7 @@ class FilterManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def set_filter(self, name, filter_=None, active=None, callback=None):
@@ -451,7 +451,7 @@ class FilterManager:
         """
 
         if breakpoints("set_filter", {"name": name}):  # pragma: no cover
-            pdb.set_trace()
+            breakpoint()
 
         try:
 
@@ -476,7 +476,7 @@ class FilterManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def __iadd__(self, directive):
@@ -506,7 +506,7 @@ class FilterManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def copy(self):
@@ -556,7 +556,7 @@ class FilterManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if 1 or cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -584,7 +584,7 @@ def build_filters_for_class(cls, li_ancestor_filter):
         if breakpoints(
             "build_filters_for_class", dict(classname=classname)
         ):  # pragma: no cover
-            pdb.set_trace()
+            breakpoint()
 
         # remember, the mro for a class includes the class itself
         if not li_ancestor_filter:
@@ -640,7 +640,7 @@ def build_filters_for_class(cls, li_ancestor_filter):
                 res[extension] = newfilter
 
             return res
-            # pdb.set_trace()
+            # breakpoint()
 
         else:
             return last_
@@ -648,7 +648,7 @@ def build_filters_for_class(cls, li_ancestor_filter):
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if 1 or rpdb() or cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -671,12 +671,12 @@ class JsonFilterManager(FilterManager):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def to_text(self, tmp, data):
         try:
-            # pdb.set_trace()
+            # breakpoint()
             return json.dumps(
                 data,
                 sort_keys=True,
@@ -686,5 +686,5 @@ class JsonFilterManager(FilterManager):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise

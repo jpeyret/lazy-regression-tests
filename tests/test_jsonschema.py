@@ -121,7 +121,7 @@ class LazyMixinBasic(LazyMixin):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 

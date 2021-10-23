@@ -58,5 +58,5 @@ class YAMLFilter(FilterManager):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise

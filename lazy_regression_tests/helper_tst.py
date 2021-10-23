@@ -139,7 +139,7 @@ def get_mock_env(seed={}):
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -172,7 +172,7 @@ def get_fake_response_from_html(
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -198,7 +198,7 @@ def get_fake_response_from_template(
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -236,7 +236,7 @@ class Helper:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def get_data(self, seed={}):
@@ -265,7 +265,7 @@ class Helper:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -279,7 +279,7 @@ class HelperHTML(Helper):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -330,7 +330,7 @@ class CheckitMixin:
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -354,7 +354,7 @@ def main():
     response = test_simple()
     ppp(response, "response")
 
-    pdb.set_trace()
+    breakpoint()
 
 
 if __name__ == "__main__":

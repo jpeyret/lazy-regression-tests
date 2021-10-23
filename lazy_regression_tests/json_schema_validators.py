@@ -93,7 +93,7 @@ class JsonSchemaValidator(DictValidator):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def get_value(self, source_):
@@ -125,5 +125,5 @@ class JsonSchemaValidator(DictValidator):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise

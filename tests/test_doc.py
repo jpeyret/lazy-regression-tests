@@ -123,7 +123,7 @@ class LazyMixinBasic(LazyMixin):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -227,7 +227,7 @@ def check_lineitems(testee: "unittest.TestCase", got, validator: "Validator"):
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -294,7 +294,7 @@ class Test_404(Test_Features):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -337,7 +337,7 @@ class Test_JSON_Too(LazyMixinBasic, unittest.TestCase):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -428,7 +428,7 @@ class Test_YAML_Graphs(Test_YAML):
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 

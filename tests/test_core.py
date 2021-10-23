@@ -180,7 +180,7 @@ var2
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def check_naming_convention(self):
@@ -267,7 +267,7 @@ var2
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -299,7 +299,7 @@ def get_subber_for_dirname(self, di_env: Optional[dict] = None):
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
 
 
@@ -316,7 +316,7 @@ class TestBasic(LazyMixinBasic, unittest.TestCase):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -333,7 +333,7 @@ class TestNamingConventions(LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -437,7 +437,7 @@ class Test_Error_Handling(LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     #
@@ -478,7 +478,7 @@ class Test_Error_Handling(LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -517,7 +517,7 @@ class Test_Error_Handling(LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -586,7 +586,7 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -652,7 +652,7 @@ class Test_Text_Filtering(LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -693,7 +693,7 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -715,7 +715,7 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -751,7 +751,7 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -768,7 +768,7 @@ class Test_Additive_Filtering(AnyName, AnotherName, LazyMixinBasic, unittest.Tes
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -802,7 +802,7 @@ class Test_JSON(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     changes = dict(var1="one")
@@ -827,13 +827,13 @@ class Test_JSON(BaseForJson, LazyMixinBasic, unittest.TestCase):
 
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e:
-                # pdb.set_trace()
+                # breakpoint()
                 self.assertTrue("var1" in str(e))
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -889,7 +889,7 @@ class Test_JSON_DictFilter(Test_JSON):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     @mock.patch.dict(os.environ, di_mock_env)
@@ -913,7 +913,7 @@ class Test_JSON_DictFilter(Test_JSON):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -955,7 +955,7 @@ class CustomDictValidator(DictValidator):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def get_value(self, source, res=None):
@@ -977,7 +977,7 @@ class CustomDictValidator(DictValidator):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -994,7 +994,7 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_002_fail231(self):
@@ -1009,7 +1009,7 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_003_add_expected_fail(self):
@@ -1026,7 +1026,7 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_004_custom(self):
@@ -1039,7 +1039,7 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_005_deactivate(self):
@@ -1052,7 +1052,7 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_006_change_expectations(self):
@@ -1066,14 +1066,14 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_007_cant_activate_missing_validation(self):
         try:
-            # pdb.set_trace()
+            # breakpoint()
             self.set_expectation("no_such_validation", active=True)
-            # pdb.set_trace()
+            # breakpoint()
             self.check_expectations(data=self.j_data)
             # pragma: no cover pylint: disable=unused-variable
             self.fail("should have gotten InvalidConfigurationException")
@@ -1082,7 +1082,7 @@ class Test_JSON_Validation(BaseForJson, LazyMixinBasic, unittest.TestCase):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -1103,13 +1103,13 @@ class Test_JSON_ValidationFail(Test_JSON_Validation):
             # pragma: no cover pylint: disable=unused-variable
             except (Exception,) as e:
                 if cpdb():
-                    pdb.set_trace()
+                    breakpoint()
                 raise
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -1149,7 +1149,7 @@ class Test_Direct_Validation(
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_002_fails_on_html(self):
@@ -1164,7 +1164,7 @@ class Test_Direct_Validation(
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -1214,7 +1214,7 @@ class Test_Direct_AutoExpectations(
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_002_fail(self):
@@ -1239,7 +1239,7 @@ class Test_Direct_AutoExpectations(
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 

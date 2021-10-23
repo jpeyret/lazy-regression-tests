@@ -83,7 +83,7 @@ class AutoExp:
 
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def get_exp(self, testee: "TestCase"):
@@ -104,7 +104,7 @@ class AutoExp:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def __init__(self, paths: Union[list, tuple, str]):
@@ -124,7 +124,7 @@ class AutoExp:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -168,7 +168,7 @@ class Validator:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def get_source(self, testee, **sources):
@@ -209,7 +209,7 @@ class Validator:
         else:
             res = source.get(self.selector)
         if rpdb() and res is None:  # pragma: no cover
-            pdb.set_trace()
+            breakpoint()
         return res
 
     def check(self, name: str, testee: "LazyMixin", exp: Any, sources: dict):
@@ -228,7 +228,7 @@ class Validator:
                     "%s.validation error: could not access data in source %s"
                     % (self, e)
                 )
-                # pdb.set_trace()
+                # breakpoint()
                 got = undefined
 
             t_message = getattr(self, "t_message", None)
@@ -251,7 +251,7 @@ class Validator:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test_regex(self, testee, exp, got, message, name=None):
@@ -279,7 +279,7 @@ class Validator:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def test(self, testee, exp, got, message, name=None):
@@ -308,7 +308,7 @@ class Validator:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -321,13 +321,13 @@ class AttributeValidator(Validator):
         try:
             res = self.f_getter(source_)
             if rpdb() and res is None:  # pragma: no cover
-                pdb.set_trace()
+                breakpoint()
             return res
         except (
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -351,7 +351,7 @@ class DictValidator(Validator):
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -390,7 +390,7 @@ class MixinExpInGot:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -465,7 +465,7 @@ class ValidationDirective:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if 1 or cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def copy(self):
@@ -528,7 +528,7 @@ class ValidationManager:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def _get_names(
@@ -604,7 +604,7 @@ class ValidationManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def check_expectations(
@@ -685,7 +685,7 @@ class ValidationManager:
         # pragma: no cover pylint: disable=unused-variable, broad-except
         except (Exception,) as e:  #
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def inject(self, validatormgr):
@@ -717,7 +717,7 @@ class ValidationManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def remove_expectation(self, name):
@@ -730,7 +730,7 @@ class ValidationManager:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def set_expectation(
@@ -780,7 +780,7 @@ class ValidationManager:
             Exception,
         ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def add_directive(
@@ -819,7 +819,7 @@ class ValidationManager:
 
             if active and final and validator is None:
 
-                # pdb.set_trace()
+                # breakpoint()
                 existing = self.validators.get(name)
                 if existing and existing.validator:
                     pass
@@ -837,7 +837,7 @@ class ValidationManager:
             if rpdb() or cpdb():
                 ppp(locals())
 
-                pdb.set_trace()
+                breakpoint()
             raise
 
     def debug(self):
@@ -883,7 +883,7 @@ class ValidationManager:
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
-                pdb.set_trace()
+                breakpoint()
             raise
 
 
@@ -928,5 +928,5 @@ def build_validators_for_class(cls, li_revmro):
     # pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e:
         if cpdb():
-            pdb.set_trace()
+            breakpoint()
         raise
