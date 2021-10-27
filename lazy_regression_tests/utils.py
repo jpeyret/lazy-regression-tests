@@ -20,6 +20,7 @@ from lazy_regression_tests._baseutils import (
     first,
     getpath,
     DictFormatter,
+    Dummy,
     UnavailableLibrary as BaseUnavailableLibrary,
 )
 

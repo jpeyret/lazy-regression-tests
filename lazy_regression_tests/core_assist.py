@@ -229,7 +229,10 @@ class _Control(object):
     """
 
     def __init__(
-        self, lazy: "LazyMixin", env: MediatedEnvironDict, options: "LazyCheckerOptions"
+        self,
+        lazy: "LazyChecker",
+        env: MediatedEnvironDict,
+        options: "LazyCheckerOptions",
     ):
 
         self.lazy = lazy
