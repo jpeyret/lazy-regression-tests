@@ -4,77 +4,50 @@
     most libraries won't use much of its functionality.
 
 """
-
+from contextlib import contextmanager
+from dataclasses import dataclass, field
+import logging
 import sys
 import types
 import re
-
-from yaml import safe_load as yload
-
-
-from traceback import print_exc as xp
+import builtins
+import pprint
 
 from pathlib import Path
-
+import subprocess
 from time import time
-
 import os
 import shutil
 import stat
-
-
-undefined = NotImplemented
 from collections import MutableMapping, namedtuple
-
+from string import Template
+from functools import partial, wraps
+from io import StringIO  # 223ed
+import json
+import copy
 
 #######################################################
 # Typing
 #######################################################
-from typing import (
-    Optional,
-    # TYPE_CHECKING,
-    Any,
-    cast,
-)
-
-#######################################################
+from typing import Optional, Any, Union, List, Dict, Callable
 
 
-import logging
-import pdb
-
-from string import Template
-
-from functools import partial, wraps
+#################################################################
+# Dependencies
+#################################################################
+from yaml import safe_load as yload, safe_dump as ydump
+from more_itertools import partition
 
 logger = logging.getLogger(__name__)
-
-undefined = NotImplemented
-
-from typing import List, Any, Tuple, Iterable
-
-# for isinstance tests...
 type_regex_hack = re.compile("").__class__
-
+undefined = NotImplemented
 verbose = "-v" in sys.argv
-
-try:
-    from cStringIO import StringIO  # 223ed
-except (ImportError,) as e:
-    from io import StringIO  # 223ed
-
-import json
-import copy
-
-try:
-    basestring_ = basestring  # type: ignore
-except (NameError,) as e:
-    basestring_ = str
+cache = {}
 
 
-#################################
-# Python 3 bytes=>str support
-#################################
+def def_repr(self):
+    """dummy repr"""
+    return self.__class__.__name__
 
 
 def cast_bytes2str(fn):
@@ -135,16 +108,6 @@ def real_rpdb() -> bool:  # pragma: no cover
     if count is not None:
         rpdb.count -= 1
         return rpdb.count > 0
-
-    try:
-        from django.core.cache import cache
-    except (ImportError,):
-        cache = {}
-    import sys
-
-    in_celery = sys.argv[0].endswith("celery") and "worker" in sys.argv
-    if in_celery:
-        return False
 
     try:
         res = bool(cache.get("rpdb_enabled"))
@@ -210,7 +173,7 @@ def cpdb():
     "disabled"
 
 
-def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
+def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callable:
     """ swap the dummy cpdb for an active one"""
 
     # dont expect any coverage: explicitly disabled under pytest
@@ -281,10 +244,15 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None):
 
 
 #######################################################
-import builtins
 
 
-def ppp(o, header=None, skip=[]):
+def ppp(o=None, header=None, skip=[], **kwargs):
+    if o is None:
+        o = kwargs
+    elif isinstance(o, str) and header is None:
+        header = o
+        o = kwargs
+
     if header is None:
         # if isinstance(o, (dict,list,str,set)):
         if o.__class__.__name__ in dir(builtins):
@@ -293,8 +261,6 @@ def ppp(o, header=None, skip=[]):
             header = f"{o.__class__.__name__}..."
         else:
             header = "[%s %s]" % (type(o), repr(o))
-
-    # header = header or
 
     msg = debugObject(o, header, li_skipfield=skip)
     print(msg)
@@ -338,7 +304,7 @@ def debugObject(
             )
         )
 
-    elif isinstance(obj, basestring_):
+    elif isinstance(obj, str):
         return "\n%s:%s" % (header, obj)
 
     else:
@@ -467,11 +433,14 @@ def first(li, empty_value=None):
     if not li:
         return empty_value
 
-    if isinstance(li, list):
+    if isinstance(li, (list, tuple)):
         return li[0]
 
+    if isinstance(li, (set)):
+        return first(list(li))
+
     if isinstance(li, dict):
-        return li.values()[0]
+        return next(iter(li.items()))
 
     raise NotImplementedError("first.  unknown type for %s[%s]" % (li, type(li)))
 
@@ -483,11 +452,11 @@ class Subber(object):
         Else 
     """
 
-    def __init__(self, *args: Any):
+    def __init__(self, *args: Any, verbose=False):
         self.li_arg = list(args)
         # raise NotImplementedError, "li_arg:%s" % (self.li_arg)
         self.di_res = {}
-        self.verbose = False
+        self.verbose = verbose
 
     def removed(self, *remove_args: Any) -> "Subber":
         """return a new Subber without some args
@@ -513,15 +482,13 @@ class Subber(object):
 
         return "Subber([" + ",".join([fmt(arg) for arg in self.li_arg]) + "])"
 
-        # return str(self.li_arg)
-
     @classmethod
     def factory(cls, obj, *args):
 
         li_sub = []
 
         for arg in args:
-            if isinstance(arg, basestring_):
+            if isinstance(arg, str):
                 li = arg.split(",")
                 for arg2 in li:
                     arg2 = arg2.strip()
@@ -728,10 +695,7 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
 class Dummy(object):
     """because you can't set attributes on type object"""
 
-    def __repr__(self):
-        return "class.%s" % (self.__class__.__name__)
-
-    __str__ = __repr__
+    __repr__ = __str__ = def_repr
 
     def setdefault(self, attrname, value):
         try:
@@ -825,8 +789,7 @@ class DictFormatter:
 
     """
 
-    def __repr__(self):
-        return "%s" % (self.__class__.__name__)
+    __repr__ = def_repr
 
     def del_dict_item(self, di: dict, key: Any, value: Any):
         """ delete the given key if it exists """
@@ -1351,3 +1314,71 @@ class YAMLAncestorLoader:
             if cpdb():
                 breakpoint()
             raise
+
+
+@contextmanager
+def disable_cpdb(*args, **kwds):
+    """ 
+    momentarily disable cdpb, for example to test known-to-fail
+    code
+    """
+    try:
+        real_cpdb.count = 0
+        yield real_cpdb
+    finally:
+        real_cpdb.count = 2
+
+
+@contextmanager
+def force_verbose(tgt, **kwds):
+    """ 
+    momentarily disable cdpb, for example to test known-to-fail
+    code
+    """
+    try:
+        ori_verbose = getattr(tgt, "verbose", None)
+        tgt.verbose = True
+        yield tgt
+    finally:
+        tgt.verbose = ori_verbose
+
+
+def oshow(self, nesting="", file=None, private=False):
+    """show an object's structure for debugging"""
+    try:
+        plocal = not file
+        file = file or StringIO()
+
+        print(nesting, f"{repr(self)}", file=file)
+
+        try:
+            dict_ = self.dict()
+        # pragma: no cover pylint: disable=unused-variable
+        except (AttributeError,) as e:
+            dict_ = self.__dict__.copy()
+
+        skipshow = getattr(self, "skipshow", [])
+        dict_ = {k: v for k, v in self.__dict__.items() if not k in skipshow}
+
+        if not private:
+            dict_ = {k: v for k, v in dict_.items() if not k.startswith("_")}
+
+        v = dict_.get("data_in")
+        if v:
+            dict_["data_in"] = f"{str(v)[:200]}..."
+
+        indent = nesting + "  "
+
+        out = StringIO()
+        pprint.pprint(dict_, out, width=1)
+        for line in out.getvalue().splitlines():
+            print(indent, f"  {line}", file=file)
+
+        if plocal:
+            print(file.getvalue())
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            breakpoint()
+        raise

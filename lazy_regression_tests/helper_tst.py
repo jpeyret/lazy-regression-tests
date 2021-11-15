@@ -98,7 +98,10 @@ def get_mock_env(seed={}):
     try:
 
         # to use temp files or not?
-        USE_TEMP_FILE = not (os.getenv("lzrt_TESTING_NO_TEMP_FILE"))
+        USE_TEMP_FILE = not (os.getenv("lzrt_TESTING_NO_TEMP_FILE")) and not (
+            os.getenv("lzrt_livetests_dir")
+        )
+        # 🎗!!!TODO!!! - ignore if lzrt_livetests_dir is set
 
         if USE_TEMP_FILE:
 
