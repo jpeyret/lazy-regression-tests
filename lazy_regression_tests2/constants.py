@@ -1,0 +1,22 @@
+"""constants for lazy tests"""
+
+import sys
+
+verbose = "-v" in sys.argv
+
+undefined = NotImplemented
+
+OPT_DIRECTIVE_SKIP = "skip"
+OPT_DIRECTIVE_BASELINE = "baseline"
+OPT_DIRECTIVE_NODIFF = "nodiff"
+OPT_DIRECTIVE_NOASSERT = "noassert"
+
+TIMEOUT_MAXTIME_TO_ALLOW = 5
+
+
+HDR = f"\n{'🧨⚙️' * 20}\n"
+FTR = f"\n{'🧨⚙️' * 20}\n"
+
+ENVIRONMENT_VARNAME_ROOT = "lzrt_"
+
+LAZY_HEADER_SEPARATOR = "<![CDATA[header"

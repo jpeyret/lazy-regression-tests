@@ -1,0 +1,478 @@
+"""validate HTTP stuff"""
+
+from typing import Any, Callable
+import copy
+
+import json
+from collections.abc import Mapping
+import unittest
+
+
+# from enum import Enum
+
+#################################################################
+# Dependencies
+#################################################################
+import pydantic
+import requests
+import lxml
+import cchardet
+
+# from bs4 import BeautifulSoup as bs
+import bs4
+
+bs = bs4.BeautifulSoup
+
+undefined = NotImplemented
+
+from lazy_regression_tests2.utils import set_cpdb, set_rpdb, ppp, first
+
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
+
+
+from lazy_regression_tests2.validators import ValidationError, ValidatorMgr, Validator
+
+from lazy_regression_tests2.common import (
+    check_equal,
+    select_by_provider,
+    check_exp_in_data,
+    check_in,
+)
+
+
+import lazy_regression_tests2.providers as providers
+
+from lazy_regression_tests2.common import (
+    ValidatorTemp,
+    LazyTemp,
+    Filter,
+    BFilter,
+    RawFilter,
+    ConfigurationException,
+    ExtAlias,
+)
+
+
+class CSSFilter(RawFilter):
+    """ancestor of `raw` (non-text) filters"""
+
+    f: str
+
+    @pydantic.validator("f", pre=True)
+    def build_filter(cls, selector, values):
+        """ prep the filter wrapper """
+        if not isinstance(selector, str):
+            raise ConfigurationException(
+                f"{cls=}.build_filter.unsupported selector {selector=}[{type(selector)}]"
+            )
+        values["f"] = selector
+        return selector
+
+    def filter(self, temp: "ValidatorTempHttp") -> Any:
+        """ mutate data in place"""
+        # need to work with the soup, not the response
+        li = temp.soup.select(self.f)
+
+        if self.name:
+            found = [copy.copy(v) for v in li]
+            if self.scalar:
+                found = first(found)
+            if self.formatter:
+                found = self.formatter(found)
+
+            di = {self.name: found}
+            temp.filtered = di
+        for hit in li:
+            hit.decompose()
+
+
+class ValidatorTempHttp(ValidatorTemp):
+    "work/temp area"
+
+    _html_in = _soup = _html = _raw_html = None
+    _formatted_got = undefined
+
+    @property
+    def formatted_got(self):
+        "format data on demand, after filtering"
+        if self._formatted_got is undefined:
+
+            # apply filters if not done yet
+            if self._filtered is None:
+                _ = self.filtered
+
+            if self.checker.ext == "html":
+
+                self._formatted_got = self.soup.prettify()
+
+            else:
+
+                self._formatted_got = self.checker.provider.datain_to_str(
+                    self.rawdata, checker=self.checker
+                )
+
+        return self._formatted_got
+
+    @property
+    def soup(self):
+        """ BeautifulSoup from response html"""
+        if self._soup is None:
+            self._soup = bs(self.raw_html, "lxml")
+        return self._soup
+
+    @property
+    def html_in(self):
+        """ prettified raw response html"""
+        if self._html_in is None:
+            self._html_in = bs(self.raw_html, "lxml").prettify()
+        return self._html_in
+
+    @property
+    def raw_html(self):
+        """ raw response html"""
+        if self._raw_html is None:
+            if isinstance(self.data_in, str):
+                self._raw_html = self.data_in
+            else:
+                self._raw_html = self.data_in.content.decode("utf-8")
+        return self._raw_html
+
+    @property
+    def html(self):
+        "prettified final html, after filtering"
+        if self._html is None:
+            self._html = self.soup.prettify()
+        return self._html
+
+
+class HTTP_Provider(providers.PAbstractExtProvider):
+    def status_code(self, data: requests.models.Response):
+        "get status code"
+        try:
+            return data.status_code
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def content_type(self, data: requests.models.Response):
+        """ get content-type"""
+        # Django format
+        headers = getattr(data, "_headers", None)
+        if headers is not None:
+            res = headers["content-type"][1]
+            return res
+
+        return data.headers["content-type"]
+
+
+class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
+    """handles json http responses"""
+
+    TYPE_RAW = dict
+
+    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+        """convert data if needed"""
+        try:
+            if isinstance(data, str):
+                res = json.loads(data)
+                return res
+
+            for name in ["json", "getvalue"]:
+                f = getattr(data, name, None)
+                if callable(f):
+                    res = f()
+                    if isinstance(res, (str, bytes)) and name in ("json", "getvalue"):
+                        res = json.loads(res)
+                    if not isinstance(res, dict):
+                        raise ConfigurationException(
+                            f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+                        )
+
+                    return res
+            raise ConfigurationException(
+                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+            )
+
+        except (json.decoder.JSONDecodeError):
+            raise
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def select_by_string(
+        self,
+        validator: "Validator",
+        data_in: Any,
+        testee: Any,
+        selector: str,
+        temp: Any,
+        rawdata: Any,
+    ):
+        """ select data by string selector """
+        try:
+
+            # if not isinstance(data_in, Mapping):
+            #     data = self.prep_rawdata(validator.mgr.checker, data_in)
+            # else:
+            #     data = data_in
+
+            data = rawdata
+
+            if not "." in selector:
+                try:
+                    res = data[selector]
+                except (KeyError,) as e:
+                    msg = f"{repr(self)} validator={validator.name} : {e}:  Known keys : {list(data.keys())}"
+                    raise ConfigurationException(msg)
+            else:
+                path = ""
+                for part in selector.split("."):
+                    path += f".{part}"
+                    try:
+                        data = data[part]
+                    except (KeyError,) as e:
+                        msg = f"{repr(self)} : {validator.name} {e}:  {path=} Known keys : {list(data.keys())}"
+                        raise ConfigurationException(msg)
+
+                res = data
+
+            return res
+        # pragma: no cover pylint: disable=unused-variable
+        except (ConfigurationException,) as e:
+            breakpoint()  # 🛑
+            pass
+            raise
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+
+class HTML_Provider(HTTP_Provider):
+
+    TYPE_RAW = bs4.BeautifulSoup
+
+    def adjust_value_for_validation(
+        self,
+        checker: "Checker",
+        validator: "Validator",
+        fn: Callable,
+        value: Any,
+        exc: Exception = None,
+    ):
+        """ try to adjust for arbitrary validator functions"""
+        try:
+            if fn.__name__ in ("search", "match") and "re.Pattern" in str(fn):
+                if isinstance(value, bs4.element.ResultSet):
+                    return [v.text.strip() for v in value]
+
+            raise NotImplementedError()
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+        """convert data if needed"""
+        try:
+
+            if isinstance(data, str):
+                soup = bs(data, "lxml")
+                return soup
+
+            if isinstance(data, bs4.element.ResultSet):
+                v = "\n".join([str(v) for v in data])
+                soup = bs(v, "lxml")
+                return soup
+
+            for name in ["content", "html"]:
+                v = getattr(data, name, undefined)
+                if not v is undefined:
+                    soup = bs(v, "lxml")
+                    return soup
+
+            raise ConfigurationException(
+                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+            )
+
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    @classmethod
+    def datain_to_str(cls, data: Any, checker: "Checker", temp: LazyTemp = None) -> str:
+        """data to str"""
+        try:
+
+            if isinstance(data, bs4.BeautifulSoup):
+                return data.prettify().strip()
+
+            if isinstance(data, str):
+                return data.strip()
+
+            if isinstance(data, dict):
+                return json.dumps(data, indent=2, sort_keys=True).strip()
+
+            if isinstance(data, bs4.element.ResultSet):
+                li = [str(v) for v in data]
+                return "\n".join(li).strip()
+
+            d2 = getattr(data, "html", None)
+            if isinstance(d2, str):
+                return bs(d2, "lxml").prettify().strip()
+
+            d2 = getattr(data, "content", None)
+            if isinstance(d2, bytes):
+
+                content_type = getattr(data, "content_type", None)
+                if content_type is None:
+                    headers = getattr(data, "headers", {}) or getattr(
+                        data, "_headers", {}
+                    )
+
+                    content_type = headers.get("content-type")
+
+                    if isinstance(content_type, tuple):
+                        content_type = content_type[1]
+
+                content_type = content_type or "?"
+
+                if c.content_html in content_type:
+                    soup = bs(d2, "lxml")
+                    return soup.prettify().strip()
+                elif content_type == c.content_json:
+                    d3 = json.loads(d2)
+                    return json.dumps(d3, indent=2, sort_keys=True).strip()
+
+            raise ConfigurationException(
+                f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+            )
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    cls_temp = ValidatorTempHttp
+
+    def select_by_string(
+        self,
+        validator: "Validator",
+        data_in: Any,
+        testee: Any,
+        selector: str,
+        temp: Any,
+        rawdata: Any,
+    ):
+        """ select data by string selector """
+        if selector == "content_type":
+            return self.content_type(data_in)
+
+        temp = validator.mgr.temp
+        res = temp.soup.select(selector)
+        return res
+
+    def assert_equal(
+        self, testee: unittest.TestCase, validator: Validator, exp, got
+    ) -> bool:
+        """check if exp can be considered equal"""
+        try:
+            if isinstance(exp, str) and isinstance(got, bs4.element.ResultSet):
+                got2 = got[0].text.strip()
+                res = exp.strip() == got2
+                if not res:
+                    msg = f"{repr(validator)}\nexp\n{exp}\n!=\ngot\n{str(got2):60.60}\n"
+                    raise ValidationError(msg, validator, got2)
+
+                return res
+
+            elif not (type(exp) is type(got)):
+                if isinstance(exp, (list, tuple, set)) and isinstance(got, (int, str)):
+                    return got in exp
+
+            else:
+
+                msg = f"{exp} =! {got}"
+                raise ValidationError(msg=msg, validator=validator, got=got)
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def build_filter(self, v_in: Any) -> BFilter:
+        "build filter"
+        try:
+            if isinstance(v_in, dict):
+                raw = v_in.get("raw")
+                if raw is None:
+                    raw = True
+                v_in["raw"] = raw
+                if raw:
+                    filter2 = CSSFilter(**v_in)
+                else:
+                    filter2 = Filter(**v_in)
+
+            elif isinstance(v_in, str):
+                filter2 = CSSFilter(f=v_in)
+            else:
+                raise ConfigurationException(f"unsupported {v_in}")
+
+            return filter2
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def get_filtered_as_str(self, checker: "Checker"):
+        "convert filtered to string"
+        return self.datain_to_str(checker.temp.soup, checker)
+
+
+providers.di_ext_provider["html"] = HTML_Provider()
+providers.di_ext_provider["http_json"] = HttpJson_Provider()
+
+
+class c:
+    """ constant """
+
+    status_code = "status_code"
+    content_type = "content_type"
+
+    content_html = "text/html"
+    content_json = "application/json"
+
+
+validator_http = ValidatorMgr(
+    ext="html",
+    validators=[
+        dict(name=c.status_code, selector=select_by_provider, v=check_equal, exp=200),
+        dict(name=c.content_type, selector=select_by_provider, v=check_exp_in_data),
+    ],
+)
+
+validator_html = validator_http.extend(
+    dict(name="content_type", exp=c.content_html),
+    dict(name="title", selector="title", v=check_equal, scalar=True),
+)
+
+validator_json = validator_http.extend(
+    dict(name="content_type", exp=c.content_json), ext="json"
+)
+validator_json.alias = alias = "http_json"
