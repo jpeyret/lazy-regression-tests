@@ -5,9 +5,9 @@ from pathlib import Path
 import sys
 from importlib import import_module
 
-from lazy_regression_tests2.core_assist2 import LazyRoot, _LazyMeta
-from lazy_regression_tests2.utils import ppp, Dummy
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.core_assist2 import LazyRoot, _LazyMeta
+from lazy_regression_tests.utils import ppp, Dummy
+from lazy_regression_tests.common import (
     ValidatorMgr,
     FilterMgr,
     Checker,
@@ -15,7 +15,7 @@ from lazy_regression_tests2.common import (
     FunctionCheck,
 )
 
-from lazy_regression_tests2.constants import undefined
+from lazy_regression_tests.constants import undefined
 
 from typing import List, Tuple, Any, Dict, Optional
 import re
@@ -282,7 +282,7 @@ class PrinterClassValidatorContributions:
         Test_Compare_404    .active     : True
                             .selector   : select_by_provider
                             .exp        : [302, 200]
-                            .v          : FunctionCheck:lazy_regression_tests2.common.check_equal (data: Any, testee: unit
+                            .v          : FunctionCheck:lazy_regression_tests.common.check_equal (data: Any, testee: unit
 
         Mixin404            . ,,  👈 this is precisely where you want to show
                                      html=dict(name="status_code", exp=[302, 200]),
@@ -290,7 +290,7 @@ class PrinterClassValidatorContributions:
         MixinBaseLazy       .active     : True
                             .selector   : select_by_provider
                             .exp        : 200
-                            .v          : FunctionCheck:lazy_regression_tests2.common.check_equal (data: Any, testee: unit
+                            .v          : FunctionCheck:lazy_regression_tests.common.check_equal (data: Any, testee: unit
         CustomLazyMixin     . ,,                    
                     """
 
@@ -482,7 +482,7 @@ import click
 
 
 # pylint: disable=unused-import
-from lazy_regression_tests2.utils import set_cpdb, set_rpdb, set_breakpoints3
+from lazy_regression_tests.utils import set_cpdb, set_rpdb, set_breakpoints3
 
 # pylint: enable=unused-import
 

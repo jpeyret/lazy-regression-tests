@@ -25,7 +25,7 @@ bs = bs4.BeautifulSoup
 
 undefined = NotImplemented
 
-from lazy_regression_tests2.utils import set_cpdb, set_rpdb, ppp, first
+from lazy_regression_tests.utils import set_cpdb, set_rpdb, ppp, first
 
 
 def cpdb(*args, **kwargs):
@@ -35,9 +35,9 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests2.validators import ValidationError, ValidatorMgr, Validator
+from lazy_regression_tests.validators import ValidationError, ValidatorMgr, Validator
 
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.common import (
     check_equal,
     select_by_provider,
     check_exp_in_data,
@@ -45,9 +45,9 @@ from lazy_regression_tests2.common import (
 )
 
 
-import lazy_regression_tests2.providers as providers
+import lazy_regression_tests.providers as providers
 
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.common import (
     ValidatorTemp,
     LazyTemp,
     Filter,

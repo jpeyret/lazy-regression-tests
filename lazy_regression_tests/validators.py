@@ -9,9 +9,9 @@ import unittest
 #################################################################
 from more_itertools import partition
 
-from lazy_regression_tests2.utils import ppp
+from lazy_regression_tests.utils import ppp
 
-from lazy_regression_tests2.basics import (
+from lazy_regression_tests.basics import (
     ExtAlias,
     get_alias_from_ancestors,
     ValidationError,
@@ -23,8 +23,8 @@ from lazy_regression_tests2.basics import (
 undefined = NotImplemented
 verbose = False
 
-from lazy_regression_tests2.providers import di_ext_provider, DEFAULT_PROVIDER
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.providers import di_ext_provider, DEFAULT_PROVIDER
+from lazy_regression_tests.common import (
     Validator,
     ValidatorMgr,
     flatten_to_validators_dicts,

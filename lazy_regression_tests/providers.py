@@ -4,7 +4,7 @@ from io import StringIO
 import pprint
 import json
 
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.common import (
     ConfigurationException,
     LazyTemp,
     PAbstractExtProvider,

@@ -3,7 +3,7 @@
 from django.forms.utils import ErrorDict
 import unittest
 
-from lazy_regression_tests2.validators import Validator, AutoExp
+from lazy_regression_tests.validators import Validator, AutoExp
 
 
 def cpdb(*args, **kwargs):

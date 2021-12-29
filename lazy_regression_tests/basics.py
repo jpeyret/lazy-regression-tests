@@ -21,8 +21,8 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests2._baseutils import oshow as show, Subber, ppp
-import lazy_regression_tests2.constants as constants
+from lazy_regression_tests._baseutils import oshow as show, Subber, ppp
+import lazy_regression_tests.constants as constants
 
 verbose = constants.verbose
 

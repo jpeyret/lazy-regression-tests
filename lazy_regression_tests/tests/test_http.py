@@ -26,10 +26,10 @@ def cpdb(*args, **kwargs):
 
 rpdb = breakpoints = cpdb
 
-from lazy_regression_tests2.core_assist2 import _LazyMeta
+from lazy_regression_tests.core_assist2 import _LazyMeta
 
-from lazy_regression_tests2.tests.helper_tst import get_mock_env
-from lazy_regression_tests2.constants import OPT_DIRECTIVE_BASELINE
+from lazy_regression_tests.tests.helper_tst import get_mock_env
+from lazy_regression_tests.constants import OPT_DIRECTIVE_BASELINE
 
 
 di_mock_env = get_mock_env()
@@ -61,10 +61,10 @@ if __name__ == "__main__":
     breakpoints = set_breakpoints3() or breakpoints
 
 
-import lazy_regression_tests2.core_assist2 as core_assist2
-import lazy_regression_tests2.validators as validators
-import lazy_regression_tests2.filters as filters
-from lazy_regression_tests2.tests.helper_tst import (
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
+import lazy_regression_tests.filters as filters
+from lazy_regression_tests.tests.helper_tst import (
     get_fake_response,
     TData,
     get_fake_response_from_html,
@@ -73,12 +73,12 @@ from lazy_regression_tests2.tests.helper_tst import (
 # force verbosity flag
 verbose = core_assist2.verbose = validators.verbose = True
 
-from lazy_regression_tests2.validators_http import (
+from lazy_regression_tests.validators_http import (
     validator_html,
     Validator,
     validator_json,
 )
-from lazy_regression_tests2.common import ValidationError
+from lazy_regression_tests.common import ValidationError
 
 
 do_test_assertsame = os.getenv("do_test_assertsame")

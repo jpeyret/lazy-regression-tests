@@ -1,6 +1,6 @@
 from typing import Any, Callable
-import lazy_regression_tests2.providers as providers
-from lazy_regression_tests2.common import LazyTemp, ConfigurationException
+import lazy_regression_tests.providers as providers
+from lazy_regression_tests.common import LazyTemp, ConfigurationException
 
 import sqlparse
 

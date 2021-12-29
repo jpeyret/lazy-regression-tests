@@ -17,12 +17,12 @@ import sys
 
 from typing import Callable
 
-from lazy_regression_tests2.constants import OPT_DIRECTIVE_BASELINE
+from lazy_regression_tests.constants import OPT_DIRECTIVE_BASELINE
 
-from lazy_regression_tests2.basics import ConfigurationException
+from lazy_regression_tests.basics import ConfigurationException
 
-import lazy_regression_tests2.core_assist2 as core_assist2
-from lazy_regression_tests2.core_assist2 import _LazyMeta, Filter
+import lazy_regression_tests.core_assist2 as core_assist2
+from lazy_regression_tests.core_assist2 import _LazyMeta, Filter
 
 
 def cpdb(*args, **kwargs):

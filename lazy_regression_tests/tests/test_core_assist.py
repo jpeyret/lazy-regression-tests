@@ -44,31 +44,31 @@ if __name__ == "__main__":
     rpdb = set_rpdb()
     breakpoints = set_breakpoints3() or breakpoints
 
-from lazy_regression_tests2.core_assist2 import (
+from lazy_regression_tests.core_assist2 import (
     _LazyMeta,
     Filter,
     FilterMgr,
     LazyMixin,
     Checker,
 )
-from lazy_regression_tests2.filters import DictFilter
+from lazy_regression_tests.filters import DictFilter
 
 # from lazy_tstmixin import TstMixin
-import lazy_regression_tests2.core_assist2 as core_assist2
-import lazy_regression_tests2.validators as validators
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
 
-import lazy_regression_tests2.validators_http as validators_http
-import lazy_regression_tests2.common as common
+import lazy_regression_tests.validators_http as validators_http
+import lazy_regression_tests.common as common
 
 
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.common import (
     parse_pydantic_validation_error,
     ConfigurationException,
     ValidationError,
     ExtAlias,
     Auto,
 )
-from lazy_regression_tests2.tests.helper_tst import (
+from lazy_regression_tests.tests.helper_tst import (
     TData,
     TstMixinSeeder,
     get_fake_response_from_html,
@@ -514,7 +514,7 @@ class Test_LazyRoot(Base):
             # don't need to assume too much about the internals of core_assist
             # so lets keep this import limited to the test
             # pylint: disable=import-outside-toplevel
-            from lazy_regression_tests2.core_assist2 import LazyRoot
+            from lazy_regression_tests.core_assist2 import LazyRoot
 
             classes = self.gen_test_classes()
 

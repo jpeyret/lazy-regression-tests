@@ -5,11 +5,11 @@ from typing import Protocol, runtime_checkable, Optional, Dict, Any, Union, List
 from abc import abstractmethod
 from inspect import signature
 
-from lazy_regression_tests2._baseutils import DictFormatter, def_repr
+from lazy_regression_tests._baseutils import DictFormatter, def_repr
 
 from pydantic import BaseModel, Field, validator, root_validator, Extra
 
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.common import (
     ConfigurationException,
     TU_NOCATCH,
     LazyTemp,

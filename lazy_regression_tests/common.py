@@ -52,9 +52,9 @@ di_ext_provider = {}
 
 warning = "\n🧨 "
 
-import lazy_regression_tests2.constants as constants
+import lazy_regression_tests.constants as constants
 
-from lazy_regression_tests2.basics import (
+from lazy_regression_tests.basics import (
     ExtAlias,
     ExecInfo,
     MediatedEnvironDict,
@@ -81,7 +81,7 @@ def _checktypes(got, exp, validator: "Validator"):
         )
 
 
-from lazy_regression_tests2._baseutils import (
+from lazy_regression_tests._baseutils import (
     DictFormatter,
     Dummy,
     def_repr,

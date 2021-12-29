@@ -15,20 +15,20 @@ from pathlib import Path
 #################################################################
 from more_itertools import partition
 
-from lazy_regression_tests2.basics import get_alias_from_ancestors
+from lazy_regression_tests.basics import get_alias_from_ancestors
 
-from lazy_regression_tests2.providers import (
+from lazy_regression_tests.providers import (
     di_ext_provider,
     PAbstractExtProvider,
     DEFAULT_PROVIDER,
 )
-from lazy_regression_tests2.validators import ValidatorMgr, build_validators_for_class
-from lazy_regression_tests2.constants import (
+from lazy_regression_tests.validators import ValidatorMgr, build_validators_for_class
+from lazy_regression_tests.constants import (
     ENVIRONMENT_VARNAME_ROOT,
     LAZY_HEADER_SEPARATOR,
     TIMEOUT_MAXTIME_TO_ALLOW,
 )
-from lazy_regression_tests2.common import (
+from lazy_regression_tests.common import (
     ExtAlias,
     ConfigurationException,
     TU_NOCATCH,
@@ -40,7 +40,7 @@ from lazy_regression_tests2.common import (
 
 # import constants
 
-from lazy_regression_tests2.filters import Filter, FilterMgr, BFilter
+from lazy_regression_tests.filters import Filter, FilterMgr, BFilter
 
 
 def cpdb(*args, **kwargs):
@@ -61,7 +61,7 @@ undefined = NotImplemented
 
 from pydantic import BaseModel, Field
 
-from lazy_regression_tests2._baseutils import set_cpdb, set_rpdb, set_breakpoints3, ppp
+from lazy_regression_tests._baseutils import set_cpdb, set_rpdb, set_breakpoints3, ppp
 
 
 if __name__ == "__main__":

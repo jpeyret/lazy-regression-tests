@@ -28,9 +28,9 @@ if __name__ == "__main__":
 
 print(f"\n\n\n{os.getcwd()=}\n\n\n")
 
-import lazy_regression_tests2.core_assist2 as core_assist2
-import lazy_regression_tests2.validators as validators
-from lazy_regression_tests2.tests.helper_tst import TData
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
+from lazy_regression_tests.tests.helper_tst import TData
 
 # force verbosity flag
 verbose = core_assist2.verbose = validators.verbose = True

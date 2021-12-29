@@ -2,8 +2,8 @@
 
 from typing import Any
 import unittest
-from lazy_regression_tests2.common import Validator, ValidationError
-from lazy_regression_tests2.basics import ConfigurationException, Auto
+from lazy_regression_tests.common import Validator, ValidationError
+from lazy_regression_tests.basics import ConfigurationException, Auto
 
 from collections.abc import Mapping
 
