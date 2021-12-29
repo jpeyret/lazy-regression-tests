@@ -173,27 +173,10 @@ def build_validators_for_class(
             alias = di_alias.get(ext)
             if not alias:
                 alias = get_alias_from_ancestors(cls, ancestors_in, ext)
-                # ppp(dict(
-                #     di_ext_provider=di_ext_provider
-                #     ,ext=ext
-                #     ,alias=alias
-                #     ,ext_provider=di_ext_provider.get(ext)
-                #     ,alias_provider=di_ext_provider.get(alias)
-                # ))
-
-                # breakpoint() #🛑
-                # pass
                 if alias:
                     pass
                     di_alias[ext] = alias
             validators = list(di.values())
-
-            # if DisableAll in validators:
-            #     breakpoint() #🛑
-            #     pass
-            #     print(f"ante:{[v for v in validators]}")
-            #     validators = validators[validators.index(DisableAll)+1:]
-            #     print(f"post:{[v for v in validators]}")
 
             di_init = dict(ext=ext, alias=alias, validators=validators)
 
