@@ -353,9 +353,6 @@ def lazyinfo(
         error = error = bool(exception)
         outinfo = OutInfo(error=error)
         if testee:
-            if rpdb():  # pragma: no cover
-                breakpoint()
-                pass
             outinfo.testmodule = testee.__module__
             outinfo.testclass = testee.__class__.__name__
             outinfo.testmethod = testee._testMethodName
@@ -402,9 +399,6 @@ def lazyinfo(
 
         out = outinfo.dumps()
 
-        # breakpoint() #🛑
-        # pass
-
         fnpo = Path(dn_out) / fn_o
 
         if exception:
@@ -431,6 +425,12 @@ def lazyinfo(
             with fnpo.open("w") as fo:
                 fo.write(out)
 
+            if exception:
+                msg = f"\n\n🐝diagnostics, usable with jlazyinfo.py are in :{fnpo}"
+                args = exception.args
+                if args and isinstance(args[0], str):
+                    arg0 = args[0] + msg
+                    exception.args = (arg0,) + exception.args[1:]
         return res
 
     # pragma: no cover pylint: disable=unused-variable
