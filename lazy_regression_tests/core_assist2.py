@@ -119,7 +119,7 @@ class _HelperRoot:
 
 @dataclass
 class LazyRoot:
-    """ 
+    """
     class and instance level root behavior for lazy
     intent is to allow things like `self.lz.html.val.title`
     """
@@ -140,17 +140,12 @@ class LazyRoot:
         return sorted(self._extensions)
 
     def clone(self, testee=None):
-        """ clone a LazyRoot """
+        """clone a LazyRoot"""
         try:
             validators = []
             for v in self.validators:
                 validators.append(v.copy(deep=True, exclude={"checker"}))
-            # filters = []
-            # for fmgr in self.filters:
-            #     f2 = fmgr.copy(deep=True, exclude={"checker", "h"})
-            #     f2.checker = None
-            #     f2.h =
-            #     filters.append(f2)
+
             filters = [fmgr.clone() for fmgr in self.filters]
             dupe = LazyRoot(validators=validators, filters=filters, testee=testee)
             if testee:
@@ -165,7 +160,7 @@ class LazyRoot:
             raise
 
     def __getattr__(self, attrname: str) -> Checker:
-        """ route anything unknown to the helper
+        """route anything unknown to the helper
         should be a Checker for the extension
         """
 
@@ -203,8 +198,8 @@ class LazyRoot:
 def build_filters_for_class(
     cls: type, ancestors_in: List[type], di_alias: Dict[str, str]
 ):
-    """ build FilterMgrs for a class by adding up filters by extension from all its supers and itself
-        and assign them to cls_Filters
+    """build FilterMgrs for a class by adding up filters by extension from all its supers and itself
+    and assign them to cls_Filters
     """
     try:
         di_filter = defaultdict(list)
@@ -236,10 +231,14 @@ def build_filters_for_class(
         di_filtermgr = {}
         for name, filters in di_filter.items():
             di = {}
+            filters0 = filters
             alias = None
 
             # ExtProvider by name or alias
             if isinstance(filters, (list, tuple)):
+                # if name == "settings":
+                #     breakpoint() #🛑
+                #     pass
                 filters, aliases = [
                     list(v) for v in partition(ExtAlias.is_instance, filters)
                 ]
@@ -302,7 +301,7 @@ def build_filters_for_class(
 
 
 class LazyMixin:
-    """ added Lazy functionality at the TestCase level """
+    """added Lazy functionality at the TestCase level"""
 
     # populated by _LazyMeta
     cls_filters: Dict[str, FilterMgr]
@@ -327,7 +326,7 @@ class LazyMixin:
     else:
         #
         def assertEqualTimed(self, exp, got, message=None):
-            """ fallback if timeout package is not available """
+            """fallback if timeout package is not available"""
             try:
                 self.assertEqual(exp, got, message)
             except (AssertionError,) as e:
@@ -336,8 +335,8 @@ class LazyMixin:
 
 class _LazyMeta(type):
     def __new__(mcls, clsname, bases, dct):
-        """ 
-        1. decorate class with custom methods 
+        """
+        1. decorate class with custom methods
         2. inject LazyMixin, ONCE, into bases
         """
         try:
@@ -358,7 +357,7 @@ class _LazyMeta(type):
             # working at runtime
             # pylint: disable=bad-super-call
             def initialize_instance(self, *args, **kwargs):
-                """ injecting an `__init__` that will happen before the TestCase.__init__"""
+                """injecting an `__init__` that will happen before the TestCase.__init__"""
                 super(newclass, self).__init__(*args, **kwargs)  # type: ignore
                 # self.filters = {k: v.copy(deep=True) for k, v in self.cls_filters.items()}
                 self.lz = self.__class__.lz.clone(testee=self)
@@ -380,7 +379,7 @@ class _LazyMeta(type):
             raise
 
     def __init__(cls, name, bases, attrs, **kwargs):
-        """ aggregate cls_filters, cls_validators from ancestors and cls """
+        """aggregate cls_filters, cls_validators from ancestors and cls"""
         try:
             li_bases2current = list(reversed(cls.mro()))
 
