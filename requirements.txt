@@ -6,3 +6,6 @@
 #########################################
 
 timeout-decorator==0.4.*
+cchardet==2.*
+lxml==4.*
+responses==0.*

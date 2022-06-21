@@ -65,7 +65,19 @@ class CSSFilter(RawFilter):
 
     @pydantic.validator("f", pre=True)
     def build_filter(cls, selector, values):
-        """ prep the filter wrapper """
+        """prep the filter wrapper"""
+
+        # name = v_in["name"]
+        print(f"\n\n🔬{cls.__name__}.build_filter:{values=}")
+
+        name = values.get("name")
+        print(f"{name=}")
+        # breakpoint() #🛑
+
+        if breakpoints("build_filter", {"name": name}):  # pragma: no cover
+            print(f"\n\n🔬🔬🔬name:{name}")
+            breakpoint()
+
         if not isinstance(selector, str):
             raise ConfigurationException(
                 f"{cls=}.build_filter.unsupported selector {selector=}[{type(selector)}]"
@@ -74,7 +86,7 @@ class CSSFilter(RawFilter):
         return selector
 
     def filter(self, temp: "ValidatorTempHttp") -> Any:
-        """ mutate data in place"""
+        """mutate data in place"""
         # need to work with the soup, not the response
         li = temp.soup.select(self.f)
 
@@ -120,21 +132,21 @@ class ValidatorTempHttp(ValidatorTemp):
 
     @property
     def soup(self):
-        """ BeautifulSoup from response html"""
+        """BeautifulSoup from response html"""
         if self._soup is None:
             self._soup = bs(self.raw_html, "lxml")
         return self._soup
 
     @property
     def html_in(self):
-        """ prettified raw response html"""
+        """prettified raw response html"""
         if self._html_in is None:
             self._html_in = bs(self.raw_html, "lxml").prettify()
         return self._html_in
 
     @property
     def raw_html(self):
-        """ raw response html"""
+        """raw response html"""
         if self._raw_html is None:
             if isinstance(self.data_in, str):
                 self._raw_html = self.data_in
@@ -162,7 +174,7 @@ class HTTP_Provider(providers.PAbstractExtProvider):
             raise
 
     def content_type(self, data: requests.models.Response):
-        """ get content-type"""
+        """get content-type"""
         # Django format
         headers = getattr(data, "_headers", None)
         if headers is not None:
@@ -217,7 +229,7 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
         temp: Any,
         rawdata: Any,
     ):
-        """ select data by string selector """
+        """select data by string selector"""
         try:
 
             # if not isinstance(data_in, Mapping):
@@ -270,7 +282,7 @@ class HTML_Provider(HTTP_Provider):
         value: Any,
         exc: Exception = None,
     ):
-        """ try to adjust for arbitrary validator functions"""
+        """try to adjust for arbitrary validator functions"""
         try:
             if fn.__name__ in ("search", "match") and "re.Pattern" in str(fn):
                 if isinstance(value, bs4.element.ResultSet):
@@ -349,10 +361,10 @@ class HTML_Provider(HTTP_Provider):
 
                 content_type = content_type or "?"
 
-                if c.content_html in content_type:
+                if co.content_html in content_type:
                     soup = bs(d2, "lxml")
                     return soup.prettify().strip()
-                elif content_type == c.content_json:
+                elif content_type == co.content_json:
                     d3 = json.loads(d2)
                     return json.dumps(d3, indent=2, sort_keys=True).strip()
 
@@ -377,7 +389,7 @@ class HTML_Provider(HTTP_Provider):
         temp: Any,
         rawdata: Any,
     ):
-        """ select data by string selector """
+        """select data by string selector"""
         if selector == "content_type":
             return self.content_type(data_in)
 
@@ -417,6 +429,19 @@ class HTML_Provider(HTTP_Provider):
     def build_filter(self, v_in: Any) -> BFilter:
         "build filter"
         try:
+
+            name = v_in["name"]
+            print(f"\n\n{self}.build_filter:name={name}")
+            # breakpoint() #🛑
+            # pass
+
+            if breakpoints("build_filter", {"name": name}):  # pragma: no cover
+                print(f"\n\n🔬🔬🔬name:{name}")
+                breakpoint()
+
+            # breakpoint() #🛑
+            # pass
+
             if isinstance(v_in, dict):
                 raw = v_in.get("raw")
                 if raw is None:
@@ -449,8 +474,8 @@ providers.di_ext_provider["html"] = HTML_Provider()
 providers.di_ext_provider["http_json"] = HttpJson_Provider()
 
 
-class c:
-    """ constant """
+class co:
+    """constant"""
 
     status_code = "status_code"
     content_type = "content_type"
@@ -462,17 +487,17 @@ class c:
 validator_http = ValidatorMgr(
     ext="html",
     validators=[
-        dict(name=c.status_code, selector=select_by_provider, v=check_equal, exp=200),
-        dict(name=c.content_type, selector=select_by_provider, v=check_exp_in_data),
+        dict(name=co.status_code, selector=select_by_provider, v=check_equal, exp=200),
+        dict(name=co.content_type, selector=select_by_provider, v=check_exp_in_data),
     ],
 )
 
 validator_html = validator_http.extend(
-    dict(name="content_type", exp=c.content_html),
+    dict(name="content_type", exp=co.content_html),
     dict(name="title", selector="title", v=check_equal, scalar=True),
 )
 
 validator_json = validator_http.extend(
-    dict(name="content_type", exp=c.content_json), ext="json"
+    dict(name="content_type", exp=co.content_json), ext="json"
 )
 validator_json.alias = alias = "http_json"
