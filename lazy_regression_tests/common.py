@@ -650,6 +650,55 @@ class PTextFilterWrapper(PAbstractFilterWrapper):
         """takes a str and returns a bool on match or not"""
 
 
+class RegexSubstitFilter(BFilter):
+    """replaces line contents using regex.sub, if there is a match
+    does not cause filtering however, because `filter`'s holdback is always
+    False
+    """
+
+    f: str
+    replace: str
+    patre: Any = None
+
+    class Config:
+        "pydantic config"
+        validate_assignment = arbitrary_types_allowed = True
+
+    def __init__(self, **kwargs):
+        try:
+            super().__init__(**kwargs)
+            self.patre = re.compile(self.f)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def filter(self, line: str) -> (bool, str):
+        """
+        returns
+        holdback: False
+        line    : transform if the regex was a match
+
+        note:  if the line is usually expected NOT to match
+        it is faster to test and then sub on a match.
+        """
+        try:
+
+            hit = self.patre.search(line)
+            if not hit:
+                return False, line
+            else:
+                line2 = self.patre.sub(self.replace, line)
+                return False, line2
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+
 class Filter(BFilter):
     """text filter"""
 
@@ -700,7 +749,6 @@ class Filter(BFilter):
         - holdback : bool whether a line should be filtered out
         - line     : (potentially modified in other subclasses)
         """
-        # 🏷004.lazy.047.substit_filter
         if not self.invert:
             return self.f.match(line), line
         else:
