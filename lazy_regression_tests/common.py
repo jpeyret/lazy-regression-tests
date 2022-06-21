@@ -69,7 +69,7 @@ from lazy_regression_tests.basics import (
 
 
 def _checktypes(got, exp, validator: "Validator"):
-    """ warn if there was type mismatch """
+    """warn if there was type mismatch"""
     if not isinstance(got, type(exp)):
 
         if validator:
@@ -96,8 +96,8 @@ undefined = NotImplemented
 
 class _Control(object):
     """unifies environment and function arguments
-       to determine handlers for IOError and AssertionError
-       save in the LazyTemp results object as well.
+    to determine handlers for IOError and AssertionError
+    save in the LazyTemp results object as well.
     """
 
     def __init__(
@@ -115,9 +115,9 @@ class _Control(object):
 
     @property
     def save_raw(self):
-        """ this depend on 2 environmental settings:
-            :param lzrt_save_raw_received_data : if it it's set we can do it
-            :param lzrt_template_dirname_report : where to put it
+        """this depend on 2 environmental settings:
+        :param lzrt_save_raw_received_data : if it it's set we can do it
+        :param lzrt_template_dirname_report : where to put it
         """
 
         if self._save_raw is undefined:
@@ -129,15 +129,15 @@ class _Control(object):
 
     @property
     def save_rraw(self):
-        """ 
-            saves Really raw got, before formatting.  
-            
-            For example if you suspect Beautifulsoup formatting is fixing some html errors that trip 
-            up the actual page.
+        """
+        saves Really raw got, before formatting.
 
-            this depend on 2 environmental settings:
-            :param lzrt_save_rraw_received_data : if it it's set we can do it
-            :param lzrt_template_dirname_report : where to put it
+        For example if you suspect Beautifulsoup formatting is fixing some html errors that trip
+        up the actual page.
+
+        this depend on 2 environmental settings:
+        :param lzrt_save_rraw_received_data : if it it's set we can do it
+        :param lzrt_template_dirname_report : where to put it
         """
 
         if self._save_rraw is undefined:
@@ -168,7 +168,7 @@ class _Control(object):
         default behavior, when unset:
 
         - `exp` file is loaded and compared to `got` data
-        - if the `exp` file is missing: 
+        - if the `exp` file is missing:
             - the `got` data is written to both the `exp` and `got` file
             - return success
         """
@@ -194,7 +194,13 @@ class _Control(object):
         return self.directive == constants.OPT_DIRECTIVE_NOASSERT
 
     def skip(self):
-        return self.directive == constants.OPT_DIRECTIVE_SKIP
+        try:
+            return self.directive == constants.OPT_DIRECTIVE_SKIP
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
 
     def baseline(self):
         return self.directive == constants.OPT_DIRECTIVE_BASELINE
@@ -247,7 +253,7 @@ class ValidatorTemp:
 
     @property
     def formatted_got(self):
-        """ filter if needed, then format input data """
+        """filter if needed, then format input data"""
         try:
             if self._formatted_got is undefined:
 
@@ -272,7 +278,7 @@ class ValidatorTemp:
 
     @property
     def filtered(self):
-        """ build filtered on the fly, if needed"""
+        """build filtered on the fly, if needed"""
         try:
             if self._filtered is None:
                 self._filtered = FilterDict()
@@ -289,7 +295,7 @@ class ValidatorTemp:
 
     @filtered.setter
     def filtered(self, di: Dict[str, Any]):
-        """ update the filtered with new values """
+        """update the filtered with new values"""
         try:
 
             if self._filtered is None:
@@ -338,7 +344,7 @@ class ValidatorTemp:
 
 @runtime_checkable
 class PAbstractExtProvider(Protocol):
-    """ 
+    """
     provides services to the FilterMgr that are specific to its extension
     - vetting RawFilters data_in
     - <data>_to_str services
@@ -395,7 +401,7 @@ class PAbstractExtProvider(Protocol):
         value: Any,
         exc: Exception = None,
     ):
-        """ try to adjust for arbitrary validator functions"""
+        """try to adjust for arbitrary validator functions"""
         try:
             raise NotImplementedError()
         # pragma: no cover pylint: disable=unused-variable
@@ -405,7 +411,7 @@ class PAbstractExtProvider(Protocol):
             raise
 
     def set_data(self, checker: "Checker", temp: ValidatorTemp, value: Any):
-        """ set data on the temp but format to raw as needed"""
+        """set data on the temp but format to raw as needed"""
         try:
             if isinstance(value, self.TYPE_RAW):
                 temp.rawdata = value
@@ -421,7 +427,7 @@ class PAbstractExtProvider(Protocol):
             raise
 
     def get_temp(self, checker: "Checker", data_in: Any, **kwargs) -> ValidatorTemp:
-        """ return temp work """
+        """return temp work"""
         try:
 
             hash_ = hash(self.datain_to_str(data_in, checker))
@@ -453,7 +459,7 @@ class PAbstractExtProvider(Protocol):
     filter_class: BFilter
 
     def build_filter(self, v_in: Any) -> BFilter:
-        " build filter "
+        "build filter"
         try:
 
             filter_class = getattr(self, "filter_class", Filter)
@@ -489,7 +495,7 @@ class PAbstractExtProvider(Protocol):
         temp: Any,
         rawdata: Any,
     ):
-        """ select data by string selector """
+        """select data by string selector"""
         try:
 
             if isinstance(data_in, Mapping):
@@ -537,7 +543,7 @@ class PAbstractExtProvider(Protocol):
 
 
 def parse_pydantic_validation_error(src):
-    """ extract some validation error info """
+    """extract some validation error info"""
     try:
 
         errors = getattr(src, "errors", None)
@@ -573,7 +579,7 @@ TU_DEBUG_NOCATCH = tuple()
 
 
 def get_immediate_raises(debug: bool) -> Tuple[Exception]:
-    """ these exceptions are getting thrown back to the caller without debug/cpdb"""
+    """these exceptions are getting thrown back to the caller without debug/cpdb"""
     return TU_DEBUG_NOCATCH if debug else TU_NOCATCH
 
 
@@ -612,11 +618,11 @@ class PAbstractFilterWrapper(Protocol):
     __repr__ = def_repr
 
     def __eq__(self, other):
-        """ see notes on hash """
+        """see notes on hash"""
         return self.func == other.func
 
     def __hash__(self):
-        """ hash whatever is in self.func 
+        """hash whatever is in self.func
         be careful : the hash here is consider the "pivot point"
         to support updating Filters in succession.
 
@@ -641,18 +647,18 @@ class PTextFilterWrapper(PAbstractFilterWrapper):
 
     @abstractmethod
     def match(self, line: str) -> bool:
-        """ takes a str and returns a bool on match or not"""
+        """takes a str and returns a bool on match or not"""
 
 
 class Filter(BFilter):
-    """ text filter"""
+    """text filter"""
 
     # the filter proper
     f: PTextFilterWrapper
 
     @pydantic.validator("f", pre=True)
     def build_filter(cls, v_in, values) -> PAbstractFilterWrapper:
-        """ prep the filter wrapper """
+        """prep the filter wrapper"""
         try:
 
             if isinstance(v_in, str):
@@ -689,7 +695,8 @@ class Filter(BFilter):
             raise
 
     def filter(self, line: str) -> bool:
-        """returns whether a line matches the filter """
+        """returns whether a line matches the filter"""
+        # 🏷003.testing.004.tr_odd_even
         if not self.invert:
             return self.f.match(line)
         else:
@@ -697,7 +704,7 @@ class Filter(BFilter):
 
     @pydantic.root_validator
     def _init(cls: Any, values: Dict[str, Any]) -> Dict[str, Any]:
-        """ root validator, checks all is good, especially `f` filter """
+        """root validator, checks all is good, especially `f` filter"""
         try:
 
             if values.get("f") is None:
@@ -734,7 +741,7 @@ class TextFilterWrapper(PTextFilterWrapper):
 
 
 class RegexFilterWrapper(TextFilterWrapper):
-    """ same as TextFilterWrapper, just name different. func is regex.search"""
+    """same as TextFilterWrapper, just name different. func is regex.search"""
 
 
 class RawFilter(Filter):
@@ -746,7 +753,7 @@ class RawFilter(Filter):
 
     @abstractmethod
     def filter(self, vtemp: ValidatorTemp) -> Any:
-        """ mutate data in place"""
+        """mutate data in place"""
 
 
 class PDictFilterWrapper(PAbstractFilterWrapper):
@@ -754,7 +761,7 @@ class PDictFilterWrapper(PAbstractFilterWrapper):
 
     @abstractmethod
     def apply(self, data: dict) -> None:
-        """ mutate a dict in place """
+        """mutate a dict in place"""
 
 
 class DictFilterWrapper(PDictFilterWrapper):
@@ -771,7 +778,7 @@ class DictFilterWrapper(PDictFilterWrapper):
         self.func = repr(di_filt.items())
 
     def apply(self, data: dict) -> Dict[str, Any]:
-        """ 
+        """
         mutate dict in place for filtering. return is a dict of
         filtered items by filter name
         """
@@ -796,7 +803,7 @@ class DictFilter(RawFilter):
 
     @pydantic.validator("f")
     def build_filter(cls, v_in: Any, values: Dict[str, Any]):
-        """ prep the filter wrapper """
+        """prep the filter wrapper"""
         try:
             if isinstance(v_in, PDictFilterWrapper):
                 return v_in
@@ -813,7 +820,7 @@ class DictFilter(RawFilter):
 
     @pydantic.root_validator
     def _init(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """root validator, make sure everything is good, esp `f` filter attribute """
+        """root validator, make sure everything is good, esp `f` filter attribute"""
         try:
             if values.get("f") is None:
                 di = {values["name"]: None}
@@ -828,7 +835,7 @@ class DictFilter(RawFilter):
             raise
 
     def filter(self, data: Union[ValidatorTemp, dict]) -> dict:
-        """apply filter and return filtered-out items in a dict """
+        """apply filter and return filtered-out items in a dict"""
         try:
             if not isinstance(data, dict):
                 data = data.rawdata
@@ -842,7 +849,7 @@ class DictFilter(RawFilter):
 
 
 class _HelperFilterMgr:
-    """ various lookups and functions, kept out of Pydantic code"""
+    """various lookups and functions, kept out of Pydantic code"""
 
     __repr__ = def_repr
 
@@ -900,7 +907,7 @@ class FilterMgr(pydantic.BaseModel):
         extra = pydantic.Extra.forbid
 
     def filter(self, data_in: Any = None) -> str:
-        """ filter data and return as string representation """
+        """filter data and return as string representation"""
         try:
 
             if data_in:
@@ -942,6 +949,8 @@ class FilterMgr(pydantic.BaseModel):
                 lines = []
                 for line in lines_in:
                     for filter_ in tfilters:
+                        # 🏷003.testing.004.tr_odd_even
+                        # 🐝this is where you want to format rather than hold back
                         if filter_.filter(line):
                             if filter_.name:
                                 # textfilters do not do scalar
@@ -970,7 +979,7 @@ class FilterMgr(pydantic.BaseModel):
     __call__ = filter
 
     def __add__(self, value_in):
-        """ add a validator """
+        """add a validator"""
         try:
             value = None
             if isinstance(value_in, dict):
@@ -1037,7 +1046,7 @@ class Checker:
     ENVIRONMENT_VARNAME_ROOT = constants.ENVIRONMENT_VARNAME_ROOT
 
     def __post_init__(self):
-        """ link itself to its filters/validators"""
+        """link itself to its filters/validators"""
         try:
 
             alias_v = alias_f = None
@@ -1117,7 +1126,7 @@ class Checker:
         reset: bool = False,
         filter_: bool = True,
     ):
-        """ is the data same as the last time? """
+        """is the data same as the last time?"""
         try:
 
             if reset:
@@ -1305,7 +1314,7 @@ class Checker:
     else:
         #
         def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
-            """ fallback if timeout package is not available """
+            """fallback if timeout package is not available"""
             try:
                 testee.assertEqual(exp, got, message)
             except (AssertionError,) as e:
@@ -1316,7 +1325,7 @@ class Checker:
                 raise
 
     def format_assertion_message(self, ori, tmp: LazyTemp, testee):
-        """ message thrown on assert_same failures"""
+        """message thrown on assert_same failures"""
 
         message = f"""
 
@@ -1343,7 +1352,7 @@ Original exception:
 
 
 class TextExtProvider(PAbstractExtProvider):
-    """ support text data """
+    """support text data"""
 
     extension = "txt"
 
@@ -1397,7 +1406,7 @@ class ValidatorCheck(Protocol):
 
 
 class FunctionCheck(ValidatorCheck):
-    """ basic unit of validation:  calls a wrapped function """
+    """basic unit of validation:  calls a wrapped function"""
 
     def __repr__(self):
 
@@ -1420,7 +1429,7 @@ class FunctionCheck(ValidatorCheck):
         return hash(self.f)
 
     def __init__(self, f: Callable) -> None:
-        """ init """
+        """init"""
 
         if not callable(f):
             raise ConfigurationException(f"{f=} is not callable")
@@ -1428,7 +1437,7 @@ class FunctionCheck(ValidatorCheck):
         self.f = f
 
     def is_valid(self, value: Any, testee, validator: "Validator") -> bool:
-        """ 
+        """
         check if the validation function return True or raises
         AssertionError
 
@@ -1501,7 +1510,7 @@ DEFAULT_OPTIONS = Options()
 
 
 class Validator(pydantic.BaseModel):
-    """ the core validation mechanism """
+    """the core validation mechanism"""
 
     # name needs to exist right away, rest can be added later
     name: str
@@ -1524,7 +1533,7 @@ class Validator(pydantic.BaseModel):
 
     @pydantic.validator("selector", pre=True)
     def build_selector(cls, value, values, config, field):
-        """ how to extract data of interest? """
+        """how to extract data of interest?"""
         try:
             try:
                 specials = value in Selectors
@@ -1548,7 +1557,7 @@ class Validator(pydantic.BaseModel):
 
     @pydantic.validator("v", pre=True)
     def build_validator(cls, value, values, config, field):
-        """ prep the validator wrapper """
+        """prep the validator wrapper"""
         try:
             # options = values["options"]
             if value in S_VALIDATIONS:
@@ -1631,7 +1640,7 @@ _callibration_signatures = (
 
 
 def is_custom_checker(f: Any) -> bool:
-    """ check signature for a match """
+    """check signature for a match"""
     try:
         if not callable(f):
             return False
@@ -1658,7 +1667,7 @@ class ValidatorMgr(pydantic.BaseModel):
     alias: Optional[str] = None
 
     def __sub__(self, value_in):
-        """ logically delete a validator by setting active to False"""
+        """logically delete a validator by setting active to False"""
         try:
             try:
                 if isinstance(value_in, str):
@@ -1690,7 +1699,7 @@ class ValidatorMgr(pydantic.BaseModel):
             raise
 
     def __add__(self, value_in):
-        """ add a validator """
+        """add a validator"""
         try:
             value = None
             if isinstance(value_in, dict):
@@ -1737,7 +1746,7 @@ class ValidatorMgr(pydantic.BaseModel):
         arbitrary_types_allowed = True
 
     def assert_valid(self, data, debug=False):
-        """ runs the validations"""
+        """runs the validations"""
         try:
 
             tu_raise = (
@@ -1781,7 +1790,7 @@ class ValidatorMgr(pydantic.BaseModel):
     __call__ = assert_valid
 
     def extend(self, *adds, ext: str = None, alias: str = None) -> "ValidatorMgr":
-        """ returns a new ValidationMgr with additional configuration"""
+        """returns a new ValidationMgr with additional configuration"""
         try:
 
             # TODO:  delete debug code
@@ -1885,7 +1894,7 @@ class ValidatorMgr(pydantic.BaseModel):
 
 
 class SameAssertor:
-    """ v4 SameChecker """
+    """v4 SameChecker"""
 
     T_FILENAME = (
         "%(filename)s %(classname)s %(_testMethodName)s %(suffix)s %(lazy_extension)s"
@@ -1905,7 +1914,7 @@ class SameAssertor:
         suffix: Optional[str] = "",
         basename_prefix: str = "",
     ) -> Path:
-        """ get the save path """
+        """get the save path"""
 
         try:
 
@@ -1972,9 +1981,9 @@ class SameAssertor:
             raise
 
     def _get_fnp_raw(self, suffix, control, tmp, got):
-        """ 
+        """
         where do we save the raw received data,
-        after formatting, but before filtering ? 
+        after formatting, but before filtering ?
         """
 
         try:
@@ -1994,7 +2003,7 @@ class SameAssertor:
             raise
 
     def _lazy_get_t_dirname(self, exp_got, subber, control, testee):
-        """ get the template for the directory names where to save files """
+        """get the template for the directory names where to save files"""
         try:
 
             env_name = dict(
@@ -2025,15 +2034,14 @@ class SameAssertor:
             raise
 
     def _handle_dirname_extras(self, _litd):
-        """ allows injection of extra instance-set attributes into the directory hierarchies
-        The intent of `lazy_dirname_extras` is to partition tests by other attributes, like say 
+        """allows injection of extra instance-set attributes into the directory hierarchies
+        The intent of `lazy_dirname_extras` is to partition tests by other attributes, like say
         a site name or a test database name.
         given `lazy_dirname_extras = "site"` and `self.site = 'example.com'`
         .
         └── <myclass>
             ├── example.com
             │   └── <get_basename>.<myclass>.<_testMethodName>.txt
-
         """
 
         try:
@@ -2062,7 +2070,7 @@ class SameAssertor:
 
 
 class Selectors(str, Enum):
-    """ some basic selector approaches"""
+    """some basic selector approaches"""
 
     # use Validator.name as the selector
     # ex: status_code will result in getattr(data, "status_code")
@@ -2076,7 +2084,7 @@ def check_equal(
     validator: "Validator",
     exp: Optional[Any] = None,
 ) -> bool:
-    """ check testee.exp == data """
+    """check testee.exp == data"""
 
     try:
 
@@ -2130,7 +2138,7 @@ def check_exp_in_data(
     validator: "Validator",
     exp: Optional[Any] = None,
 ) -> bool:
-    """ check data in testee.exp"""
+    """check data in testee.exp"""
     try:
 
         exp = exp or validator.exp
@@ -2158,7 +2166,7 @@ def check_in(
     validator: "Validator",
     exp: Optional[Any] = None,
 ) -> bool:
-    """ check data in testee.exp"""
+    """check data in testee.exp"""
     try:
 
         exp = exp or validator.exp
@@ -2183,7 +2191,7 @@ def check_in(
 
 
 def check_not_in(data, testee, validator):
-    """ check data not in testee.exp"""
+    """check data not in testee.exp"""
     return data not in validator.exp
 
 
@@ -2217,7 +2225,7 @@ def flatten_to_validators_dicts(
     li: List[Union[Validator, dict]],
     values: Union[List, ValidatorMgr, Validator, Dict[str, Any], str],
 ):
-    """ flatten nested one or more Validator ValidatorMgr dict to a list of Validator, dict """
+    """flatten nested one or more Validator ValidatorMgr dict to a list of Validator, dict"""
 
     try:
         # print(f"flatten_to_validators_dicts {values=}")
@@ -2260,7 +2268,7 @@ CHECK_EQUALITY = FunctionCheck(check_equal)
 
 
 class ActualValidator(Validator):
-    """ before each validation, active Validators are copied to ActualValidators
+    """before each validation, active Validators are copied to ActualValidators
     which check that the configuration can be used (for example, active implies a `v`
     validation function has been provided)
     """
@@ -2310,7 +2318,7 @@ class ActualValidator(Validator):
     def assert_valid(
         self, testee: Any, rawdata: Any, data_in: Any, debug: Optional[bool] = False
     ):
-        """ run self.v.is_valid() against part or all of data_in"""
+        """run self.v.is_valid() against part or all of data_in"""
 
         tu_raises = get_immediate_raises(debug)
         try:
