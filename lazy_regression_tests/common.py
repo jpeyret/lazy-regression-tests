@@ -694,13 +694,17 @@ class Filter(BFilter):
                 breakpoint()
             raise
 
-    def filter(self, line: str) -> bool:
-        """returns whether a line matches the filter"""
-        # 🏷003.testing.004.tr_odd_even
+    def filter(self, line: str) -> (bool, str):
+        """
+        returns
+        - holdback : bool whether a line should be filtered out
+        - line     : (potentially modified in other subclasses)
+        """
+        # 🏷004.lazy.047.substit_filter
         if not self.invert:
-            return self.f.match(line)
+            return self.f.match(line), line
         else:
-            return not self.f.match(line)
+            return not self.f.match(line), line
 
     @pydantic.root_validator
     def _init(cls: Any, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -949,9 +953,10 @@ class FilterMgr(pydantic.BaseModel):
                 lines = []
                 for line in lines_in:
                     for filter_ in tfilters:
-                        # 🏷003.testing.004.tr_odd_even
+                        # 🏷004.lazy.047.substit_filter
                         # 🐝this is where you want to format rather than hold back
-                        if filter_.filter(line):
+                        holdback, line = filter_.filter(line)
+                        if holdback:
                             if filter_.name:
                                 # textfilters do not do scalar
                                 # if filter_.scalar:
