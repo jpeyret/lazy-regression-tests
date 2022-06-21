@@ -12,6 +12,7 @@ import os
 import unittest
 import unittest.mock as mock
 import sys
+import tempfile
 
 # from lazy_tstmixin import TstMixin
 
