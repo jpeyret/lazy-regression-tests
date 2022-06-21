@@ -79,7 +79,7 @@ def cast_bytes2str(fn):
 def _pseudo_decor(fn, attrname):
     """decorator to cast the an attribute with a function result to a str if and only if it's bytes
 
-       can't be used directly, see `cast_contentbytes2str`
+    can't be used directly, see `cast_contentbytes2str`
     """
 
     # https://stackoverflow.com/a/25827070
@@ -133,7 +133,7 @@ def real_rpdb() -> bool:  # pragma: no cover
 
 
 def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
-    """ swap the dummy rpdb for an active one"""
+    """swap the dummy rpdb for an active one"""
 
     # dont expect any coverage: explicitly disabled under pytest
     # pragma: no cover
@@ -184,7 +184,7 @@ def cpdb():
 
 
 def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callable:
-    """ swap the dummy cpdb for an active one"""
+    """swap the dummy cpdb for an active one"""
 
     # dont expect any coverage: explicitly disabled under pytest
     # pragma: no cover
@@ -428,18 +428,18 @@ def debugDict(
 
 
 def fill_template(tmpl: str, *args: Any) -> str:
-    """ fill in the template with % and dict based formatting """
+    """fill in the template with % and dict based formatting"""
     return tmpl % Subber(*args)
 
 
 def sub_template(tmpl: str, *args: Any) -> str:
-    """ substitute the template with $ and Template formatting """
+    """substitute the template with $ and Template formatting"""
     tmp = Template(tmpl)
     return tmp.substitute(Subber(*args))  # type: ignore
 
 
 def first(li, empty_value=None):
-    """ grab the first item found """
+    """grab the first item found"""
     if not li:
         return empty_value
 
@@ -456,10 +456,10 @@ def first(li, empty_value=None):
 
 
 class Subber(object):
-    """ implement a first found getter for lookup keys
-        each obj in li_arg is asked, via getattr & get, whether
-        it holds a key.  if found it is returned immediately
-        Else 
+    """implement a first found getter for lookup keys
+    each obj in li_arg is asked, via getattr & get, whether
+    it holds a key.  if found it is returned immediately
+    Else
     """
 
     def __init__(self, *args: Any, verbose=False):
@@ -470,8 +470,8 @@ class Subber(object):
 
     def removed(self, *remove_args: Any) -> "Subber":
         """return a new Subber without some args
-           a common use would be not have `self` as a subber on property
-           lookups
+        a common use would be not have `self` as a subber on property
+        lookups
         """
         args2 = [arg for arg in self.li_arg if not arg in remove_args]
         return Subber(*args2)
@@ -578,7 +578,7 @@ class Subber(object):
         return res
 
     def as_dict(self):
-        """ expand contents to a dict for example to pass on to a Jinja template """
+        """expand contents to a dict for example to pass on to a Jinja template"""
 
         try:
             di = {}
@@ -599,7 +599,7 @@ class Subber(object):
 
 class RescueDict(object):
     """fall through in case a fill_template does not find a key
-       use sparingly as it covers up exceptions
+    use sparingly as it covers up exceptions
     """
 
     # ???TODO??? - consider adding a **kwds to default capability
@@ -781,7 +781,7 @@ def getpath(src: Any, path: str) -> Any:
 
 
 class DictFormatter:
-    """ takes an input dictionary, looks for matching items from keys in 
+    """takes an input dictionary, looks for matching items from keys in
     the second formatting dictonary and modifies the input dictionary when
     there is a match
 
@@ -802,7 +802,7 @@ class DictFormatter:
     __repr__ = def_repr
 
     def del_dict_item(self, di: dict, key: Any, value: Any):
-        """ delete the given key if it exists """
+        """delete the given key if it exists"""
         di.pop(key, None)
         return di
 
@@ -936,7 +936,7 @@ class DictFormatter:
 
 
 class InvalidConfigurationException(ValueError):
-    """ indicates that some configuration is missing or invalid """
+    """indicates that some configuration is missing or invalid"""
 
     def __init__(self, msg, *args, **kwargs):
 
@@ -1039,7 +1039,7 @@ except NameError:
 
 def set_breakpoints3(recurse=True, fnp_config=None):
 
-    """ swap the dummy breakpoints for an active one"""
+    """swap the dummy breakpoints for an active one"""
 
     # dont expect any coverage: explicitly disabled under pytest
     # pragma: no cover
@@ -1075,18 +1075,18 @@ def set_breakpoints3(recurse=True, fnp_config=None):
 
 
 class UnavailableLibrary:
-    """ throws error messages whenever something hasnt been installed 
+    """throws error messages whenever something hasnt been installed
 
     usage:
         try:
             from yaml import dump as ydump
         #use this to get a path to the client module
-        except (ImportError,) as e: 
+        except (ImportError,) as e:
             class Foo:
                 pass
 
             #anything calling on ydump will now blow up
-            ydump = UnavailableLibrary(name = Foo.__module__, missing="yaml")    
+            ydump = UnavailableLibrary(name = Foo.__module__, missing="yaml")
     """
 
     exception_cls = InvalidConfigurationException
@@ -1102,7 +1102,7 @@ class UnavailableLibrary:
         self.message = message
 
     def __repr__(self):
-        """ error message """
+        """error message"""
         return f"""
 Third party package/library '{self.missing}' has not been installed.  
 You need to install it before using {self.name}
@@ -1110,7 +1110,7 @@ You need to install it before using {self.name}
 """
 
     def __getattr__(self, *args, **kwargs):
-        """ throw errors on any access """
+        """throw errors on any access"""
         raise self.exception_cls(self)
 
     # and reroute call
@@ -1196,7 +1196,7 @@ class CacheDict(MutableMapping):
 
 
 def debug_nested_dict_types(di, path=""):
-    """ mostly used to figure out annoying YAML/JSON dump problems """
+    """mostly used to figure out annoying YAML/JSON dump problems"""
 
     # pragma: no cover
     for k, v in di.items():
@@ -1207,7 +1207,7 @@ def debug_nested_dict_types(di, path=""):
 
 
 def copytree(src, dst, symlinks=False, ignore=None):
-    """ shamelessly copied from https://stackoverflow.com/a/22331852 """
+    """shamelessly copied from https://stackoverflow.com/a/22331852"""
 
     try:
 
@@ -1279,7 +1279,7 @@ def merge(a, b, path=None, ignore=None):
 
 
 class YAMLAncestorLoader:
-    """ 
+    """
     this class can "pull in" configuration data
     from ancestor config files and merge them.
 
@@ -1295,7 +1295,7 @@ class YAMLAncestorLoader:
         self.pa_yaml = pa_yaml
 
     def ignore(self, keys, path, a, b):
-        """ default ignore that skips certain keys on merge """
+        """default ignore that skips certain keys on merge"""
 
         return {self.ancestor_attr}
 
@@ -1328,7 +1328,7 @@ class YAMLAncestorLoader:
 
 @contextmanager
 def disable_cpdb(*args, **kwds):
-    """ 
+    """
     momentarily disable cdpb, for example to test known-to-fail
     code
     """
@@ -1341,7 +1341,7 @@ def disable_cpdb(*args, **kwds):
 
 @contextmanager
 def force_verbose(tgt, **kwds):
-    """ 
+    """
     momentarily disable cdpb, for example to test known-to-fail
     code
     """
