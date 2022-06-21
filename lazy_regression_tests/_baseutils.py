@@ -23,13 +23,13 @@ import stat
 from collections import namedtuple
 
 try:
-    #3.8
+    # 3.8
     from collections import MutableMapping
-#pragma: no cover pylint: disable=unused-variable
-except (ImportError,) as e: 
-    #3.10
+# pragma: no cover pylint: disable=unused-variable
+except (ImportError,) as e:
+    # 3.10
     from collections.abc import MutableMapping
-    
+
 from string import Template
 from functools import partial, wraps
 from io import StringIO  # 223ed
