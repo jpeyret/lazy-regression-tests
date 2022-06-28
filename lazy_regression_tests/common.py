@@ -686,6 +686,7 @@ class RegexSubstitFilter(BFilter):
         try:
 
             hit = self.patre.search(line)
+
             if not hit:
                 return False, line
             else:
@@ -1001,8 +1002,9 @@ class FilterMgr(pydantic.BaseModel):
                 lines = []
                 for line in lines_in:
                     for filter_ in tfilters:
-                        # 🏷004.lazy.047.substit_filter
-                        # 🐝this is where you want to format rather than hold back
+                        # There are 2 varieties of filters.
+                        # The more common type "holds back" lines and puts them into temp.filtered
+                        # substitution filters instead format the line, typically to remove or substit something.
                         holdback, line = filter_.filter(line)
                         if holdback:
                             if filter_.name:

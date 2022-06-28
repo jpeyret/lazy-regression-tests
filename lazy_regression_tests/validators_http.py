@@ -116,17 +116,20 @@ class ValidatorTempHttp(ValidatorTemp):
 
             # apply filters if not done yet
             if self._filtered is None:
+                # with a textfilter active this will side-effect self._formatted_got
                 _ = self.filtered
 
             if self.checker.ext == "html":
+                # this a textfilter so it is happening after soup.prettify
 
-                self._formatted_got = self.soup.prettify()
+                if self._formatted_got is undefined:
+                    self._formatted_got = self.soup.prettify()
 
             else:
-
-                self._formatted_got = self.checker.provider.datain_to_str(
-                    self.rawdata, checker=self.checker
-                )
+                if self._formatted_got is undefined:
+                    self._formatted_got = self.checker.provider.datain_to_str(
+                        self.rawdata, checker=self.checker
+                    )
 
         return self._formatted_got
 
