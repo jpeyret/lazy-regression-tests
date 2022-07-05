@@ -67,12 +67,7 @@ class CSSFilter(RawFilter):
     def build_filter(cls, selector, values):
         """prep the filter wrapper"""
 
-        # name = v_in["name"]
-        print(f"\n\n🔬{cls.__name__}.build_filter:{values=}")
-
         name = values.get("name")
-        print(f"{name=}")
-        # breakpoint() #🛑
 
         if breakpoints("build_filter", {"name": name}):  # pragma: no cover
             print(f"\n\n🔬🔬🔬name:{name}")

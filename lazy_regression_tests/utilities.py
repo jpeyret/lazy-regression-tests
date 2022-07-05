@@ -4,6 +4,7 @@ import types
 from pathlib import Path
 import sys
 from importlib import import_module
+from typing import Callable
 
 from lazy_regression_tests.core_assist2 import LazyRoot, _LazyMeta
 from lazy_regression_tests.utils import ppp, Dummy
@@ -55,7 +56,7 @@ def debug_ancestors(header, ancestors):
 
 
 def filter_lz_cls(li: List[type], ext: str) -> List[type]:
-    """filter any classes that contribute to the extension either as 
+    """filter any classes that contribute to the extension either as
     - _LazyMeta-based
     - or having cls_validators/cls_filters
     """
@@ -72,7 +73,7 @@ def filter_lz_cls(li: List[type], ext: str) -> List[type]:
 
 
 def filter_val(li_cls: List[type], ext: str, name: str) -> List[Tuple[type, Any]]:
-    """ filter all classes with given extension and the named validator"""
+    """filter all classes with given extension and the named validator"""
     res = []
 
     seen = set()
@@ -107,8 +108,6 @@ def filter_val(li_cls: List[type], ext: str, name: str) -> List[Tuple[type, Any]
                     defined_on_class = defined_on_class[-1]
             else:
                 print(f"{ori_validators=}{type(ori_validators)=}")
-                breakpoint()  # 🛑
-                pass
 
             if defined_on_class:
                 res.append((cls, defined_on_class))
@@ -155,9 +154,6 @@ class Palette(dict):
         return color
 
 
-from typing import Callable
-
-
 class Cargo(pydantic.BaseModel):
 
     testee_cls: type
@@ -183,7 +179,7 @@ class PrinterClassValidatorContributions:
         return res
 
     def _print(self, val: Validator, ancestor: type, to_print=List[Tuple[str, Any]]):
-        """ print class info, as well as validator attribute values in to_print """
+        """print class info, as well as validator attribute values in to_print"""
 
         try:
             cargo = self.cargo
@@ -259,7 +255,7 @@ class PrinterClassValidatorContributions:
         return f"{cargo.indent2}[{cargo.palette[ancestor.__module__]}]{ancestor.__name__:20.20}[/]"
 
     def _print_testcase(self, val: Validator, ancestor, di_print):
-        """ print information on the actual TestCase instance """
+        """print information on the actual TestCase instance"""
         cargo = self.cargo
         cargo.print("-" * 80)
         cargo.print(
@@ -297,9 +293,6 @@ class PrinterClassValidatorContributions:
     def _print_ancestor(self, val: Validator, ancestor, got_from: Dict):
         try:
             to_print = []
-
-            # breakpoint() #🛑
-            # pass
 
             for attrname, tu in got_from.items():
                 if tu[0] == ancestor:
@@ -409,7 +402,7 @@ def print_validator(
 
 
 def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
-    """ show ancestry / origin of configuration """
+    """show ancestry / origin of configuration"""
     try:
 
         colors = PALETTE_MODULE.copy()
@@ -425,8 +418,6 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
             s += f"[{v}]{v}[/]\n"
         sys.stdout.write(s + "\n\n.")
         print(s)
-        # breakpoint() #🛑
-        pass
 
         cargo = Cargo(palette=palette, print=print, testee_cls=cls)
 
@@ -446,8 +437,6 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
             print_validator(cls, name, val, filtered_ancestors_mro, cargo=cargo)
 
         print("\nlegend:")
-        # breakpoint() #🛑
-        pass
         for k, color in cargo.palette.items():
             if isinstance(k, str) and k.startswith("style-"):
                 continue
@@ -508,9 +497,9 @@ if __name__ == "__main__":
 @click.option("--extension")
 @click.option("--verbose/--quiet", "-v/-q", default=False)
 def run(**kwargs):
-    """click stub 
-    - do not modify overmuch or at all 
-    - past click validation the real work is done in Main 
+    """click stub
+    - do not modify overmuch or at all
+    - past click validation the real work is done in Main
     """
     try:
 
@@ -526,16 +515,16 @@ def run(**kwargs):
 
 
 class Main:
-    """ main manager docstring """
+    """main manager docstring"""
 
     def __repr__(self):  # pylint: disable=missing-function-docstring
-        """ repr """
+        """repr"""
         return "%s" % (self.__class__.__name__)
 
     def __init__(self, **kwargs):  # pylint: disable=missing-function-docstring
-        """ init - note that the incoming `kwargs` are determined by `run`s arguments 
-            Main's designed to be called programmatically, but `kwargs` then need to match the expectations
-            of `run`s signature.
+        """init - note that the incoming `kwargs` are determined by `run`s arguments
+        Main's designed to be called programmatically, but `kwargs` then need to match the expectations
+        of `run`s signature.
         """
         self.__dict__.update(**kwargs)
 
@@ -580,7 +569,6 @@ class Main:
                 for ext in extensions:
                     trace_ancestry(cls, ext=ext)
 
-            # raise NotImplementedError("%s.process(%s)" % (self, locals()))
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
