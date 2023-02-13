@@ -1237,7 +1237,7 @@ class Checker:
 
             testee = self.lz.testee
 
-            # tmp.fnp_got = fnp_got = self._get_fnp_save("got", options, suffix)
+            # Issue.011.eval.tabulator
             tmp.fnp_got = fnp_got = checker.get_fnp_save(
                 exp_got="got", suffix=suffix, testee=testee, control=control
             )
@@ -1247,9 +1247,7 @@ class Checker:
                 exp_got="exp", suffix=suffix, testee=testee, control=control
             )
 
-            fnp_raw = checker._get_fnp_raw(
-                suffix=suffix, control=control, tmp=None, got=got
-            )
+            checker.write_raw(suffix=suffix, testee=testee, control=control, got=got)
 
             # linefeeds have a tendency to creep in sometimes
             if filter_:
@@ -1804,6 +1802,9 @@ class ValidatorMgr(pydantic.BaseModel):
         """runs the validations"""
         try:
 
+            breakpoint()  # 🛑
+            pass
+
             tu_raise = (
                 (
                     AssertionError,
@@ -1959,7 +1960,7 @@ class SameAssertor:
         self.checker = checker
 
     def __repr__(self):
-        return "%s[%s]" % (self.__class__.__name__, self.extension)
+        return "%s[%s]" % (self.__class__.__name__, self.checker.ext)
 
     def get_fnp_save(
         self,
@@ -2035,21 +2036,24 @@ class SameAssertor:
                 breakpoint()
             raise
 
-    def _get_fnp_raw(self, suffix, control, tmp, got):
+    def write_raw(self, suffix, testee, control, got):
         """
         where do we save the raw received data,
         after formatting, but before filtering ?
         """
 
+        # suffix=suffix, testee=testee, control=control, got=got
+
         try:
-            if not control.save_raw:
+            if not control.env.get("save_raw_received_data"):
                 return
 
-            fnp_raw = self._get_fnp_save(
-                "report", options, suffix, basename_prefix="unfiltered."
+            fnp = self.get_fnp_save(
+                testee=testee, exp_got="report", control=control, suffix=suffix
             )
 
-            return fnp_raw
+            with fnp.open("w") as fo:
+                fo.write(str(got))
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -2197,6 +2201,13 @@ def check_exp_in_data(
     try:
 
         exp = exp or validator.exp
+
+        if type(exp) is type(AutoExp) and issubclass(exp, AutoExp):
+            exp = exp.get_exp(validator, testee)
+
+        elif callable(exp):
+            exp = exp()
+
         res = exp in data
 
         if not res:

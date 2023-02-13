@@ -40,7 +40,7 @@ class ExtAlias(pydantic.BaseModel):
     checker from lz.settings will be using `JsonExtProvider` despite being named `settings`
 
     if absent, name drives ExtProvider
-    
+
     """
 
     alias: str
@@ -59,11 +59,11 @@ class ExecInfo:
 
 
 class MediatedEnvironDict(dict):
-    """ reads prefixed environment variables 
-        `rootname` allows user to define the variable's prefix
-        i.e. change from `lzrt_` to something else if there is a
-        conflict 
-        LZRT_OPT_DIRECTIVE could be MYLAZY_OPT_DIRECTIVE
+    """reads prefixed environment variables
+    `rootname` allows user to define the variable's prefix
+    i.e. change from `lzrt_` to something else if there is a
+    conflict
+    LZRT_OPT_DIRECTIVE could be MYLAZY_OPT_DIRECTIVE
     """
 
     def __init__(self, acquired=False, **kwds):
@@ -87,10 +87,10 @@ class MediatedEnvironDict(dict):
 
 
 class BFilter(pydantic.BaseModel):
-    """ the core filtering mechanism
-        Note:  its primary concept is that the `f` - filtering function drives 
-        the equality/hash for objects.  This allows overrides of all other 
-        attributes by later classes.
+    """the core filtering mechanism
+    Note:  its primary concept is that the `f` - filtering function drives
+    the equality/hash for objects.  This allows overrides of all other
+    attributes by later classes.
     """
 
     # filters are assumed to be textfilters
@@ -114,13 +114,13 @@ class BFilter(pydantic.BaseModel):
         extra = pydantic.Extra.forbid
 
     def __eq__(self, other):
-        """ see notes on hash """
+        """see notes on hash"""
         if not isinstance(other, BFilter):
             return NotImplemented
         return self.f == other.f
 
     def __hash__(self):
-        """ be careful here.  __hash__ and __eq__ drive successive overrides of filters 
+        """be careful here.  __hash__ and __eq__ drive successive overrides of filters
         by subclasses.  if you were to include `invert` in the hash, then updating the filter
         to inversion would not work.  Right now the only thing that is being used is the filter
         function `v` itself
@@ -150,11 +150,11 @@ class ConfigurationException(ValueError):
 
 
 class SpecialCommand:
-    """ special classes to command particular behavior"""
+    """special classes to command particular behavior"""
 
 
 class DisableAll(SpecialCommand):
-    """ disable a Mgr content up to that point
+    """disable a Mgr content up to that point
     i.e. ValidatorMgr becomes empty, ditto Filter
     """
 
@@ -236,7 +236,7 @@ def get_alias_from_ancestors(
 
 
 class ValidationError(AssertionError):
-    """ give better insight on a validation error than base AssertionError"""
+    """give better insight on a validation error than base AssertionError"""
 
     def __init__(
         self,
@@ -315,7 +315,7 @@ class OutInfo:
             setattr(self, k, v)
 
     def __setattr__(self, __name: str, __value: Any) -> None:
-        """ support json-izing"""
+        """support json-izing"""
         if __value is undefined:
             return
         if isinstance(__value, (str, int, float, bool)):
@@ -348,6 +348,9 @@ def lazyinfo(
 
         dn_out = os.getenv("lzrt_info_dir")
         if not dn_out:
+            print(
+                f"env variable $lzrt_info_dir is not set.  No diagnostics can be written."
+            )
             return
 
         error = error = bool(exception)
@@ -422,8 +425,15 @@ def lazyinfo(
             res = f"\n{res}\n"
 
         if error or write_on_success:
+
             with fnpo.open("w") as fo:
                 fo.write(out)
+
+            # write symlink last
+            fnp_last = Path(dn_out) / "lastinfo.json"
+            if fnp_last.exists():
+                fnp_last.unlink()
+            os.symlink(fnpo, fnp_last)
 
             if exception:
                 msg = f"\n\n🐝diagnostics, usable with jlazyinfo.py are in :{fnpo}"
