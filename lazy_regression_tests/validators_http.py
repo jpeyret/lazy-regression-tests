@@ -15,10 +15,10 @@ import unittest
 #################################################################
 import pydantic
 import requests
-import lxml
-import cchardet
 
-# from bs4 import BeautifulSoup as bs
+# import lxml
+# import cchardet
+
 import bs4
 
 bs = bs4.BeautifulSoup
@@ -230,11 +230,6 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
         """select data by string selector"""
         try:
 
-            # if not isinstance(data_in, Mapping):
-            #     data = self.prep_rawdata(validator.mgr.checker, data_in)
-            # else:
-            #     data = data_in
-
             data = rawdata
 
             if not "." in selector:
@@ -258,8 +253,6 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
             return res
         # pragma: no cover pylint: disable=unused-variable
         except (ConfigurationException,) as e:
-            breakpoint()  # 🛑
-            pass
             raise
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:

@@ -15,7 +15,7 @@ from typing import (
 )
 from io import StringIO
 from abc import abstractmethod
-from inspect import signature
+from inspect import signature, _ParameterKind
 import re
 from dataclasses import dataclass
 import unittest
@@ -26,6 +26,13 @@ import sys
 import operator
 from collections.abc import Mapping
 from collections import defaultdict
+
+try:
+    from rich import inspect as rin
+# pragma: no cover pylint: disable=unused-variable
+except (ImportError,) as e:
+    rin = NotImplemented
+
 
 verbose = "-v" in sys.argv
 
@@ -700,6 +707,36 @@ class RegexSubstitFilter(BFilter):
             raise
 
 
+def _check_function_has_one_parameter(v_in: Callable) -> bool:
+    """check this function will work with 1 positional parameter"""
+
+    count = 0
+    for param in signature(v_in).parameters.values():
+        pkind = param.kind
+
+        # standard parameters
+        if pkind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD):
+            if param.default is param.empty or not count:
+                # first positional or any w.o. default
+                count += 1
+            else:
+                # positionals following will have also defaults
+                break
+
+        # BREAK as we know we are done with positionals once we hit these...
+        elif pkind == param.VAR_POSITIONAL:
+            # but first, we'll count it as a positional if its the first...
+            count = 1 if count == 0 else count
+            break
+        elif pkind in (param.KEYWORD_ONLY, param.VAR_KEYWORD):
+            break
+        else:
+            # shouldn't happen, but...
+            raise TypeError(f" unknown {pkind}")
+
+    return count == 1
+
+
 class Filter(BFilter):
     """text filter"""
 
@@ -716,16 +753,20 @@ class Filter(BFilter):
                 values["label"] = f"regex.{v_in}"
                 return RegexFilterWrapper(v)
             if callable(v_in):
-                # direct function assignment, check signature
-                sig = signature(v_in)
-                len_param = len(sig.parameters)
-                if not len_param == 1:
+                if not _check_function_has_one_parameter(v_in):
                     raise ValueError(
-                        f"expecting 1 parameter, of type `str` for {v_in}.  got {len_param}"
+                        f"""
+                                     unsupported {v_in=}. A filter function takes one, and only one, parameter.  
+                                     `f(a)`     is OK
+                                     `f(*args)` is OK
+                                     `f()`      is BAD
+                                     `f(a,b)`   is BAD
+                                     """
                     )
 
                 # TODO: test that a string would work in first parameters, test a bool-capable result
-                values["label"] = v_in.__name__
+                if not values.get("label"):
+                    values["label"] = v_in.__name__
                 return TextFilterWrapper(v_in)
 
             elif isinstance(v_in, BFilter):
@@ -1194,8 +1235,19 @@ class Checker:
             self._lazycheck(got, checker=checker, suffix=suffix, filter_=filter_)
             return self.temp
 
-        except AssertionError:
-            raise
+        except (AssertionError,) as e:
+            # we want to raise a new exception, minus all the info about finding diffs and formatting error
+            # messages which is... what lazydiff does
+
+            new_exc = AssertionError(str(e))
+
+            # capture fnp_exp, fnp_got which are used to launch `diff` commands as required
+            di = {name: getattr(e, name, None) for name in ["fnp_exp", "fnp_got"]}
+            new_exc.__dict__.update(**di)
+
+            # https://docs.python.org/3.3/whatsnew/3.3.html#pep-409-suppressing-exception-context
+            # howto- https://stackoverflow.com/a/17092033 - suppress causal exception
+            raise new_exc from None  # 🧨🧨🧨differences found🧨🧨🧨
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
@@ -1801,9 +1853,6 @@ class ValidatorMgr(pydantic.BaseModel):
     def assert_valid(self, data, debug=False):
         """runs the validations"""
         try:
-
-            breakpoint()  # 🛑
-            pass
 
             tu_raise = (
                 (

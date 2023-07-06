@@ -1392,3 +1392,63 @@ def oshow(self, nesting="", file=None, private=False):
         if cpdb():
             breakpoint()
         raise
+
+
+def dropbad_dump(obj, fdump, seen: set | None = None):
+    try:
+        id_ = id(obj)
+        if seen is None:
+            seen = set()
+        if id_ in seen:
+            res = str(obj)
+            if " at 0x" in res:
+                res = obj.__class__.__name__
+            return res
+
+        seen.add(id_)
+
+        print(f"dropbad_dump({obj=})", flush=True)
+        fdump(obj)
+        return obj
+    # pragma: no cover pylint: disable=unused-variable
+    except (TypeError, ValueError) as e:
+        res = {}
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                try:
+                    fdump(v)
+                    res[k] = v
+                # pragma: no cover pylint: disable=unused-variable
+                except (TypeError, ValueError) as e:
+
+                    safe = dropbad_dump(v, fdump=fdump, seen=seen)
+                    res[k] = safe
+
+        elif hasattr(obj, "__iter__"):
+            try:
+                res = []
+                # breakpoint() #🛑
+                pass
+                for v in obj:
+                    try:
+                        fdump(v)
+                        res.append(v)
+                    # pragma: no cover pylint: disable=unused-variable
+                    except (TypeError, ValueError) as e:
+                        res.append(dropbad_dump(v, fdump=fdump, seen=seen))
+                return res
+            except (TypeError, ValueError) as e:
+                res = str(obj)
+                return res
+
+        else:
+
+            for k, v in vars(obj).items():
+                try:
+                    fdump(v)
+                    res[k] = v
+                # pragma: no cover pylint: disable=unused-variable
+                except (TypeError, ValueError) as e:
+                    safe = dropbad_dump(v, fdump=fdump, seen=seen)
+                    res[k] = safe
+        return res

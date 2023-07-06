@@ -17,6 +17,8 @@ from lazy_regression_tests.common import (
     undefined,
 )
 
+from lazy_regression_tests._baseutils import dropbad_dump
+
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -32,7 +34,7 @@ import requests
 
 
 class DictExtProvider(PAbstractExtProvider):
-    """ support dict data and dumps via pretty-print """
+    """support dict data and dumps via pretty-print"""
 
     extension = "dict"
 
@@ -94,7 +96,7 @@ class DictExtProvider(PAbstractExtProvider):
             raise
 
     def build_filter(self, v_in: Any) -> Union[DictFilter, BFilter]:
-        " build filter "
+        "build filter"
         try:
 
             if isinstance(v_in, BFilter):
@@ -122,13 +124,13 @@ class DictExtProvider(PAbstractExtProvider):
 
 
 class JsonExtProvider(DictExtProvider):
-    """ support dict data and dumps via json.dumps """
+    """support dict data and dumps via json.dumps"""
 
     extension = "json"
 
     @classmethod
     def check_is_json(cls, data, checker, temp):
-        " check that a 404 didn't return html somehow"
+        "check that a 404 didn't return html somehow"
         try:
             content_type = getattr(data, "content_type", None)
             status_code = getattr(data, "status_code", None)
@@ -235,21 +237,27 @@ class JsonExtProvider(DictExtProvider):
 
 
 class YamlProvider(DictExtProvider):
-    """ support dict data and dumps via json.dumps """
+    """support dict data and dumps via json.dumps"""
 
     extension = "yaml"
 
     def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
-        """ no conversion needed, that's the point of using yaml"""
+        """no conversion needed, that's the point of using yaml"""
         return data
 
     @classmethod
     def datain_to_str(
         cls, data: dict, checker: "Checker", temp: LazyTemp = None
     ) -> str:
-        """yaml dump """
+        """yaml dump"""
         try:
-            return ydump(data, default_flow_style=False).strip()
+            try:
+                return ydump(data, default_flow_style=False).strip()
+            # pragma: no cover pylint: disable=unused-variable
+            except (TypeError, ValueError) as e:
+                data2 = dropbad_dump(data, ydump)
+                return ydump(data2, default_flow_style=False).strip()
+
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
