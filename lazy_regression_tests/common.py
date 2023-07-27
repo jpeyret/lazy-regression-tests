@@ -33,6 +33,10 @@ try:
 except (ImportError,) as e:
     rin = NotImplemented
 
+from bemyerp.websec.log_settings import getLogger
+
+logger = getLogger(__name__, "debuglog")
+log = logger.debug
 
 verbose = "-v" in sys.argv
 
@@ -83,7 +87,7 @@ def _checktypes(got, exp, validator: "Validator"):
             selector_msg = f" using {validator.selector=}"
         else:
             selector_msg = ""
-        print(
+        logger.warning(
             f"{warning}{repr(validator)}: Possible type mismatch exp={type(exp)} vs got={type(got)=} {selector_msg}\n"
         )
 
@@ -99,6 +103,11 @@ from lazy_regression_tests._baseutils import (
 )
 
 undefined = NotImplemented
+
+
+def cpdblazy(*args, **kwargs):
+    """conditionally halt on exceptions, activate with `export cpdblazy=1` in bash"""
+    return os.getenv("cpdblazy")
 
 
 class _Control(object):
@@ -1103,14 +1112,14 @@ class FilterMgr(pydantic.BaseModel):
         try:
             plocal = not file
             file = file or StringIO()
-            print(f"{self.__class__.__name__}:{self.ext=},{self.alias=}", file=file)
-            print(nesting, "Filters:", file=file)
+            log(f"{self.__class__.__name__}:{self.ext=},{self.alias=}", file=file)
+            log(nesting, "Filters:", file=file)
             indent = nesting + "  "
             for f in self.filters:
                 f.show(file=file, nesting=indent)
 
             if plocal:
-                print(file.getvalue())
+                logger.info(file.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1181,7 +1190,7 @@ class Checker:
             plocal = not file
             file = file or StringIO()
 
-            print(
+            log(
                 nesting,
                 f"{self.__class__.__name__}:ext={self.ext},provider={self.provider}",
                 file=file,
@@ -1197,7 +1206,7 @@ class Checker:
                 self.temp.show(nesting=indent, file=file)
 
             if plocal:
-                print(file.getvalue())
+                logger.info(file.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1589,8 +1598,6 @@ class FunctionCheck(ValidatorCheck):
                 else:
                     res = bool(self.f(value2, **di))
 
-            # print(f"\n\n{self}.is_valid({validator.name=})=>{res}")
-
             if not res:
                 if implicit_res:
                     return implicit_res
@@ -1907,13 +1914,9 @@ class ValidatorMgr(pydantic.BaseModel):
 
             after_val = {v.name: v for v in dupe.validators}
 
-            for add in adds:
-                print(f"{add}")
-
             li_add = []
             flatten_to_validators_dicts(li_add, adds)
 
-            ppp(f"{self}.extend()", li_add=li_add)
             add = None
 
             for add in li_add:
@@ -1976,15 +1979,15 @@ class ValidatorMgr(pydantic.BaseModel):
             file = file or StringIO()
 
             if header:
-                print(header, file=file)
+                log(header, file=file)
 
-            print(f"{self.__class__.__name__}:{self.alias=}")
+            log(f"{self.__class__.__name__}:{self.alias=}")
 
             for v in self.validators:
                 v.show(nesting=nesting, file=file)
 
             if plocal:
-                print(file.getvalue())
+                log(file.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -2343,7 +2346,6 @@ def flatten_to_validators_dicts(
     """flatten nested one or more Validator ValidatorMgr dict to a list of Validator, dict"""
 
     try:
-        # print(f"flatten_to_validators_dicts {values=}")
 
         if isinstance(values, (list, tuple)):
             [
@@ -2362,9 +2364,6 @@ def flatten_to_validators_dicts(
             [flatten_to_validators_dicts(li, v) for v in values.validators]
 
         elif isinstance(values, str):
-            # print(f"{values}")
-            # breakpoint() #🛑
-            # pass
             _flatten_from_string(li, values)
 
         else:

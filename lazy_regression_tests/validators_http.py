@@ -27,6 +27,11 @@ undefined = NotImplemented
 
 from lazy_regression_tests.utils import set_cpdb, set_rpdb, ppp, first
 
+from bemyerp.websec.log_settings import getLogger
+
+logger = getLogger(__name__, "debuglog")
+log = logger.debug
+
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -42,6 +47,7 @@ from lazy_regression_tests.common import (
     select_by_provider,
     check_exp_in_data,
     check_in,
+    cpdblazy,
 )
 
 
@@ -412,6 +418,8 @@ class HTML_Provider(HTTP_Provider):
                 raise ValidationError(msg=msg, validator=validator, got=got)
 
         # pragma: no cover pylint: disable=unused-variable
+        except (ValidationError,):
+            raise
         except (Exception,) as e:
             if cpdb():
                 breakpoint()
@@ -422,7 +430,7 @@ class HTML_Provider(HTTP_Provider):
         try:
 
             name = v_in["name"]
-            print(f"\n\n{self}.build_filter:name={name}")
+            log(f"\n\n{self}.build_filter:name={name}")
             # breakpoint() #🛑
             # pass
 
