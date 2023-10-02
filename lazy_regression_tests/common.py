@@ -152,13 +152,13 @@ class _Control(object):
         up the actual page.
 
         this depend on 2 environmental settings:
-        :param lzrt_save_rraw_received_data : if it it's set we can do it
+        :param lzrt_save_raw_received_data : if it it's set we can do it
         :param lzrt_template_dirname_report : where to put it
         """
 
         if self._save_rraw is undefined:
             res = bool(self.env.get("template_dirname_report"))
-            self._save_rraw = bool(res and self.env.get("save_rraw_received_data"))
+            self._save_rraw = bool(res and self.env.get("save_raw_received_data"))
         return self._save_rraw
 
     _directive = undefined
@@ -2105,7 +2105,13 @@ class SameAssertor:
             )
 
             with fnp.open("w") as fo:
-                fo.write(str(got))
+                # breakpoint() #🛑
+                pass
+                # <class 'django.http.response.HttpResponse'> . content
+
+                got2 = self.checker.temp.rawdata or got
+
+                fo.write(str(got2))
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
