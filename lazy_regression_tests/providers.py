@@ -257,7 +257,9 @@ class YamlProvider(DictExtProvider):
             except (TypeError, ValueError) as e:
                 data2 = dropbad_dump(data, ydump)
                 return ydump(data2, default_flow_style=False).strip()
-
+        # pragma: no cover pylint: disable=unused-variable
+        except (TypeError,) as e:
+            raise
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():

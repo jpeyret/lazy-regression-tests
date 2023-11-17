@@ -358,6 +358,35 @@ class ValidatorTemp:
         self.__dict__.update(**kwargs)
 
 
+from typing import Type
+
+
+def nested_get(data: Any, selector: str) -> Any:
+    """return a nested dictionary lookup or undefined"""
+    try:
+        parts = selector.split(".")
+        for part in parts:
+            if isinstance(data, Mapping):
+                data = data.get(part, undefined)
+            else:
+                data = getattr(data, part, undefined)
+            if data is undefined:
+                return data
+        return data
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            breakpoint()
+        raise
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            breakpoint()
+        raise
+
+
 @runtime_checkable
 class PAbstractExtProvider(Protocol):
     """
@@ -446,7 +475,11 @@ class PAbstractExtProvider(Protocol):
         """return temp work"""
         try:
 
-            hash_ = hash(self.datain_to_str(data_in, checker))
+            try:
+                hash_ = hash(self.datain_to_str(data_in, checker))
+            # pragma: no cover pylint: disable=unused-variable
+            except (TypeError,) as e:
+                hash_ = hash(f"{id(data_in)}")
 
             if checker.data_hash == hash_ and checker.temp:
                 return checker.temp
@@ -538,6 +571,9 @@ class PAbstractExtProvider(Protocol):
 
             else:
 
+                if "." in selector:
+                    data = nested_get(data_in, selector)
+                    return data
                 try:
                     data = getattr(data_in, selector)
                 except (AttributeError,) as e:
@@ -1872,6 +1908,9 @@ class ValidatorMgr(pydantic.BaseModel):
             )
 
             self.temp = self.provider.get_temp(checker=self.checker, data_in=data)
+            if "noassert" in os.getenv("lzrt_directive", ""):
+                return self.temp
+
             rawdata = self.temp.rawdata
 
             actuals: List[ActualValidator] = []
