@@ -856,6 +856,12 @@ class DictFormatter:
                                     keep[di_key] = v
 
                                 di = func_fmt(di, di_key, v)
+                            elif func_fmt == 1:
+                                if keep is not None:
+                                    keep[di_key] = v
+
+                                _ = di.pop(di_key, None)
+
                             elif isinstance(func_fmt, dict):
                                 if keep is not None:
 
@@ -871,7 +877,7 @@ class DictFormatter:
                                 )
                             else:
                                 raise NotImplementedError(
-                                    "%s.process(%s)" % (self, locals())
+                                    f"{self}.process:regex:{key=}:{func_fmt=}"
                                 )
                     continue
 
@@ -1407,7 +1413,11 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 
         seen.add(id_)
 
-        print(f"dropbad_dump({obj=})", flush=True)
+        # _dropbad_dump = getattr(obj,"_dropbad_dump",None)
+        # if _dropbad_dump:
+        #     return obj._dropbad_dump()
+
+        # print(f"dropbad_dump({obj=})", flush=True)
         fdump(obj)
         return obj
     # pragma: no cover pylint: disable=unused-variable
@@ -1420,9 +1430,12 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                     res[k] = v
                 # pragma: no cover pylint: disable=unused-variable
                 except (TypeError, ValueError) as e:
-
-                    safe = dropbad_dump(v, fdump=fdump, seen=seen)
-                    res[k] = safe
+                    try:
+                        safe = dropbad_dump(v, fdump=fdump, seen=seen)
+                        res[k] = safe
+                    # pragma: no cover pylint: disable=unused-variable
+                    except (Exception,) as e:
+                        res[k] = str(v)
 
         elif hasattr(obj, "__iter__"):
             try:
@@ -1441,7 +1454,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                 res = str(obj)
                 return res
 
-        else:
+        elif hasattr(obj, "__dict__"):
 
             for k, v in vars(obj).items():
                 try:
@@ -1451,4 +1464,9 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                 except (TypeError, ValueError) as e:
                     safe = dropbad_dump(v, fdump=fdump, seen=seen)
                     res[k] = safe
+        else:
+            # breakpoint() #🛑
+            pass
+            return {}
+
         return res

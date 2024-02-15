@@ -232,7 +232,7 @@ def build_filters_for_class(
         for name, filters in di_filter.items():
             di = {}
             filters0 = filters
-            alias = None
+            alias_ = None
 
             # ExtProvider by name or alias
             if isinstance(filters, (list, tuple)):
@@ -243,22 +243,22 @@ def build_filters_for_class(
                     list(v) for v in partition(ExtAlias.is_instance, filters)
                 ]
                 if aliases:
-                    alias = aliases[-1].alias
-                    di_alias[name] = alias
+                    alias_ = aliases[-1].alias
+                    di_alias[name] = alias_
 
             else:
                 if isinstance(filters, ExtAlias):
-                    alias = filters.alias
-                    di_alias[name] = alias
+                    alias_ = filters.alias
+                    di_alias[name] = alias_
 
-            alias = alias or di_alias.get(name)
+            alias_ = alias_ or di_alias.get(name)
 
-            if not alias:
-                alias = get_alias_from_ancestors(cls, ancestors_in, name)
-                if alias:
-                    di_alias[name] = alias
+            if not alias_:
+                alias_ = get_alias_from_ancestors(cls, ancestors_in, name)
+                if alias_:
+                    di_alias[name] = alias_
 
-                ext_provider = di_ext_provider[alias or name]
+            ext_provider = di_ext_provider[alias_ or name]
 
             for v_in in filters:
 
@@ -273,12 +273,12 @@ def build_filters_for_class(
 
             # and now we reassign the list, which is now unique by filter, in their original position
             # of declaration
-            if name == "settings" and alias is None:
+            if name == "settings" and alias_ is None:
                 msg = f"\n\nbuild_filters_for_class {cls=} {name=}, {ext=}"
-                ppp(dict(ext=ext, name=name, alias=alias), msg)
+                ppp(dict(ext=ext, name=name, alias=alias_), msg)
 
             filtermgr = di_filtermgr[name] = FilterMgr(
-                ext=name, filters=list(di.values()), alias=alias
+                ext=name, filters=list(di.values()), alias=alias_
             )
 
             li_filtermgr.append(filtermgr)

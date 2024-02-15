@@ -252,7 +252,17 @@ class YamlProvider(DictExtProvider):
         """yaml dump"""
         try:
             try:
-                return ydump(data, default_flow_style=False).strip()
+
+                # from yaml import dump as ydump
+                import yaml
+
+                # https://stackoverflow.com/a/66853182
+
+                class NoAliasDumper(yaml.SafeDumper):
+                    def ignore_aliases(self, data):
+                        return True
+
+                return yaml.dump(data, default_flow_style=False).strip()
             # pragma: no cover pylint: disable=unused-variable
             except (TypeError, ValueError) as e:
                 data2 = dropbad_dump(data, ydump)
