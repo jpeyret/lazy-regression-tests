@@ -73,6 +73,7 @@ from lazy_regression_tests.tests.helper_tst import (
     TstMixinSeeder,
     get_fake_response_from_html,
     TstMixin,
+    check_keep,
 )
 
 
@@ -93,12 +94,12 @@ ext_alias_json = ExtAlias(alias="json")
 
 
 class Base(TstMixin, TstMixinSeeder, unittest.TestCase):
-    " pin any common functionality you need here"
+    "pin any common functionality you need here"
 
     lazy_filename = LAZY_FILENAME
 
     def gen_test_classes(self) -> Dict[str, type]:
-        """ generate classes using LazyMeta gets tested"""
+        """generate classes using LazyMeta gets tested"""
         try:
 
             class Top(metaclass=_LazyMeta):
@@ -147,10 +148,10 @@ class Base(TstMixin, TstMixinSeeder, unittest.TestCase):
 
 
 class Test_Dict(Base):
-    """ test dict filtering with text representation  """
+    """test dict filtering with text representation"""
 
     def gen_test_classes(self) -> Dict[str, FilterMgr]:
-        """ generate classes using LazyMeta gets tested"""
+        """generate classes using LazyMeta gets tested"""
         try:
 
             class Dico(metaclass=_LazyMeta):
@@ -183,7 +184,7 @@ class Test_Dict(Base):
     classnameoi = "Dico"
     ext = "dict"
 
-    @unittest.skipUnless(do_test_json, "ltoggletestjson to run")
+    @unittest.skipUnless(*check_keep("json"))
     @unittest.skipUnless(
         not IS_PYTEST, "test is unreliable under pytest and fails with truncated output"
     )
@@ -217,7 +218,7 @@ class Test_Dict(Base):
                 breakpoint()
             raise
 
-    @unittest.skipUnless(do_test_json, "ltoggletestjson to run")
+    @unittest.skipUnless(*check_keep("json"))
     def test_filter(self):
         "test filtering"
         try:
@@ -247,7 +248,6 @@ class Test_Dict(Base):
                 breakpoint()
             raise
 
-    # @unittest.skipUnless(False, "ltoggletestjson to run")
     def test_named(self):
         "test named filters and their filtered temp results"
         try:
@@ -289,12 +289,12 @@ class Test_Dict(Base):
 
 
 class Test_Json(Test_Dict):
-    """ test dict filtering with json extensions """
+    """test dict filtering with json extensions"""
 
     ext = "json"
 
     def gen_test_classes(self) -> Dict[str, FilterMgr]:
-        """ generate classes using LazyMeta gets tested"""
+        """generate classes using LazyMeta gets tested"""
         try:
 
             class Dico(metaclass=_LazyMeta):
@@ -336,15 +336,14 @@ careamouseghidef
 
     ext = "txt"
 
-    @unittest.skipUnless(do_test_badfunc, "do_test_badfunc")
     def test_bad_func(self):
-        """ testing if a direct pass to filters fails if the function
-            signature doesnt match f(x:any):truthy
+        """testing if a direct pass to filters fails if the function
+        signature doesnt match f(x:any):truthy
         """
         try:
 
             def bad_func(a: str, b: str) -> bool:
-                """this should fail Filter validation """
+                """this should fail Filter validation"""
                 return True
 
             try:
@@ -359,7 +358,7 @@ careamouseghidef
                     ):
 
                         class Bad(metaclass=_LazyMeta):
-                            """this should fail Filter validation """
+                            """this should fail Filter validation"""
 
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
@@ -369,7 +368,7 @@ careamouseghidef
                 pass
 
             def bad_func2(a: str) -> dict:
-                """this should fail Filter validation """
+                """this should fail Filter validation"""
                 return {}
 
             try:
@@ -378,7 +377,7 @@ careamouseghidef
                     with pytest.raises(ConfigurationException):
 
                         class Bad2(metaclass=_LazyMeta):
-                            """this should fail Filter validation """
+                            """this should fail Filter validation"""
 
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
@@ -395,7 +394,7 @@ careamouseghidef
             raise
 
     def test_filter(self):
-        """test basic filtering up and down hierarchy """
+        """test basic filtering up and down hierarchy"""
         try:
 
             di_gen = self.gen_test_classes()
@@ -440,7 +439,7 @@ careamouseghidef
             raise
 
     def test_named(self):
-        """ test name filters and filter tracking """
+        """test name filters and filter tracking"""
         try:
             di_gen = self.gen_test_classes()
             clsoi = di_gen["Named"]
@@ -468,7 +467,7 @@ careamouseghidef
             raise
 
     def test_it(self):
-        """ test inversions and activations as well as verbosity """
+        """test inversions and activations as well as verbosity"""
         try:
             ori = core_assist2.verbose
             core_assist2.verbose = True
@@ -509,7 +508,7 @@ class Test_LazyRoot(Base):
     "testing LazyRoot behavior"
 
     def test_lazyroot(self):
-        """ test LazyRoot functionality """
+        """test LazyRoot functionality"""
         try:
             # don't need to assume too much about the internals of core_assist
             # so lets keep this import limited to the test
@@ -538,13 +537,13 @@ class Test_LazyRoot(Base):
 
 
 class Test_Actual(unittest.TestCase):
-    """ test "actual behavior" of a unitest.TestCase instance """
+    """test "actual behavior" of a unitest.TestCase instance"""
 
     ext = "txt"
     test_funcs = ["abcdef"]
 
     def test_direct_tstcase(self):
-        """ check that instance-level stuff works """
+        """check that instance-level stuff works"""
         try:
 
             class Tester(unittest.TestCase, metaclass=_LazyMeta):
@@ -579,14 +578,14 @@ class Test_Actual(unittest.TestCase):
 
 class BaseValidatorTst(Base):
     """set up base testing behavior
-    - create classes dynamically 
+    - create classes dynamically
     - sets the default classname of interest
     """
 
     classnameoi = "Top"
 
     def gen_test_classes(self) -> Dict[str, type]:
-        """ generate classes using LazyMeta that can be tested"""
+        """generate classes using LazyMeta that can be tested"""
         try:
 
             class Top(metaclass=_LazyMeta):
@@ -616,12 +615,12 @@ class BaseValidatorTst(Base):
 
 
 class Test_Validator(BaseValidatorTst):
-    """ testing validations """
+    """testing validations"""
 
     classnameoi = "TopVal"
 
     def test_mgr_nesting(self):
-        """ test class getting managers"""
+        """test class getting managers"""
         try:
 
             class TopVal(metaclass=_LazyMeta):
@@ -673,7 +672,7 @@ class Test_Validator(BaseValidatorTst):
                 breakpoint()
             raise
 
-    @unittest.skipUnless(do_test_validator, "ltoggletestvalidator to run")
+    @unittest.skipUnless(*check_keep("check_validator"))
     def test_basics(self):
         "test validators"
         try:
@@ -763,7 +762,7 @@ class Test_Validator(BaseValidatorTst):
             valname = "abc_in_data"
 
             class DynTest(clsoi):
-                " check that you can build a class dynamically once more"
+                "check that you can build a class dynamically once more"
                 cls_validators = dict(txt=[dict(name=valname, active=False)])
 
             self.assertTrue(DynTest.lz.txt.v)
@@ -813,9 +812,9 @@ class Test_Validator(BaseValidatorTst):
                 breakpoint()
             raise
 
-    @unittest.skipUnless(do_test_fail, "dont use TData on html")
+    @unittest.skipUnless(*check_keep("tdata_html"))
     def test_val_checkers(self):
-        """ test some default validation functions"""
+        """test some default validation functions"""
         try:
 
             valstatus = validators.Validator(
@@ -823,7 +822,7 @@ class Test_Validator(BaseValidatorTst):
             )
 
             class TstBase(unittest.TestCase, metaclass=_LazyMeta):
-                """ we know we want to test a status code"""
+                """we know we want to test a status code"""
 
                 # status_code = 200
                 cls_validators = dict(yaml=[valstatus])
@@ -897,7 +896,7 @@ class Test_Validator(BaseValidatorTst):
                 breakpoint()
             raise
 
-    @unittest.skipUnless(do_test_fail, "dont use TData on html")
+    @unittest.skipUnless(*check_keep("tdata_html"))
     def test_val_exp(self):
         """ """
         try:
@@ -916,7 +915,7 @@ class Test_Validator(BaseValidatorTst):
             )
 
             class TstBase(metaclass=_LazyMeta):
-                """ we know we want to test a status code"""
+                """we know we want to test a status code"""
 
                 cls_validators = dict(html=[valstatus])
 
@@ -979,9 +978,9 @@ class Test_Validator(BaseValidatorTst):
                 breakpoint()
             raise
 
-    @unittest.skipUnless(False, "dont use TData on html")
+    @unittest.skipUnless(*check_keep("still_bad"))
     def test_val_regex(self):
-        """ regex validations """
+        """regex validations"""
         try:
 
             patre = re.compile("abc")
@@ -991,7 +990,7 @@ class Test_Validator(BaseValidatorTst):
             )
 
             class TstDirect(metaclass=_LazyMeta):
-                """ we know we want to test a status code"""
+                """we know we want to test a status code"""
 
                 cls_validators = dict(html=[valtitle])
 
@@ -1019,9 +1018,9 @@ class Test_Validator(BaseValidatorTst):
             raise
 
 
-@unittest.skipUnless(do_test_valstacking, "ltoggletestvalstacking")
+@unittest.skipUnless(*check_keep("valstacking"))
 class Test_ValidatorMgr_Stacking(Base):
-    """ 
+    """
     rather than having to subclass LazyMeta managed classes
         Mixin_Test_Http, Mixin_Test_Html
     explicitly combine ValidorMgr instances
@@ -1083,7 +1082,7 @@ class Test_ValidatorMgr_Stacking(Base):
             raise
 
     def test_validatormgr(self):
-        """ test stacking with ValidatorMgr """
+        """test stacking with ValidatorMgr"""
         try:
             html = "html"
 
@@ -1171,9 +1170,9 @@ class Test_ValidatorMgr_Stacking(Base):
                 breakpoint()
             raise
 
-    @unittest.skipUnless(do_test_fail, "dont use TData on html")
+    @unittest.skipUnless(*check_keep("tdata_html"))
     def test_stacking_validator(self):
-        """ test stacking with Validator """
+        """test stacking with Validator"""
         try:
             mgr = self.validation_manager_http.extend(
                 validators.Validator(name=self.name_contenttype, exp=self.content_html),
@@ -1216,7 +1215,7 @@ class Test_ValidatorMgr_Stacking(Base):
             raise
 
     def test_stacking_dict(self):
-        """ test stacking with dict """
+        """test stacking with dict"""
         try:
             html = "html"
             mgr = self.validation_manager_http.extend(
@@ -1244,12 +1243,12 @@ class Test_ValidatorMgr_Stacking(Base):
 
 
 class Test_Aliasing(Base):
-    """ allowing ext_provider different from the Checker's name  """
+    """allowing ext_provider different from the Checker's name"""
 
     dummy_objectvalue01 = "<objectvalue01>"
 
     def gen_test_classes(self, testclassname: str) -> Dict[str, type]:
-        """ generate classes using LazyMeta gets tested"""
+        """generate classes using LazyMeta gets tested"""
         try:
 
             li_val = [
@@ -1344,7 +1343,7 @@ class Test_Aliasing(Base):
     def get_testee_data(
         self, testclassname, data=None, di_exp=dict(objectvalue01=dummy_objectvalue01)
     ):
-        """ build a testee by classname, prep data and set expectations for AutoExp """
+        """build a testee by classname, prep data and set expectations for AutoExp"""
         try:
             di_cls = self.gen_test_classes(testclassname)
             self.cls_tst = di_cls[testclassname]
@@ -1439,7 +1438,6 @@ class Test_Aliasing(Base):
                 breakpoint()
             raise
 
-    # @unittest.skipUnless(do_test_json, "ltoggletestjson to run")
     def test_no_alias(self):
         try:
 

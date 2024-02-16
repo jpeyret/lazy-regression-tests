@@ -18,12 +18,20 @@ import tempfile
 
 from typing import Callable
 
-from lazy_regression_tests.constants import OPT_DIRECTIVE_BASELINE
+from lazy_regression_tests.constants import (
+    OPT_DIRECTIVE_BASELINE,
+    LAZY_KEEP_TEST_PREFIX,
+)
 
 from lazy_regression_tests.basics import ConfigurationException
 
 import lazy_regression_tests.core_assist2 as core_assist2
 from lazy_regression_tests.core_assist2 import _LazyMeta, Filter
+
+from lazy_regression_tests._baseutils import eprint
+
+
+verbose = "-v" in sys.argv or "--verbose" in sys.argv
 
 
 def cpdb(*args, **kwargs):
@@ -35,13 +43,13 @@ rpdb = breakpoints = cpdb
 
 def get_mock_env(seed={}):
     """
-        this is used to mock the environment variables and 
+    this is used to mock the environment variables and
 
-        also determines whether temp files are:
-        - used     : useful for self-testing the lazy-test itself
-        - not used : pretty much required for actual lazy-test usage
+    also determines whether temp files are:
+    - used     : useful for self-testing the lazy-test itself
+    - not used : pretty much required for actual lazy-test usage
 
-        Note the self-caching 
+    Note the self-caching
     """
 
     try:
@@ -162,7 +170,7 @@ def get_fake_response_from_html(
 def get_fake_response(
     html_in: str, data={}, url=None, status=200, content_type="text/html; charset=utf8"
 ):
-    """ return a pretend HttpResponse"""
+    """return a pretend HttpResponse"""
     try:
 
         if data:
@@ -195,7 +203,7 @@ def get_fake_response(
 
 
 class TData:
-    """ Wrapper to simulate test data objects"""
+    """Wrapper to simulate test data objects"""
 
     def json(self):
         return json.dumps(self.__dict__, indent=2, sort_keys=True)
@@ -278,7 +286,7 @@ DUMMY_HTML = f"""
 
 
 class TstMixin(unittest.TestCase):
-    """ functions to test Lazy frame work itself """
+    """functions to test Lazy frame work itself"""
 
     def get_classes_oi(self, vars):
         """filter lazymeta-d classes from a locals/globals"""
@@ -287,7 +295,7 @@ class TstMixin(unittest.TestCase):
         return classes
 
     def get_filter_by_label(self, src, ext: str, label: str) -> Filter:
-        """ gets a filter by label"""
+        """gets a filter by label"""
 
         mgr = src.cls_filters[ext]
         known = ""
@@ -298,9 +306,9 @@ class TstMixin(unittest.TestCase):
         raise ValueError(f"unknown Filter {ext=} {label=}.  known labels={known}")
 
     def get_filter_exp(self, text: str, f_skip: Callable[[str], bool]):
-        """ apply hand-written filter to some text
+        """apply hand-written filter to some text
         Example:
-        exp = self.get_filter_exp(self.text1, lambda line:  ("abc" in line or "def" in line) )    
+        exp = self.get_filter_exp(self.text1, lambda line:  ("abc" in line or "def" in line) )
         """
         lines = text.splitlines()
         lines = [line for line in lines if not f_skip(line)]
@@ -318,3 +326,15 @@ class TstMixin(unittest.TestCase):
             msg = f"\nFilter:{ext=}{label=}\n{e.args[0]}"
             e.args = (msg, filter)
             raise
+
+
+def check_keep(suffix: str) -> tuple[bool, str]:
+    """conditional activation of tests - RUN TEST ONLY IF"""
+
+    envname = f"{LAZY_KEEP_TEST_PREFIX}{suffix}".replace("__", "_")
+
+    res = bool(os.getenv(envname))
+    msg = f"add ${envname}"
+    if verbose:
+        eprint("🔬", msg)
+    return (res, msg)

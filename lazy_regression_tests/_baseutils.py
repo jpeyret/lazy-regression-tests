@@ -1470,3 +1470,8 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
             return {}
 
         return res
+
+
+def eprint(*args, **kwargs):
+    """print to sys.stderr"""
+    print(*args, file=sys.stderr, **kwargs)

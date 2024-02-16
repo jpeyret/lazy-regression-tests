@@ -20,3 +20,5 @@ FTR = f"\n{'🧨⚙️' * 20}\n"
 ENVIRONMENT_VARNAME_ROOT = "lzrt_"
 
 LAZY_HEADER_SEPARATOR = "<![CDATA[header"
+
+LAZY_KEEP_TEST_PREFIX = "lazy_keep_test_"
