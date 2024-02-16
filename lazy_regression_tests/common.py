@@ -33,9 +33,9 @@ try:
 except (ImportError,) as e:
     rin = NotImplemented
 
-from bemyerp.websec.log_settings import getLogger
+from logging import getLogger
 
-logger = getLogger(__name__, "debuglog")
+logger = getLogger("lazy")
 log = logger.debug
 
 verbose = "-v" in sys.argv

@@ -27,9 +27,9 @@ undefined = NotImplemented
 
 from lazy_regression_tests.utils import set_cpdb, set_rpdb, ppp, first
 
-from bemyerp.websec.log_settings import getLogger
+from logging import getLogger
 
-logger = getLogger(__name__, "debuglog")
+logger = getLogger("lazy")
 log = logger.debug
 
 

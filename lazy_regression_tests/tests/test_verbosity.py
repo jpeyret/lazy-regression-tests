@@ -12,7 +12,7 @@ import os
 #################################################################
 import pytest
 
-from bemyerp.lib._baseutils import set_cpdb, set_rpdb, set_breakpoints3
+from lazy_regression_tests.utils import set_cpdb, set_rpdb, set_breakpoints3
 
 
 def cpdb(*args, **kwargs):
