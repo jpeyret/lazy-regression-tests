@@ -12,6 +12,7 @@ from pathlib import Path
 # Dependencies
 #################################################################
 import pydantic
+from pydantic import ConfigDict
 
 
 def cpdb(*args, **kwargs):
@@ -106,12 +107,7 @@ class BFilter(pydantic.BaseModel):
     cls_: Optional[type] = None
     formatter: Optional[Callable] = None
     show = show
-
-    class Config:
-        "pydantic config"
-        # f can be a number of things and is resolved in its validator, build_filter, for now
-        arbitrary_types_allowed = True
-        extra = pydantic.Extra.forbid
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=pydantic.Extra.forbid)
 
     def __eq__(self, other):
         """see notes on hash"""

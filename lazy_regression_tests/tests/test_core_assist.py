@@ -28,6 +28,7 @@ from lazy_regression_tests.utils import (
     set_rpdb,
     set_breakpoints3,
     ppp,
+    disable_cpdb
 )
 
 

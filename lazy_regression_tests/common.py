@@ -26,6 +26,7 @@ import sys
 import operator
 from collections.abc import Mapping
 from collections import defaultdict
+from pydantic import ConfigDict
 
 try:
     from rich import inspect as rin
@@ -623,7 +624,8 @@ def parse_pydantic_validation_error(src):
 TU_NOCATCH = (
     AssertionError,
     ConfigurationException,
-    pydantic.error_wrappers.ValidationError,
+    #v1 pydantic.error_wrappers.ValidationError,
+    pydantic.ValidationError,
     ValidationError,
 )
 
@@ -711,10 +713,7 @@ class RegexSubstitFilter(BFilter):
     f: str
     replace: str
     patre: Any = None
-
-    class Config:
-        "pydantic config"
-        validate_assignment = arbitrary_types_allowed = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     def __init__(self, **kwargs):
         try:
@@ -887,7 +886,7 @@ class RawFilter(Filter):
     """ancestor of `raw` (non-text) filters"""
 
     raw = True
-    f: Any
+    f: Any = None
     scalar: bool = False
 
     @abstractmethod
@@ -1038,12 +1037,7 @@ class FilterMgr(pydantic.BaseModel):
     @property
     def named_filters(self) -> Dict[str, BFilter]:
         return self.h.named_filters
-
-    class Config:
-        "pydantic config"
-        # v can be a number of things and is resolved in its validator, build_filter, for now
-        arbitrary_types_allowed = True
-        extra = pydantic.Extra.forbid
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra=pydantic.Extra.forbid)
 
     def filter(self, data_in: Any = None) -> str:
         """filter data and return as string representation"""
@@ -1674,10 +1668,7 @@ class Validator(pydantic.BaseModel):
 
     def __str__(self):
         return f"{self.__class__.__name__}:{str(self.__dict__)}"
-
-    class Config:
-        "pydantic config"
-        validate_assignment = arbitrary_types_allowed = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @pydantic.validator("selector", pre=True)
     def build_selector(cls, value, values, config, field):
@@ -1888,10 +1879,7 @@ class ValidatorMgr(pydantic.BaseModel):
             if cpdb():
                 breakpoint()
             raise
-
-    class Config:
-        "pydantic config"
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def assert_valid(self, data, debug=False):
         """runs the validations"""
@@ -2435,7 +2423,7 @@ class ActualValidator(Validator):
     name: str
     mgr: ValidatorMgr
     selector: Union[None, Any, Callable] = None
-    exp: Any
+    exp: Any = None
     v: ValidatorCheck
     error: str = ""
 

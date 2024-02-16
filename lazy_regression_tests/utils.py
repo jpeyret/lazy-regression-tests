@@ -10,6 +10,7 @@ import pdb
 from lazy_regression_tests._baseutils import (
     set_cpdb,
     set_rpdb,
+    disable_cpdb,
     ppp,
     debugObject,
     fill_template,
