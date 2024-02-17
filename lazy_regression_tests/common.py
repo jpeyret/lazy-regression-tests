@@ -840,13 +840,8 @@ class Filter(BFilter):
         else:
             return not self.f.match(line), line
 
-    # @pydantic.root_validator
-    # def _init(cls: Any, values: Dict[str, Any]) -> Dict[str, Any]:
-        # """root validator, checks all is good, especially `f` filter"""
-
-    # https://docs.pydantic.dev/latest/concepts/validators/#model-validators
-    @pydantic.model_validator(mode='after')
-    def _init(self) -> Dict[str, Any]:
+    @pydantic.model_validator(mode='after') # type: ignore
+    def _init(self):
 
         try:
 
@@ -961,8 +956,6 @@ class DictFilter(RawFilter):
                 breakpoint()
             raise
 
-    # @pydantic.root_validator
-    # def _init(cls, values: Dict[str, Any]) -> Dict[str, Any]:
     @pydantic.model_validator(mode="after")
     def _init(self):
         """root validator, make sure everything is good, esp `f` filter attribute"""
@@ -1667,7 +1660,6 @@ class Validator(pydantic.BaseModel):
     active: Optional[bool] = True
     selector: Optional[Any] = None
     exp: Optional[Any] = None
-    # options: Optional[Options] = DEFAULT_OPTIONS
     v: Optional[ValidatorCheck] = None
 
     def __repr__(self) -> str:
@@ -1677,10 +1669,6 @@ class Validator(pydantic.BaseModel):
         return f"{self.__class__.__name__}:{str(self.__dict__)}"
 
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
-
-    # @pydantic.validator("selector", pre=True)
-    # def build_selector(cls, value, values):
-    #     """how to extract data of interest?"""
 
     @pydantic.field_validator('selector')
     @classmethod
@@ -2442,13 +2430,6 @@ class ActualValidator(Validator):
     v: ValidatorCheck
     error: str = ""
 
-    # @pydantic.validator("v", pre=True)
-    # def build_validator(cls, value, values, config, field):
-
-    # @pydantic.field_validator('selector')
-    # @classmethod
-    # def build_selector(cls, v : Any, info : pydantic.ValidationInfo):
-
     @pydantic.field_validator("v", mode="before")
     @classmethod
     def build_validator(cls, value: Any, info : pydantic.ValidationInfo):
@@ -2467,8 +2448,6 @@ class ActualValidator(Validator):
                 breakpoint()
             raise
 
-    # @pydantic.root_validator
-    # def _init(cls, values: Dict[str, Any]) -> Dict[str, Any]:
     @pydantic.model_validator(mode="after")
     def _init(self):
         try:
