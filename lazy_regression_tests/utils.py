@@ -24,6 +24,7 @@ from lazy_regression_tests._baseutils import (
     set_breakpoints3,
     Dummy,
     UnavailableLibrary as BaseUnavailableLibrary,
+    force_verbose,
 )
 
 

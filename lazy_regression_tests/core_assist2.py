@@ -15,7 +15,7 @@ from pathlib import Path
 #################################################################
 from more_itertools import partition
 
-from lazy_regression_tests.basics import get_alias_from_ancestors
+from lazy_regression_tests.basics import get_alias_from_ancestors,ALazyRoot
 
 from lazy_regression_tests.providers import (
     di_ext_provider,
@@ -118,7 +118,7 @@ class _HelperRoot:
 
 
 @dataclass
-class LazyRoot:
+class LazyRoot(ALazyRoot):
     """
     class and instance level root behavior for lazy
     intent is to allow things like `self.lz.html.val.title`

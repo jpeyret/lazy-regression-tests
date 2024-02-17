@@ -444,3 +444,8 @@ def lazyinfo(
         if cpdb():
             breakpoint()
         raise
+
+class ALazyRoot:
+    "keep annos happy"
+
+

@@ -28,7 +28,8 @@ from lazy_regression_tests.utils import (
     set_rpdb,
     set_breakpoints3,
     ppp,
-    disable_cpdb
+    disable_cpdb,
+    force_verbose
 )
 
 
@@ -352,7 +353,7 @@ careamouseghidef
                     with pytest.raises(
                         (
                             ConfigurationException,
-                            pydantic.error_wrappers.ValidationError,
+                            pydantic.ValidationError,
                         )
                     ):
 
@@ -363,7 +364,7 @@ careamouseghidef
 
                 # self.fail(f"shoulda failed. bad function signature {bad_func}")
             # pragma: no cover pylint: disable=unused-variable
-            except (ValueError, pydantic.error_wrappers.ValidationError) as e:
+            except (ValueError, pydantic.ValidationError) as e:
                 pass
 
             def bad_func2(a: str) -> dict:
@@ -381,7 +382,7 @@ careamouseghidef
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
             # pragma: no cover pylint: disable=unused-variable
-            except (pydantic.error_wrappers.ValidationError,) as e:
+            except (pydantic.ValidationError,) as e:
                 pass
             except (ValueError,) as e:
                 self.assertTrue("expecting" in str(e))
@@ -835,7 +836,7 @@ class Test_Validator(BaseValidatorTst):
             with disable_cpdb() as disabled:
                 # with disable_cpdb() as disabled:
                 with pytest.raises(
-                    (ValidationError, pydantic.error_wrappers.ValidationError)
+                    (ValidationError, pydantic.ValidationError)
                 ):
                     # we expect an error because there is no validation function
                     checker.v(foob)

@@ -77,6 +77,7 @@ from lazy_regression_tests.basics import (
     get_alias_check_equality,
     ValidationError,
     DisableAll,
+    ALazyRoot,
 )
 
 
@@ -624,7 +625,6 @@ def parse_pydantic_validation_error(src):
 TU_NOCATCH = (
     AssertionError,
     ConfigurationException,
-    #v1 pydantic.error_wrappers.ValidationError,
     pydantic.ValidationError,
     ValidationError,
 )
@@ -1172,7 +1172,7 @@ class FilterMgr(pydantic.BaseModel):
 
 @dataclass
 class Checker:
-    lz: "LazyRoot"
+    lz: ALazyRoot
     f: FilterMgr
     v: "ValidatorMgr"
     ext: str
@@ -1904,7 +1904,7 @@ class ValidatorMgr(pydantic.BaseModel):
                 (
                     AssertionError,
                     ConfigurationException,
-                    pydantic.error_wrappers.ValidationError,
+                    pydantic.ValidationError,
                 )
                 if not debug
                 else tuple()
