@@ -840,22 +840,27 @@ class Filter(BFilter):
         else:
             return not self.f.match(line), line
 
-    @pydantic.root_validator
-    def _init(cls: Any, values: Dict[str, Any]) -> Dict[str, Any]:
-        """root validator, checks all is good, especially `f` filter"""
+    # @pydantic.root_validator
+    # def _init(cls: Any, values: Dict[str, Any]) -> Dict[str, Any]:
+        # """root validator, checks all is good, especially `f` filter"""
+
+    # https://docs.pydantic.dev/latest/concepts/validators/#model-validators
+    @pydantic.model_validator(mode='after')
+    def _init(self) -> Dict[str, Any]:
+
         try:
 
-            if values.get("f") is None:
-                name = values.get("name", "")
+            if self.f is None:
+                name = self.name
                 if name:
                     name = f".{name}"
 
                 msg = (
-                    f"{cls.__name__}{name} could not determine `f` filter for {values=}"
+                    f"{type(self).__name__}{name} could not determine `f` filter for {self}"
                 )
                 raise ConfigurationException(msg)
 
-            return values
+            return self
         # pragma: no cover pylint: disable=unused-variable
         except (ConfigurationException,) as e:
             raise
@@ -885,7 +890,7 @@ class RegexFilterWrapper(TextFilterWrapper):
 class RawFilter(Filter):
     """ancestor of `raw` (non-text) filters"""
 
-    raw = True
+    raw : bool = True
     f: Any = None
     scalar: bool = False
 
@@ -956,16 +961,18 @@ class DictFilter(RawFilter):
                 breakpoint()
             raise
 
-    @pydantic.root_validator
-    def _init(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    # @pydantic.root_validator
+    # def _init(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @pydantic.model_validator(mode="after")
+    def _init(self):
         """root validator, make sure everything is good, esp `f` filter attribute"""
         try:
-            if values.get("f") is None:
-                di = {values["name"]: None}
+            if self.f is None:
+                di = {self.name: None}
                 f = DictFilterWrapper(di)
-                values["f"] = f
+                self.f = f
 
-            return values
+            return self
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
@@ -1668,25 +1675,32 @@ class Validator(pydantic.BaseModel):
 
     def __str__(self):
         return f"{self.__class__.__name__}:{str(self.__dict__)}"
+
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-    @pydantic.validator("selector", pre=True)
-    def build_selector(cls, value, values, config, field):
-        """how to extract data of interest?"""
+    # @pydantic.validator("selector", pre=True)
+    # def build_selector(cls, value, values):
+    #     """how to extract data of interest?"""
+
+    @pydantic.field_validator('selector')
+    @classmethod
+    def build_selector(cls, v : Any, info : pydantic.ValidationInfo):
+
+
         try:
             try:
-                specials = value in Selectors
+                specials = v in Selectors
             except (TypeError,) as e:
                 specials = False
 
             if specials:
                 # take the validator's own name as the attribute name
-                if value == Selectors.name:
-                    return values["name"]
+                if v == Selectors.name:
+                    return info.data["name"]
                 else:
-                    raise NotImplementedError(f"{value}")
+                    raise NotImplementedError(f"{v}")
 
-            return value
+            return v
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1694,8 +1708,9 @@ class Validator(pydantic.BaseModel):
                 breakpoint()
             raise
 
-    @pydantic.validator("v", pre=True)
-    def build_validator(cls, value, values, config, field):
+    @pydantic.field_validator("v", mode="before")
+    @classmethod
+    def build_validator(cls, value, info : pydantic.ValidationInfo):
         """prep the validator wrapper"""
         try:
             # options = values["options"]
@@ -2427,8 +2442,17 @@ class ActualValidator(Validator):
     v: ValidatorCheck
     error: str = ""
 
-    @pydantic.validator("v", pre=True)
-    def build_validator(cls, value, values, config, field):
+    # @pydantic.validator("v", pre=True)
+    # def build_validator(cls, value, values, config, field):
+
+    # @pydantic.field_validator('selector')
+    # @classmethod
+    # def build_selector(cls, v : Any, info : pydantic.ValidationInfo):
+
+    @pydantic.field_validator("v", mode="before")
+    @classmethod
+    def build_validator(cls, value: Any, info : pydantic.ValidationInfo):
+
         try:
             if not value:
                 value = CHECK_EQUALITY
@@ -2443,18 +2467,20 @@ class ActualValidator(Validator):
                 breakpoint()
             raise
 
-    @pydantic.root_validator
-    def _init(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    # @pydantic.root_validator
+    # def _init(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @pydantic.model_validator(mode="after")
+    def _init(self):
         try:
 
-            selector = values["selector"]
+            selector = self.selector
             if selector is None:
-                values["selector"] = values["name"]
+                self.selector  = self.name
 
-            exp = values["exp"]
+            exp = self.exp
             if exp is None:
-                values["exp"] = AutoExp
-            return values
+                self.exp = AutoExp
+            return self
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
