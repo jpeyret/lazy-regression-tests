@@ -9,13 +9,14 @@ from typing import (
     Optional,
     Dict,
     Any,
+    Sequence,
     Union,
     List,
     Callable,
 )
 from io import StringIO
 from abc import abstractmethod
-from inspect import signature, _ParameterKind
+from inspect import signature
 import re
 from dataclasses import dataclass
 import unittest
@@ -28,41 +29,11 @@ from collections.abc import Mapping
 from collections import defaultdict
 from pydantic import ConfigDict
 
-try:
-    from rich import inspect as rin
-# pragma: no cover pylint: disable=unused-variable
-except (ImportError,) as e:
-    rin = NotImplemented
-
-from logging import getLogger
-
-logger = getLogger("lazy")
-log = logger.debug
-
-verbose = "-v" in sys.argv
 
 #################################################################
 # Dependencies
 #################################################################
 import pydantic
-
-try:
-    from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
-except (ImportError,) as e:
-    timeout = None
-
-    class CustomTimeoutError(Exception):
-        """shouldnt see this"""
-
-
-#################################################################
-# Default validation functions
-#################################################################
-
-di_ext_provider = {}
-
-
-warning = "\n🧨 "
 
 import lazy_regression_tests.constants as constants
 
@@ -80,6 +51,47 @@ from lazy_regression_tests.basics import (
     ALazyRoot,
 )
 
+from lazy_regression_tests._baseutils import (
+    DictFormatter,
+    Dummy,
+    def_repr,
+    Subber,
+    fill_template,
+    oshow as show,
+)
+
+try:
+    from rich import inspect as rin
+# pragma: no cover pylint: disable=unused-variable
+except (ImportError,) as e:
+    rin = NotImplemented
+
+from logging import getLogger
+
+
+try:
+    from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
+except (ImportError,) as e:
+    timeout = None
+
+    class CustomTimeoutError(Exception):
+        """shouldnt see this"""
+
+
+logger = getLogger("lazy")
+log = logger.debug
+
+verbose = "-v" in sys.argv
+
+#################################################################
+# Default validation functions
+#################################################################
+
+di_ext_provider = {}
+
+
+warning = "\n🧨 "
+
 
 def _checktypes(got, exp, validator: "Validator"):
     """warn if there was type mismatch"""
@@ -93,16 +105,6 @@ def _checktypes(got, exp, validator: "Validator"):
             f"{warning}{repr(validator)}: Possible type mismatch exp={type(exp)} vs got={type(got)=} {selector_msg}\n"
         )
 
-
-from lazy_regression_tests._baseutils import (
-    DictFormatter,
-    Dummy,
-    def_repr,
-    ppp,
-    Subber,
-    fill_template,
-    oshow as show,
-)
 
 undefined = NotImplemented
 
@@ -200,7 +202,7 @@ class _Control(object):
                     constants.OPT_DIRECTIVE_NODIFF,
                     constants.OPT_DIRECTIVE_NOASSERT,
                 }
-                if not res in known:
+                if res not in known:
                     raise ValueError(
                         f" unknown directive {res}.  known directives: {known}"
                     )
@@ -358,9 +360,6 @@ class ValidatorTemp:
         self.data_in = data_in
         checker.temp = self
         self.__dict__.update(**kwargs)
-
-
-from typing import Type
 
 
 def nested_get(data: Any, selector: str) -> Any:
@@ -551,7 +550,7 @@ class PAbstractExtProvider(Protocol):
 
             if isinstance(data_in, Mapping):
                 data = data_in
-                if not "." in selector:
+                if "." not in selector:
                     try:
                         res = data[selector]
                         return res
@@ -840,7 +839,7 @@ class Filter(BFilter):
         else:
             return not self.f.match(line), line
 
-    @pydantic.model_validator(mode='after') # type: ignore
+    @pydantic.model_validator(mode="after")  # type: ignore
     def _init(self):
 
         try:
@@ -850,9 +849,7 @@ class Filter(BFilter):
                 if name:
                     name = f".{name}"
 
-                msg = (
-                    f"{type(self).__name__}{name} could not determine `f` filter for {self}"
-                )
+                msg = f"{type(self).__name__}{name} could not determine `f` filter for {self}"
                 raise ConfigurationException(msg)
 
             return self
@@ -885,7 +882,7 @@ class RegexFilterWrapper(TextFilterWrapper):
 class RawFilter(Filter):
     """ancestor of `raw` (non-text) filters"""
 
-    raw : bool = True
+    raw: bool = True
     f: Any = None
     scalar: bool = False
 
@@ -1037,6 +1034,7 @@ class FilterMgr(pydantic.BaseModel):
     @property
     def named_filters(self) -> Dict[str, BFilter]:
         return self.h.named_filters
+
     model_config = ConfigDict(arbitrary_types_allowed=True, extra=pydantic.Extra.forbid)
 
     def filter(self, data_in: Any = None) -> str:
@@ -1670,10 +1668,9 @@ class Validator(pydantic.BaseModel):
 
     model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-    @pydantic.field_validator('selector')
+    @pydantic.field_validator("selector")
     @classmethod
-    def build_selector(cls, v : Any, info : pydantic.ValidationInfo):
-
+    def build_selector(cls, v: Any, info: pydantic.ValidationInfo):
 
         try:
             try:
@@ -1698,7 +1695,7 @@ class Validator(pydantic.BaseModel):
 
     @pydantic.field_validator("v", mode="before")
     @classmethod
-    def build_validator(cls, value, info : pydantic.ValidationInfo):
+    def build_validator(cls, value, info: pydantic.ValidationInfo):
         """prep the validator wrapper"""
         try:
             # options = values["options"]
@@ -1882,9 +1879,39 @@ class ValidatorMgr(pydantic.BaseModel):
             if cpdb():
                 breakpoint()
             raise
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def assert_valid(self, data, debug=False):
+    def _check_skip(
+        self, v, skips: Sequence[str | Any | re.Pattern] | re.Pattern | str | None
+    ) -> bool:
+        """check if the validator should be skipped"""
+        try:
+            if not skips:
+                return False
+            if not isinstance(skips, Sequence):
+                skips = [skips]
+            for skip in skips:
+                if isinstance(skip, str):
+                    if v.name == skip:
+                        return True
+                elif isinstance(skip, re.Pattern):
+                    if skip.match(v.name):
+                        return True
+
+            return False
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def assert_valid(
+        self,
+        data,
+        debug=False,
+        skips: Sequence[str | Any | re.Pattern] | re.Pattern | str | None = None,
+    ):
         """runs the validations"""
         try:
 
@@ -1908,7 +1935,10 @@ class ValidatorMgr(pydantic.BaseModel):
             for val in self.validators:
                 if not val.active:
                     continue
-                actual = ActualValidator(mgr=self, **val.dict())
+                if skips and self._check_skip(val, skips):
+                    continue
+
+                actual = ActualValidator(mgr=self, **val.model_dump())
                 actuals.append(actual)
 
             for val in actuals:
@@ -2432,7 +2462,7 @@ class ActualValidator(Validator):
 
     @pydantic.field_validator("v", mode="before")
     @classmethod
-    def build_validator(cls, value: Any, info : pydantic.ValidationInfo):
+    def build_validator(cls, value: Any, info: pydantic.ValidationInfo):
 
         try:
             if not value:
@@ -2454,7 +2484,7 @@ class ActualValidator(Validator):
 
             selector = self.selector
             if selector is None:
-                self.selector  = self.name
+                self.selector = self.name
 
             exp = self.exp
             if exp is None:
