@@ -74,6 +74,7 @@ verbose = False
 
 class _HelperRoot:
     def __init__(self, lz: "LazyRoot"):
+        #🎫004.lazy.054.underscore_lz
         self.lz = lz
 
     _filters = _validators = undefined
@@ -82,6 +83,7 @@ class _HelperRoot:
     def filters(self) -> Dict[str, FilterMgr]:
         "return filters"
         if self._filters is undefined:
+            #🎫004.lazy.054.underscore_lz
             self._filters = {f.ext: f for f in self.lz.filters}
         return self._filters
 
@@ -89,6 +91,7 @@ class _HelperRoot:
     def validators(self) -> Dict[str, ValidatorMgr]:
         "return validators"
         if self._validators is undefined:
+            #🎫004.lazy.054.underscore_lz
             self._validators = {f.ext: f for f in self.lz.validators}
         return self._validators
 
@@ -104,7 +107,9 @@ class _HelperRoot:
                     f"unknown {attrname} known filters={'/'.join(self.filters.keys())} validators={'/'.join(self.validators.keys())}"
                 )
 
+            #🎫004.lazy.054.underscore_lz
             checker = Checker(lz=self.lz, f=filter_, v=validator, ext=attrname)
+            #🎫004.lazy.054.underscore_lz
             setattr(self.lz, attrname, checker)
             return checker
 
@@ -360,6 +365,7 @@ class _LazyMeta(type):
                 """injecting an `__init__` that will happen before the TestCase.__init__"""
                 super(newclass, self).__init__(*args, **kwargs)  # type: ignore
                 # self.filters = {k: v.copy(deep=True) for k, v in self.cls_filters.items()}
+                #🎫004.lazy.054.underscore_lz
                 self.lz = self.__class__.lz.clone(testee=self)
 
             # we want to inject this so that it always comes before TestCase.__init__

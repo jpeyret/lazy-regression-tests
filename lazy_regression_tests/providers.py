@@ -52,11 +52,13 @@ class DictExtProvider(PAbstractExtProvider):
                         res = json.loads(res)
                     if not isinstance(res, dict):
                         raise ConfigurationException(
+                            #🎫004.lazy.054.underscore_lz
                             f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
                         )
 
                     return res
             raise ConfigurationException(
+                #🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
             )
 
@@ -83,6 +85,7 @@ class DictExtProvider(PAbstractExtProvider):
                     data = f()
                 else:
                     raise ConfigurationException(
+                        #🎫004.lazy.054.underscore_lz
                         f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
                     )
 
@@ -173,6 +176,7 @@ class JsonExtProvider(DictExtProvider):
                     return v
 
             raise ConfigurationException(
+                #🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
             )
 
@@ -226,6 +230,7 @@ class JsonExtProvider(DictExtProvider):
                     return res.strip()
 
                 raise ConfigurationException(
+                    #🎫004.lazy.054.underscore_lz
                     f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
                 )
 

@@ -66,8 +66,8 @@ try:
 except (ImportError,) as e:
     rin = NotImplemented
 
-from logging import getLogger
-
+from bemyerp.websec.log_settings import getLogger
+logger = getLogger(__name__, "debuglog")
 
 try:
     from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
@@ -77,9 +77,13 @@ except (ImportError,) as e:
     class CustomTimeoutError(Exception):
         """shouldnt see this"""
 
+import bemyerp.pssystem.constants as dbgconstants
 
-logger = getLogger("lazy")
-log = logger.debug
+FLOG = logger.warning
+
+def log(msg, *args, flog=None, **kwargs): #custom lazy
+    flog = flog or FLOG
+    flog(f'{dbgconstants.LOG_PREFIX_DEBUG2.lazy }{msg}', *args, **kwargs)
 
 verbose = "-v" in sys.argv
 
@@ -119,6 +123,10 @@ class _Control(object):
     to determine handlers for IOError and AssertionError
     save in the LazyTemp results object as well.
     """
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__},options={self.options},env={self.env}"
+    
 
     def __init__(
         self,
@@ -1140,8 +1148,8 @@ class FilterMgr(pydantic.BaseModel):
         try:
             plocal = not file
             file = file or StringIO()
-            log(f"{self.__class__.__name__}:{self.ext=},{self.alias=}", file=file)
-            log(nesting, "Filters:", file=file)
+            log(f"{self.__class__.__name__}:{self.ext=},{self.alias=}")
+            log("Filters:")
             indent = nesting + "  "
             for f in self.filters:
                 f.show(file=file, nesting=indent)
@@ -1303,6 +1311,9 @@ class Checker:
         filter_: bool = True,
     ) -> LazyTemp:
         try:
+
+            prefix=f"Checker._lazycheck:"
+
             self.lazy_save_got = lazy_save_got
             self.lazy_save_exp = lazy_save_exp
             env = self.lazy_environ
@@ -1311,6 +1322,8 @@ class Checker:
                 env.acquire(self.ENVIRONMENT_VARNAME_ROOT)
 
             self._lazy_control = control = _Control(self, env, checker)
+
+            log(f"{prefix}{control=}")
 
             # only create the lazy temp the first time.
             tmp = self.lazytemp = getattr(self, "lazytemp", None) or LazyTemp(
@@ -1323,7 +1336,7 @@ class Checker:
                 return tmp
 
             # calculate the paths of the exp/got files
-
+            #🎫004.lazy.054.underscore_lz
             testee = self.lz.testee
 
             # Issue.011.eval.tabulator
@@ -1336,9 +1349,21 @@ class Checker:
                 exp_got="exp", suffix=suffix, testee=testee, control=control
             )
 
+            log(f"{prefix}{fnp_exp=},{fnp_got=}")
+
+            if breakpoints('_lazycheck', {'always': 1}):  # pragma: no cover
+                print(f'\n\n🔬🔬🔬Checker.lazycheck')
+                breakpoint()
+                pass
+            
+
+
+            log("checker.write_raw")
             checker.write_raw(suffix=suffix, testee=testee, control=control, got=got)
 
             # linefeeds have a tendency to creep in sometimes
+
+            log(f"{prefix}.got.stripping")
             if filter_:
                 formatted_got = self.temp.formatted_got.strip()
             else:
@@ -1348,6 +1373,7 @@ class Checker:
 
             # at this point, we want to write the received, formatted, data regardless
             if self.lazy_save_got:
+                log(f"{prefix}:{fnp_got=}.open+write")
                 with fnp_got.open("w") as fo:
 
                     if metadata_header:
@@ -1363,6 +1389,7 @@ class Checker:
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
             if control.baseline() and self.lazy_save_exp:
+                log(f"{prefix}:{fnp_exp=}.open+write")
                 with fnp_exp.open("w") as fo:
 
                     if metadata_header:
@@ -1515,6 +1542,7 @@ class TextExtProvider(PAbstractExtProvider):
         try:
             if not isinstance(data, str):
                 raise ConfigurationException(
+                    #🎫004.lazy.054.underscore_lz
                     f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker.lz.extensions)}"
                 )
             return data.strip()
@@ -2039,7 +2067,7 @@ class ValidatorMgr(pydantic.BaseModel):
             file = file or StringIO()
 
             if header:
-                log(header, file=file)
+                log(header)
 
             log(f"{self.__class__.__name__}:{self.alias=}")
 
