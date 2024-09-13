@@ -1,4 +1,4 @@
-"""
+f"""
 common lazy functionality
 """
 import os
@@ -1171,7 +1171,7 @@ class FilterMgr(pydantic.BaseModel):
 
 @dataclass
 class Checker:
-    lz: ALazyRoot
+    _lz: ALazyRoot
     f: FilterMgr
     v: "ValidatorMgr"
     ext: str
@@ -1189,6 +1189,7 @@ class Checker:
     def __post_init__(self):
         """link itself to its filters/validators"""
         try:
+            
 
             alias_v = alias_f = None
 
@@ -1337,7 +1338,7 @@ class Checker:
 
             # calculate the paths of the exp/got files
             #🎫004.lazy.054.underscore_lz
-            testee = self.lz.testee
+            testee = self._lz.testee
 
             # Issue.011.eval.tabulator
             tmp.fnp_got = fnp_got = checker.get_fnp_save(
@@ -1543,7 +1544,7 @@ class TextExtProvider(PAbstractExtProvider):
             if not isinstance(data, str):
                 raise ConfigurationException(
                     #🎫004.lazy.054.underscore_lz
-                    f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+                    f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                 )
             return data.strip()
         # pragma: no cover pylint: disable=unused-variable

@@ -57,7 +57,7 @@ class Test_Verbose(unittest.TestCase):
 
         testee = Tester()
         data = TData(status_code="200")
-        checker = testee.lz.dict
+        checker = testee._lz.dict
         v = checker.v
         with pytest.raises(validators.ValidationError) as tmp:
             v(data)

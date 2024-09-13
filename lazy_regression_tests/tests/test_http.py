@@ -122,7 +122,7 @@ class Base(unittest.TestCase):
             try:
                 ext = ext or self.ext
                 testee = self.cls_tst()
-                extlz: core_assist2.Checker = getattr(testee.lz, ext)
+                extlz: core_assist2.Checker = getattr(testee._lz, ext)
                 return extlz.assert_same(got=data)
 
             # pragma: no cover pylint: disable=unused-variable
@@ -176,7 +176,7 @@ class Test_Validation(Base):
         try:
 
             testee = self.cls_tst()
-            v = testee.lz.html.v
+            v = testee._lz.html.v
 
             # adding a CSS lookup
             validate_name = Validator(
@@ -207,7 +207,7 @@ class Test_Validation(Base):
 
             v.validators.append(validate_name)
 
-            v_title = testee.lz.html.validators["title"]
+            v_title = testee._lz.html.validators["title"]
             v_title.v = custom_title_validation
 
             v(self.response)
@@ -223,7 +223,7 @@ class Test_Validation(Base):
         try:
 
             testee = self.cls_tst()
-            v = testee.lz.html.v
+            v = testee._lz.html.v
 
             # adding a CSS lookup
             validate_name = Validator(
@@ -263,7 +263,7 @@ class Test_Assert_Json(Base):
             self.seed(data=response)
             self.testee = self.cls_tst()
             self.testee._testMethodName = self.__class__.__name__.lower()
-            self.checker: Checker = self.testee.lz.http_json
+            self.checker: Checker = self.testee._lz.http_json
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():
@@ -291,7 +291,7 @@ class Test_Assert_Json(Base):
         try:
 
             testee = self.testee
-            checker: core_assist2.Checker = testee.lz.http_json
+            checker: core_assist2.Checker = testee._lz.http_json
 
             response = self.get_response(now="a bit later")
             checker.v(response)
@@ -335,7 +335,7 @@ class Test_Assert_Same(Base):
 
             testee = self.cls_tst()
 
-            lz = testee.lz
+            lz = testee._lz
             extlz: core_assist2.Checker = lz.html
 
             v = extlz.v

@@ -75,7 +75,7 @@ verbose = False
 class _HelperRoot:
     def __init__(self, lz: "LazyRoot"):
         #🎫004.lazy.054.underscore_lz
-        self.lz = lz
+        self._lz = lz
 
     _filters = _validators = undefined
 
@@ -84,7 +84,7 @@ class _HelperRoot:
         "return filters"
         if self._filters is undefined:
             #🎫004.lazy.054.underscore_lz
-            self._filters = {f.ext: f for f in self.lz.filters}
+            self._filters = {f.ext: f for f in self._lz.filters}
         return self._filters
 
     @property
@@ -92,7 +92,7 @@ class _HelperRoot:
         "return validators"
         if self._validators is undefined:
             #🎫004.lazy.054.underscore_lz
-            self._validators = {f.ext: f for f in self.lz.validators}
+            self._validators = {f.ext: f for f in self._lz.validators}
         return self._validators
 
     def __getattr__(self, attrname: str):
@@ -108,9 +108,9 @@ class _HelperRoot:
                 )
 
             #🎫004.lazy.054.underscore_lz
-            checker = Checker(lz=self.lz, f=filter_, v=validator, ext=attrname)
+            checker = Checker(_lz=self._lz, f=filter_, v=validator, ext=attrname)
             #🎫004.lazy.054.underscore_lz
-            setattr(self.lz, attrname, checker)
+            setattr(self._lz, attrname, checker)
             return checker
 
         # pragma: no cover pylint: disable=unused-variable
@@ -126,7 +126,7 @@ class _HelperRoot:
 class LazyRoot(ALazyRoot):
     """
     class and instance level root behavior for lazy
-    intent is to allow things like `self.lz.html.val.title`
+    intent is to allow things like `self._lz.html.val.title`
     """
 
     filters: List[FilterMgr]
@@ -310,7 +310,8 @@ class LazyMixin:
 
     # populated by _LazyMeta
     cls_filters: Dict[str, FilterMgr]
-    lz: LazyRoot
+    #🎫004.lazy.054.underscore_lz
+    _lz: LazyRoot
 
     #######################################################
     # Note the conditional method definition and the fallback to
@@ -366,7 +367,7 @@ class _LazyMeta(type):
                 super(newclass, self).__init__(*args, **kwargs)  # type: ignore
                 # self.filters = {k: v.copy(deep=True) for k, v in self.cls_filters.items()}
                 #🎫004.lazy.054.underscore_lz
-                self.lz = self.__class__.lz.clone(testee=self)
+                self._lz = self.__class__._lz.clone(testee=self)
 
             # we want to inject this so that it always comes before TestCase.__init__
             setattr(newclass, "__init__", initialize_instance)
@@ -406,12 +407,14 @@ class _LazyMeta(type):
 
             cls.cls_validators = validators
 
+
             lz = LazyRoot(
                 filters=list(cls.cls_filters.values()),
                 validators=list(validators.values()),
             )
 
-            cls.lz = lz
+            #🎫004.lazy.054.underscore_lz
+            cls._lz = lz
 
             super().__init__(name, bases, attrs)
         # pragma: no cover pylint: disable=unused-variable

@@ -209,13 +209,13 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
                     if not isinstance(res, dict):
                         raise ConfigurationException(
                             #🎫004.lazy.054.underscore_lz
-                            f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+                            f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                         )
 
                     return res
             raise ConfigurationException(
                 #🎫004.lazy.054.underscore_lz
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
         except (json.decoder.JSONDecodeError):
@@ -315,7 +315,7 @@ class HTML_Provider(HTTP_Provider):
 
             raise ConfigurationException(
                 #🎫004.lazy.054.underscore_lz
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
         except (Exception,) as e:
@@ -370,7 +370,7 @@ class HTML_Provider(HTTP_Provider):
 
             raise ConfigurationException(
                 #🎫004.lazy.054.underscore_lz
-                f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker.lz.extensions)}"
+                f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
         # pragma: no cover pylint: disable=unused-variable

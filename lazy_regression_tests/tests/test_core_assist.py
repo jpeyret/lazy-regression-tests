@@ -202,7 +202,7 @@ class Test_Dict(Base):
 
             data = self.input1.copy()
 
-            lz = testee.lz
+            lz = testee._lz
             checker = getattr(lz, self.ext, None)
             if not checker:
                 print(f"{self} {testee=}.lz has no {self.ext}")
@@ -233,7 +233,7 @@ class Test_Dict(Base):
 
             di_exp = {k: v for k, v in input_.items() if not k.startswith("skip")}
 
-            checker = getattr(testee.lz, self.ext)
+            checker = getattr(testee._lz, self.ext)
 
             filter_: FilterMgr = checker.f
 
@@ -255,7 +255,7 @@ class Test_Dict(Base):
             di_gen = self.gen_test_classes()
             clsoi = di_gen[self.classnameoi]
             testee = clsoi()
-            checker: Checker = getattr(testee.lz, self.ext)
+            checker: Checker = getattr(testee._lz, self.ext)
 
             filter_: FilterMgr = checker.f
 
@@ -408,7 +408,7 @@ careamouseghidef
             testee = clsoi()
 
             #🎫004.lazy.054.underscore_lz
-            got = testee.lz.txt.f(self.text1)
+            got = testee._lz.txt.f(self.text1)
 
             self.assertFalse("abc" in got)
             self.assertFalse("def" in got)
@@ -420,14 +420,14 @@ careamouseghidef
             testee2 = di_gen["DirectTop"]()
 
             #🎫004.lazy.054.underscore_lz
-            got = testee2.lz.txt.f(self.text1)
+            got = testee2._lz.txt.f(self.text1)
             self.assertEqual(exp, got)
 
             clsoi = di_gen["Level3"]
             testee = clsoi()
 
             #🎫004.lazy.054.underscore_lz
-            got = testee.lz.txt.f(self.text1)
+            got = testee._lz.txt.f(self.text1)
 
             exp = self.get_filter_exp(
                 self.text1, lambda line: ("abc" in line) or not ("ghi" in line)
@@ -453,7 +453,7 @@ careamouseghidef
 
             testee = clsoi()
 
-            checker = testee.lz.txt
+            checker = testee._lz.txt
 
             got = checker.f(self.text1)
 
@@ -522,7 +522,7 @@ class Test_LazyRoot(Base):
 
             clsoi: LazyMixin = classes["Named"]
 
-            lz: LazyRoot = clsoi.lz
+            lz: LazyRoot = clsoi._lz
 
             mgr = lz.txt
 
@@ -663,7 +663,7 @@ class Test_Validator(BaseValidatorTst):
             data = TData(val1="value1", val2=2, data="abcd")
             testee = Level3()
 
-            checker = testee.lz.dict
+            checker = testee._lz.dict
 
             lvalidators = checker.validators
 
@@ -706,24 +706,24 @@ class Test_Validator(BaseValidatorTst):
             validator = lz.txt.v
 
             testee = clsoi()
-            # testee.lz.txt.v.testee = testee
+            # testee._lz.txt.v.testee = testee
 
             try:
                 data = "addxc"
                 with disable_cpdb():
-                    testee.lz.txt.v(data)
+                    testee._lz.txt.v(data)
                 self.fail(f"abc presence test shoulda failed on {data}")
             except (AssertionError,) as e:
                 if verbose:
                     print(f"✅{self}.expected error: {e}")
 
             data = "abcd"
-            v = testee.lz.txt.v
+            v = testee._lz.txt.v
             v(data)
 
             data = TData(data="abc")
 
-            checker = testee.lz.dict
+            checker = testee._lz.dict
 
             checker.validators["abc_in_data"].selector = "data"
             checker.v(data)
@@ -750,7 +750,7 @@ class Test_Validator(BaseValidatorTst):
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if testee:
-                testee.lz.show()
+                testee._lz.show()
             if cpdb():
                 breakpoint()
             raise
@@ -769,34 +769,34 @@ class Test_Validator(BaseValidatorTst):
                 cls_validators = dict(txt=[dict(name=valname, active=False)])
 
             #🎫004.lazy.054.underscore_lz
-            self.assertTrue(DynTest.lz.txt.v)
+            self.assertTrue(DynTest._lz.txt.v)
 
             #🎫004.lazy.054.underscore_lz
-            self.assertFalse(DynTest.lz.txt.validators[valname].active)
+            self.assertFalse(DynTest._lz.txt.validators[valname].active)
 
             testee = DynTest()
 
-            self.assertFalse(testee.lz.txt.validators[valname].active)
+            self.assertFalse(testee._lz.txt.validators[valname].active)
 
             self.assertTrue(isinstance(testee, LazyMixin))
 
-            self.assertTrue(testee.lz.txt.v.testee)
+            self.assertTrue(testee._lz.txt.v.testee)
 
-            testee.lz.txt.v("xxx")
+            testee._lz.txt.v("xxx")
 
-            testee.lz.txt.validators["abc_in_data"].active = True
+            testee._lz.txt.validators["abc_in_data"].active = True
 
             raiser = getattr(self, "fail", AssertionError)
 
             try:
                 with disable_cpdb():
-                    testee.lz.txt.v("xxx")
+                    testee._lz.txt.v("xxx")
                     raiser("abc presence validator has no validation function")
             except (AssertionError) as e:
                 if verbose:
                     print(f"✅{self}.expected error: {e}")
 
-            validator = testee.lz.txt.validators["abc_in_data"]
+            validator = testee._lz.txt.validators["abc_in_data"]
 
             validator.active = True
 
@@ -804,12 +804,12 @@ class Test_Validator(BaseValidatorTst):
 
             try:
                 with disable_cpdb():
-                    testee.lz.txt.v("xxx")
+                    testee._lz.txt.v("xxx")
             except (AssertionError,) as e:
                 if verbose:
                     print(f"✅{self}.expected error: {e}")
 
-            testee.lz.txt.v("xabcd")
+            testee._lz.txt.v("xabcd")
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -837,7 +837,7 @@ class Test_Validator(BaseValidatorTst):
             foob = TData(status_code=200)
 
             #🎫004.lazy.054.underscore_lz
-            checker = missing_validator.lz.yaml
+            checker = missing_validator._lz.yaml
 
             with disable_cpdb() as disabled:
                 # with disable_cpdb() as disabled:
@@ -931,10 +931,10 @@ class Test_Validator(BaseValidatorTst):
                 "and now we expect status_code=200"
                 cls_validators = dict(html=[dict(name="status_code", exp=ok)])
 
-            self.assertEqual(ok, TstOK.lz.html.validators["status_code"].exp)
+            self.assertEqual(ok, TstOK._lz.html.validators["status_code"].exp)
 
             testee = TstOK()
-            checker = testee.lz.html
+            checker = testee._lz.html
 
             response = get_fake_response_from_html(status=404)
             try:
@@ -965,9 +965,9 @@ class Test_Validator(BaseValidatorTst):
 
             testee_equal = TstOKEqual()
 
-            checker_cls = TstOKEqual.lz.html
+            checker_cls = TstOKEqual._lz.html
 
-            checker = testee_equal.lz.html
+            checker = testee_equal._lz.html
 
             v_cls = checker_cls.validators[valname]
             v_inst = checker.validators[valname]
@@ -1003,7 +1003,7 @@ class Test_Validator(BaseValidatorTst):
             data = get_fake_response_from_html(title="xabcd")
 
             testee = TstDirect()
-            checker = testee.lz.html
+            checker = testee._lz.html
             checker.v(data)
 
             data = get_fake_response_from_html(title="xyz")
@@ -1132,7 +1132,7 @@ class Test_ValidatorMgr_Stacking(Base):
             data = TData(content_type=self.content_json, status_code=404)
 
             # The ValidationMgr of interest
-            v = testee.lz.json.v
+            v = testee._lz.json.v
 
             testee.status_code = 200
 
@@ -1145,7 +1145,7 @@ class Test_ValidatorMgr_Stacking(Base):
             # self.assertIn("v is missing", msg)
 
             # deactivate json validation
-            testee.lz.json.validators[self.name_valjson].active = False
+            testee._lz.json.validators[self.name_valjson].active = False
 
             # now we are missing status_code on data
             delattr(testee, "status_code")
@@ -1207,7 +1207,7 @@ class Test_ValidatorMgr_Stacking(Base):
 
             testee = Test()
 
-            checker = testee.lz.html
+            checker = testee._lz.html
 
             data = get_fake_response_from_html(
                 status=self.ok, content_type=self.content_html
@@ -1371,7 +1371,7 @@ class Test_Aliasing(Base):
             testee, data = self.get_testee_data(
                 "TSettingsAlias", di_exp=dict(objectvalue01="badexp")
             )
-            checker = testee.lz.settings
+            checker = testee._lz.settings
             with pytest.raises(common.ValidationError):
                 checker.v(data)
 
@@ -1387,7 +1387,7 @@ class Test_Aliasing(Base):
         try:
 
             testee, data = self.get_testee_data("TSettingsAliasChild")
-            checker = testee.lz.settings
+            checker = testee._lz.settings
             checker.v(data)
 
         # pragma: no cover pylint: disable=unused-variable
@@ -1400,7 +1400,7 @@ class Test_Aliasing(Base):
         try:
 
             testee, data = self.get_testee_data("TSettingsAliasValidatorMgr")
-            checker: Checker = testee.lz.settings
+            checker: Checker = testee._lz.settings
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
@@ -1415,7 +1415,7 @@ class Test_Aliasing(Base):
         try:
 
             testee, data = self.get_testee_data("TSettingsAlias")
-            checker: Checker = testee.lz.settings
+            checker: Checker = testee._lz.settings
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
@@ -1432,7 +1432,7 @@ class Test_Aliasing(Base):
             testee, data = self.get_testee_data(
                 "TNoAlias", di_exp=dict(objectvalue01="badexp")
             )
-            checker = testee.lz.json
+            checker = testee._lz.json
 
             with pytest.raises(common.ValidationError):
                 checker.v(data)
@@ -1448,7 +1448,7 @@ class Test_Aliasing(Base):
         try:
 
             testee, data = self.get_testee_data("TNoAlias")
-            checker = testee.lz.json
+            checker = testee._lz.json
             checker.v(data)
 
             # raise NotImplementedError()
