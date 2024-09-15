@@ -414,22 +414,29 @@ class PAbstractExtProvider(Protocol):
     extension: str
     cls_temp = ValidatorTemp
 
+    TYPE_RAW: Any
+    text_based : bool = True
+
+
     def assert_equal(
-        self, testee: unittest.TestCase, validator: "Validator", exp, got
+        self, testee: unittest.TestCase, exp, got, message = None, list_to_set = True
     ) -> bool:
         """check if exp can be considered equal"""
         try:
             # breakpoint() #🛑
             # pass
-            if isinstance(got, (list, set)) and isinstance(exp, (list, set)):
+            if list_to_set and isinstance(got, (list, set)) and isinstance(exp, (list, set)):
                 got = set(got)
                 exp = set(exp)
 
-            return exp == got
-            # return 1
+
+            testee.assertEqual(exp, got, message)
+            return True
 
         # pragma: no cover pylint: disable=unused-variable
         except (AssertionError,) as e:
+            breakpoint() #🛑
+            pass
             raise
 
         # pragma: no cover pylint: disable=unused-variable
@@ -441,11 +448,16 @@ class PAbstractExtProvider(Protocol):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-    TYPE_RAW: Any
 
     @abstractmethod
     def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
         """convert data if needed"""
+
+
+    def strip(self, data : str|Any) -> str|Any:
+        if isinstance(data, str):
+            return data.strip()
+        return data
 
     def adjust_value_for_validation(
         self,
@@ -601,6 +613,22 @@ class PAbstractExtProvider(Protocol):
 
     def prep(self, tmp: Any, data: Any):
         return data
+
+
+    def write(self, fnp : str|Path, data : str, header : Any = None):
+        pa = Path(fnp)
+
+        with pa.open("w") as fo:
+            if header:
+                fo.write(header)
+            fo.write(data)
+        
+    def read(self, fnp : str|Path) -> Any:
+        pa = Path(fnp)
+
+        with pa.open() as fi:
+            res = fi.read()
+        return res
 
 
 def parse_pydantic_validation_error(src):
@@ -1285,6 +1313,9 @@ class Checker:
             # we want to raise a new exception, minus all the info about finding diffs and formatting error
             # messages which is... what lazydiff does
 
+            breakpoint() #🛑
+            pass
+
             new_exc = AssertionError(str(e))
 
             # capture fnp_exp, fnp_got which are used to launch `diff` commands as required
@@ -1359,49 +1390,52 @@ class Checker:
             
 
 
-            log("checker.write_raw")
-            checker.write_raw(suffix=suffix, testee=testee, control=control, got=got)
+            log(f"{type(checker)}.write_raw")
+            checker.write_raw(provider=self.provider, suffix=suffix, testee=testee, control=control, got=got)
 
             # linefeeds have a tendency to creep in sometimes
 
+            log(f"{prefix}1398:{got is None=}")
+
+            #🎫004.lazy.052.polars_diffing            
             log(f"{prefix}.got.stripping")
             if filter_:
-                formatted_got = self.temp.formatted_got.strip()
+                formatted_got = self.temp.formatted_got
+                log(f"{prefix}1404:{formatted_got is None=}")
             else:
                 formatted_got = checker.checker.provider.datain_to_str(
                     got, checker.checker
-                ).strip()
+                )
+                log(f"{prefix}1409:{formatted_got is None=}")
+
+            formatted_got = self.provider.strip(formatted_got)
+
+            log(f"{prefix}1413:{formatted_got is None=}")
+
 
             # at this point, we want to write the received, formatted, data regardless
             if self.lazy_save_got:
                 log(f"{prefix}:{fnp_got=}.open+write")
-                with fnp_got.open("w") as fo:
 
-                    if metadata_header:
-                        if isinstance(metadata_header, list):
-                            metadata_header = "\n".join(metadata_header)
-                        data = f"""{metadata_header.strip()}
-{constants.LAZY_HEADER_SEPARATOR}
-"""
-                        fo.write(data)
-
-                    fo.write(formatted_got)
+                self.provider.write(fnp_got, formatted_got)
 
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
             if control.baseline() and self.lazy_save_exp:
                 log(f"{prefix}:{fnp_exp=}.open+write")
-                with fnp_exp.open("w") as fo:
 
-                    if metadata_header:
+                header = None
+                if metadata_header:
                         if isinstance(metadata_header, list):
                             metadata_header = "\n".join(metadata_header)
-                        data = f"""{metadata_header.strip()}
+                        else:
+                            metadata_header = str(metadata_header)
+                        header = f"""{metadata_header.strip()}
 {constants.LAZY_HEADER_SEPARATOR}
 """
-                        fo.write(data)
 
-                    fo.write(formatted_got)
+                self.provider.write(fnp_exp, formatted_got, header)
+
                 return tmp
 
             # the environment requests that no diffing or writing take place
@@ -1411,21 +1445,24 @@ class Checker:
 
             if external_exp is undefined:
                 try:
-                    with fnp_exp.open() as fi:
-                        exp = fi.read().rstrip()
+                    #🎫004.lazy.052.polars_diffing
 
-                        if constants.LAZY_HEADER_SEPARATOR in exp:
-                            exp = exp.split(constants.LAZY_HEADER_SEPARATOR)[1].strip()
+                    exp = self.provider.read(fnp_exp)
+                    exp = self.provider.strip(exp)
+
+                    if isinstance(exp, str) and constants.LAZY_HEADER_SEPARATOR in exp:
+                        exp = exp.split(constants.LAZY_HEADER_SEPARATOR)[1].strip()
+
 
                 except (IOError,):
                     # we just want to write the received data as our expectation
                     tmp.execinfo.ioerror_exp = fnp_exp
                     tmp.message = message = "no check because IOError on %s" % (fnp_exp)
                     if self.lazy_save_got:
-                        with open(fnp_exp, "w") as fo:
-                            fo.write(formatted_got)
+                        self.provider.write(fnp_exp, formatted_got)
                     return tmp
             else:
+                raise NotImplementedError()
                 exp = checker.format(tmp, external_exp, None).rstrip()
 
             # the environment requests only equality is checked, without trying to show details
@@ -1438,6 +1475,10 @@ class Checker:
 
             try:
                 # supports a timeout mechanism, if the module is available
+                log(f"{prefix}1480{formatted_got is None=}")
+                log(f"{prefix}1481{exp is None=}")
+
+
                 self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp)
             except (CustomTimeoutError,) as e:  # pragma: no cover
                 tmp.message = message = (
@@ -1463,7 +1504,7 @@ class Checker:
                 breakpoint()
             raise
 
-    if timeout:
+    if False and timeout:
 
         @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
         def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
@@ -1472,7 +1513,10 @@ class Checker:
             )
 
             try:
-                testee.assertEqual(exp, got, message)
+                breakpoint() #🛑
+                pass
+                # testee.assertEqual(exp, got, message)
+                self.provider.assert_equal(testee, exp, got, message)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
             # pragma: no cover pylint: disable=unused-variable
@@ -1486,7 +1530,8 @@ class Checker:
         def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
             """fallback if timeout package is not available"""
             try:
-                testee.assertEqual(exp, got, message)
+                # testee.assertEqual(exp, got, message)
+                self.provider.assert_equal(testee, exp, got, message)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
             except (Exception,) as e:
@@ -2098,6 +2143,8 @@ class SameAssertor:
     )
 
     def __init__(self, checker: "Checker"):
+        #🎫004.lazy.052.polars_diffing (Pdb) rin(checker.provider) <class 'bemyerp.tests.validators_polars.Polars_Provider'>
+ 
         self.checker = checker
 
     def __repr__(self):
@@ -2177,7 +2224,10 @@ class SameAssertor:
                 breakpoint()
             raise
 
-    def write_raw(self, suffix, testee, control, got):
+
+
+    
+    def write_raw(self, provider :PAbstractExtProvider, suffix, testee, control, got): #🎫004.lazy.052.polars_diffing
         """
         where do we save the raw received data,
         after formatting, but before filtering ?
@@ -2185,22 +2235,23 @@ class SameAssertor:
 
         # suffix=suffix, testee=testee, control=control, got=got
 
+
         try:
             if not control.env.get("save_raw_received_data"):
                 return
+            
+            #🎫004.lazy.052.polars_diffing - route some of this to checker.provider 
 
             fnp = self.get_fnp_save(
                 testee=testee, exp_got="report", control=control, suffix=suffix
             )
 
-            with fnp.open("w") as fo:
-                # breakpoint() #🛑
-                pass
-                # <class 'django.http.response.HttpResponse'> . content
+            got2 = self.checker.temp.rawdata or got
+            if provider.text_based:
+                got2 = str(got2)
 
-                got2 = self.checker.temp.rawdata or got
+            provider.write(fnp,got2)
 
-                fo.write(str(got2))
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
