@@ -67,8 +67,11 @@ def build_validators_for_class(
         ]
 
         di_vcls = {}
+        di_config = {}
 
         for ix, acls in enumerate(ancestors):
+
+            config = None
 
             if verbose:
                 print(f"{ix:02} ancestor={acls.__name__}")
@@ -81,11 +84,13 @@ def build_validators_for_class(
                         list(v) for v in partition(ExtAlias.is_instance, values)
                     ]
                     alias = aliases[-1].alias if aliases else None
+                    config = aliases[-1].config if aliases else None
 
                 # preserve specialized ValidatorMgr subclasses
                 if isinstance(values, ValidatorMgr):
                     di_vcls[ext] = values.__class__
                     alias = values.alias
+                    config = values.config
 
                 if alias:
                     known_alias = di_alias.get(ext)
@@ -117,6 +122,9 @@ def build_validators_for_class(
                 li_values = []
                 flatten_to_validators_dicts(li_values, values)
 
+                if config:
+                    di_config[ext] = config
+
                 if verbose:
                     print(f"   {ext:6.6} {values=}")
 
@@ -130,6 +138,15 @@ def build_validators_for_class(
                 print(f"{ext=} : {validators}")
 
             di: Dict[str, Validator] = {}
+
+            dodebug = ext in ("parquet","dataframe") and cls.__name__ == "BaseCTE"
+
+            if breakpoints('buildvalidator', {'always': dodebug}):  # pragma: no cover
+                print(f'\n\n🔬🔬🔬always:{1}')
+                breakpoint()
+                pass
+
+
 
             for v_in in validators:
 
@@ -178,8 +195,16 @@ def build_validators_for_class(
                     di_alias[ext] = alias
             validators = list(di.values())
 
-            di_init = dict(ext=ext, alias=alias, validators=validators)
+            if breakpoints('buildvalidator', {'always': dodebug}):  # pragma: no cover
+                print(f'\n\n🔬🔬🔬always:{1}')
+                breakpoint()
+                pass
 
+
+
+            di_init = dict(ext=ext, alias=alias, validators=validators,config=di_config.get(ext))
+
+            #🎫004.lazy.052.polars_diffing - what we are actually passing on to ValidatorMgr
             vmgr = res[ext] = vcls(**di_init)
             assert vmgr.provider
 

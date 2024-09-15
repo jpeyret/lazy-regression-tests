@@ -29,7 +29,7 @@ verbose = constants.verbose
 
 undefined = constants.undefined
 
-
+#🎫004.lazy.052.polars_diffing
 class ExtAlias(pydantic.BaseModel):
     """allows uncoupling name from extension provider
 
@@ -45,6 +45,7 @@ class ExtAlias(pydantic.BaseModel):
     """
 
     alias: str
+    config : dict[str,Any]|None = None
 
     @classmethod
     def is_instance(cls, v):

@@ -1867,6 +1867,9 @@ def is_custom_checker(f: Any) -> bool:
         raise
 
 
+
+
+
 class ValidatorMgr(pydantic.BaseModel):
     """chains all the validators for a given extension"""
 
@@ -1878,6 +1881,32 @@ class ValidatorMgr(pydantic.BaseModel):
     checker: Any = None
 
     alias: Optional[str] = None
+
+    #🎫004.lazy.052.polars_diffing - we may want it, but it's probably gonna have to come in via `ExtAlias`
+    #
+    config : dict[str,Any]|None = None
+
+    # @pydantic.model_validator(mode='before')
+    # @classmethod
+    # def pause_for_debug(cls, data: Any) -> Any:
+    #     try:
+    #         dodebug = data.get("ext") in ("parquet","dataframe")
+
+    #         if breakpoints('buildvalidator', {'always': dodebug}):  # pragma: no cover
+    #             print(f'\n\n🔬🔬🔬always:{1}')
+    #             breakpoint()
+    #             pass
+            
+
+
+    #         return data
+    #     #pragma: no cover pylint: disable=unused-variable
+    #     except (Exception,) as e: 
+    #         if cpdb():
+    #             breakpoint()
+    #         raise
+        
+
 
     def __sub__(self, value_in):
         """logically delete a validator by setting active to False"""

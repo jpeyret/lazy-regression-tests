@@ -394,6 +394,16 @@ class _LazyMeta(type):
             #     breakpoint() #🛑
             #     pass
 
+            if breakpoints('LazyMeta', {'classname': cls.__name__}):  # pragma: no cover
+                cls_validators = attrs.get("cls_validators")
+                print(f'\n\n🔬🔬🔬classname:{cls.__name__} {cls_validators=}')
+                breakpoint()
+                pass
+
+
+
+
+
             cls.__lz_ori = dict(
                 cls_validators=cls.__dict__.get("cls_validators", {}),
                 cls_filters=cls.__dict__.get("cls_filters", {}),
