@@ -398,6 +398,7 @@ class HTML_Provider(HTTP_Provider):
         res = temp.soup.select(selector)
         return res
 
+    #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
     def assert_equal(
         self, testee: unittest.TestCase, validator: Validator, exp, got
     ) -> bool:

@@ -18,7 +18,7 @@ from io import StringIO
 from abc import abstractmethod
 from inspect import signature
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_field 
 import unittest
 from pathlib import Path
 from enum import Enum
@@ -257,8 +257,14 @@ class LazyTemp:
         self.message = ""
         self.filtered = Dummy()
         self.testee = testee
-        self.provider = provider
+        #🎫004.lazy.052.polars_diffing  - we we have visibility on config here???
 
+        if breakpoints('providerclassname', {'providerclassname': type(provider).__name__}):  # pragma: no cover
+            print(f'\n\n🔬🔬🔬providerclassname:{type(provider).__name__}')
+            breakpoint()
+            pass
+
+        self.provider = provider
         self.execinfo = ExecInfo()
         self.vtemp = vtemp or self.provider.cls_temp()
 
@@ -417,7 +423,7 @@ class PAbstractExtProvider(Protocol):
     TYPE_RAW: Any
     text_based : bool = True
 
-
+    #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
     def assert_equal(
         self, testee: unittest.TestCase, exp, got, message = None, list_to_set = True
     ) -> bool:
@@ -1199,7 +1205,8 @@ class FilterMgr(pydantic.BaseModel):
 
 @dataclass
 class Checker:
-    _lz: ALazyRoot
+    #howto- hide dataclass field for less noisy debugs
+    _lz: ALazyRoot = dataclass_field(repr=False) 
     f: FilterMgr
     v: "ValidatorMgr"
     ext: str
@@ -1232,6 +1239,8 @@ class Checker:
                 self.v.checker = self
             else:
                 self.v = ValidatorMgr(checker=self, ext=self.ext, alias=self.alias)
+
+            #🎫004.lazy.052.polars_diffing - what about here, to link in the config... we do have its ValidatorMgr...
 
             self.alias = get_alias_check_equality([alias_f, alias_v])
 
@@ -1504,7 +1513,7 @@ class Checker:
                 breakpoint()
             raise
 
-    if False and timeout:
+    if False and timeout:  #!!!TODO!!! 🎫004.lazy.052.polars_diffing - remove the False, which is only in place to facilitate debugging by not going off main Thread
 
         @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
         def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
@@ -1516,6 +1525,7 @@ class Checker:
                 breakpoint() #🛑
                 pass
                 # testee.assertEqual(exp, got, message)
+                #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
                 self.provider.assert_equal(testee, exp, got, message)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
@@ -1531,6 +1541,7 @@ class Checker:
             """fallback if timeout package is not available"""
             try:
                 # testee.assertEqual(exp, got, message)
+                #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
                 self.provider.assert_equal(testee, exp, got, message)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
