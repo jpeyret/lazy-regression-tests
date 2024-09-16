@@ -423,9 +423,35 @@ class PAbstractExtProvider(Protocol):
     TYPE_RAW: Any
     text_based : bool = True
 
+    #🎫004.lazy.052.polars_diffing - rename to differentiate
+    def check_equal(
+        self, testee: unittest.TestCase, validator: "Validator", exp, got
+    ) -> bool:
+        """check if exp can be considered equal"""
+        try:
+            # breakpoint() #🛑
+            # pass
+            if isinstance(got, (list, set)) and isinstance(exp, (list, set)):
+                got = set(got)
+                exp = set(exp)
+
+            return exp == got
+            # return 1
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (AssertionError,) as e:
+            raise
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+
     #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
     def assert_equal(
-        self, testee: unittest.TestCase, exp, got, message = None, list_to_set = True
+        self, checker : "Checker", testee: unittest.TestCase, exp, got, message = None, list_to_set = True
     ) -> bool:
         """check if exp can be considered equal"""
         try:
@@ -1526,7 +1552,7 @@ class Checker:
                 pass
                 # testee.assertEqual(exp, got, message)
                 #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(testee, exp, got, message)
+                self.provider.assert_equal(self, testee, exp, got, message)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
             # pragma: no cover pylint: disable=unused-variable
@@ -1542,7 +1568,7 @@ class Checker:
             try:
                 # testee.assertEqual(exp, got, message)
                 #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(testee, exp, got, message)
+                self.provider.assert_equal(self, testee, exp, got, message)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
             except (Exception,) as e:
@@ -1687,6 +1713,7 @@ class FunctionCheck(ValidatorCheck):
                 di["validator"] = validator
 
             try:
+                 #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
                 res = bool(self.f(value, **di))
 
                 # assume custom checkers
@@ -2058,6 +2085,7 @@ class ValidatorMgr(pydantic.BaseModel):
             for val in actuals:
                 if not val.active:
                     continue
+                 #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config... - `self.checker` ought to do it...
                 valid = val.assert_valid(self.testee, rawdata, data)
                 if not valid:
                     raise ValidationError(f"{val.name}", validator=val)
@@ -2374,7 +2402,7 @@ class Selectors(str, Enum):
     # just as if Validator(name=status_code, selector="status_code")
     name = "name"
 
-
+#🎫004.lazy.052.polars_diffing - assertEqual on a variable, not the whole data
 def check_equal(
     data: Any,
     testee: unittest.TestCase,
@@ -2391,15 +2419,20 @@ def check_equal(
             exp = exp.get_exp(validator, testee)
 
         if not isinstance(data, type(exp)):
-            assert_equal = validator.mgr.provider.assert_equal
-            if assert_equal:
-                res = assert_equal(
+            #🎫004.lazy.052.polars_diffing - this is the old-style assertEqual applied to a variable, not the entire data p  
+            provider_check_equal = validator.mgr.provider.check_equal
+            if provider_check_equal:
+                # breakpoint() #🛑
+                pass
+                #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+                res = provider_check_equal(
                     testee=testee, validator=validator, exp=exp, got=data
                 )
                 if not res:
                     msg = f"{validator.name}\nexp\n{exp}\n!=\ngot\n{str(data):60.60}\n"
                     raise ValidationError(msg, validator=validator, got=data)
                 return res
+
 
         res = data == exp
         if not res and verbose:
@@ -2664,7 +2697,7 @@ class ActualValidator(Validator):
                     raise NotImplementedError(f"unsupported {type(selector)=}")
             else:
                 data = data_in
-
+            #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
             valid = self.v.is_valid(data, testee=testee, validator=self)
             return valid
         except (tu_raises) as e:
