@@ -467,8 +467,6 @@ class PAbstractExtProvider(Protocol):
 
         # pragma: no cover pylint: disable=unused-variable
         except (AssertionError,) as e:
-            breakpoint() #🛑
-            pass
             raise
 
         # pragma: no cover pylint: disable=unused-variable
@@ -1348,8 +1346,6 @@ class Checker:
             # we want to raise a new exception, minus all the info about finding diffs and formatting error
             # messages which is... what lazydiff does
 
-            breakpoint() #🛑
-            pass
 
             new_exc = AssertionError(str(e))
 
