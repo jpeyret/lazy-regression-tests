@@ -276,6 +276,8 @@ class ValidatorTemp:
 
     lazytemp: LazyTemp
 
+    errors = {}
+
     skipshow = ["checker"]
     show = show
 
@@ -634,6 +636,11 @@ class PAbstractExtProvider(Protocol):
             return data
         # pragma: no cover pylint: disable=unused-variable
         except (ConfigurationException,) as e:
+
+            if cpdb() and e.allow_cpdb():
+                breakpoint() #🛑
+                pass
+
             raise
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1756,6 +1763,8 @@ class Options(pydantic.BaseModel):
 
 DEFAULT_OPTIONS = Options()
 
+seen = set()
+
 
 class Validator(pydantic.BaseModel):
     """the core validation mechanism"""
@@ -1833,6 +1842,62 @@ class Validator(pydantic.BaseModel):
             if cpdb():
                 breakpoint()
             raise
+
+
+    @pydantic.model_validator(mode='before')
+    @classmethod
+    def pause_for_debug(cls, data: Any) -> Any:
+        try:
+            name = data.get("name")
+
+            selector = data.get("selector")
+
+            lookup = (cls, name, selector, "ante")
+
+
+            if breakpoints('pause_for_debug', {'name': name}) and not lookup in seen:  # pragma: no cover
+                print(f'\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}')
+                seen.add(lookup)
+                breakpoint()
+                pass
+            
+
+
+            return data
+        #pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e: 
+            if cpdb():
+                breakpoint()
+            raise
+
+
+    @pydantic.model_validator(mode='after')
+    @classmethod
+    def pause_for_debug_post(cls, data: Any, **kwargs) -> Any:
+        try:
+            name = data.name
+
+            selector = data.selector
+
+            lookup = (cls, name, selector,"post")
+
+            if breakpoints('pause_for_debug_post', {'name': name}) and not lookup in seen:  # pragma: no cover
+                print(f'\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}')
+                seen.add(lookup)
+                breakpoint()
+                pass
+            
+
+
+            return data
+        #pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e: 
+            if 1 or cpdb():
+                breakpoint()
+            raise
+
+
+
 
     def extend(self, val: Union[None, "Validator", Dict[str, Any]] = None, **kwargs):
         try:
@@ -2651,6 +2716,7 @@ class ActualValidator(Validator):
     ):
         """run self.v.is_valid() against part or all of data_in"""
 
+ 
         tu_raises = get_immediate_raises(debug)
         try:
 

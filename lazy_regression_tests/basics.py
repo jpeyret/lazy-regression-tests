@@ -144,6 +144,9 @@ class ConfigurationException(ValueError):
         "adds header/footer"
         v = Exception.__repr__(self)
         return f"{constants.HDR}{v}{constants.FTR}"
+    
+    def allow_cpdb(self):
+        return os.getenv("bme_debug_allow_cpdb")
 
 
 class SpecialCommand:
