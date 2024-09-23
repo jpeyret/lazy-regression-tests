@@ -373,6 +373,7 @@ def lazyinfo(
         subber = Subber(*([outinfo, kwargs, testee] + list(args)))
 
         if gather_test_info:
+            outinfo0 = outinfo
             outinfo = gather_test_info(
                 subber=subber,
                 testee=testee,
@@ -380,6 +381,8 @@ def lazyinfo(
                 exception=exception,
                 tb=tb,
             )
+            if not outinfo:
+                outinfo = outinfo0
 
         if error:
             error_part = "error."
