@@ -345,6 +345,9 @@ def lazyinfo(
         type_ = tb = None
         if exception:
             type_, _, tb = sys.exc_info()
+        else:
+            #we actually dont do all that much with lazyinfo when nothing happened
+            return f"{testee}.  no exception "
 
         dn_out = os.getenv("lzrt_info_dir")
         if not dn_out:
@@ -392,6 +395,10 @@ def lazyinfo(
 
         fnp_exp = getattr(exception, "fnp_exp", undefined)
         fnp_got = getattr(exception, "fnp_got", undefined)
+
+        if not outinfo:
+            str_exc = str(exception)
+            return f"🧨 {outinfo=} for exception:{str_exc:100.100}"        
 
         outinfo.file_exp = fnp_exp
         outinfo.file_got = fnp_got
