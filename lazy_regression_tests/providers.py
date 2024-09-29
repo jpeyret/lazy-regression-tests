@@ -240,6 +240,7 @@ class JsonExtProvider(DictExtProvider):
                 breakpoint()
             raise
 
+from _pickle import PicklingError
 
 class YamlProvider(DictExtProvider):
     """support dict data and dumps via json.dumps"""
@@ -260,6 +261,7 @@ class YamlProvider(DictExtProvider):
 
                 # from yaml import dump as ydump
                 import yaml
+                
 
                 # https://stackoverflow.com/a/66853182
 
@@ -269,12 +271,30 @@ class YamlProvider(DictExtProvider):
 
                 return yaml.dump(data, default_flow_style=False).strip()
             # pragma: no cover pylint: disable=unused-variable
-            except (TypeError, ValueError) as e:
+            except (TypeError, ValueError,PicklingError) as e:
                 data2 = dropbad_dump(data, ydump)
                 return ydump(data2, default_flow_style=False).strip()
         # pragma: no cover pylint: disable=unused-variable
         except (TypeError,) as e:
             raise
+
+        #pragma: no cover pylint: disable=unused-variable
+        except (PicklingError,) as e:
+            if 1:
+                for k,v in vars(data).items():
+                    print(k,end="")
+                    try:
+                        _ = yaml.dump(v)
+                        print("✅")
+                    #pragma: no cover pylint: disable=unused-variable
+                    except (Exception,) as e2: 
+                        print("🧨")
+            
+
+            # if cpdb():
+            #     breakpoint()
+            raise TypeError(e)
+        
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():

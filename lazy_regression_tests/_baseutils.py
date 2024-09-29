@@ -1399,6 +1399,7 @@ def oshow(self, nesting="", file=None, private=False):
             breakpoint()
         raise
 
+from _pickle import PicklingError
 
 def dropbad_dump(obj, fdump, seen: set | None = None):
     try:
@@ -1421,7 +1422,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
         fdump(obj)
         return obj
     # pragma: no cover pylint: disable=unused-variable
-    except (TypeError, ValueError) as e:
+    except (TypeError, ValueError,PicklingError) as e:
         res = {}
         if isinstance(obj, dict):
             for k, v in obj.items():
@@ -1429,7 +1430,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                     fdump(v)
                     res[k] = v
                 # pragma: no cover pylint: disable=unused-variable
-                except (TypeError, ValueError) as e:
+                except (TypeError, ValueError,PicklingError) as e:
                     try:
                         safe = dropbad_dump(v, fdump=fdump, seen=seen)
                         res[k] = safe
