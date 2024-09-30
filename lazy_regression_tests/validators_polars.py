@@ -11,7 +11,7 @@ import polars as pl
 
 from lazy_regression_tests.common import ValidatorTemp, BFilter
 
-from lazy_regression_tests.common_polars import find_columns_with_nulls, fill_nulls
+from lazy_regression_tests.common_polars import find_columns_with_nulls, fill_nulls, read_df
 
 from bemyerp.websec.log_settings import getLogger
 
