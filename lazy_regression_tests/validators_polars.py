@@ -176,7 +176,16 @@ class Polars_Provider(providers.PAbstractExtProvider):
             assert isinstance(got, pl.DataFrame)
 
             #what are the join keys for polars equivalence check?
-            join_on = checker.v.config["join_on"]
+
+            join_on = kwargs.get("join_on")
+            if not join_on:
+
+                config = kwargs.get("config") or checker.v.config
+                if callable(config):
+                    config = config(testee)
+
+
+                join_on = config["join_on"]
 
             colstatus = "_lazydiff_compare"
 
@@ -243,6 +252,7 @@ def check_unique(data : pl.DataFrame, testee : "unittest.TestCase", validator : 
         return True
     #pragma: no cover pylint: disable=unused-variable
     except (AssertionError,) as e: 
+        e.args += (df_dupekeys,)
         raise
     #pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e: 

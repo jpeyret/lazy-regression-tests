@@ -79,7 +79,7 @@ except (ImportError,) as e:
 
 import bemyerp.pssystem.constants as dbgconstants
 
-FLOG = logger.warning
+FLOG = logger.debug
 
 def log(msg, *args, flog=None, **kwargs): #custom lazy
     flog = flog or FLOG
@@ -1335,6 +1335,7 @@ class Checker:
         external_exp: Any = undefined,
         reset: bool = False,
         filter_: bool = True,
+        **kwargs,
     ):
         """is the data same as the last time?"""
         try:
@@ -1346,7 +1347,7 @@ class Checker:
 
             checker = SameAssertor(checker=self)
 
-            self._lazycheck(got, checker=checker, suffix=suffix, filter_=filter_)
+            self._lazycheck(got, checker=checker, suffix=suffix, filter_=filter_,**kwargs)
             return self.temp
 
         except (AssertionError,) as e:
@@ -1379,6 +1380,7 @@ class Checker:
         lazy_save_got: bool = True,
         lazy_save_exp: bool = True,
         filter_: bool = True,
+        **kwargs
     ) -> LazyTemp:
         try:
 
@@ -1517,7 +1519,7 @@ class Checker:
                 log(f"{prefix}1481{exp is None=}")
 
 
-                self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp)
+                self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp,**kwargs)
             except (CustomTimeoutError,) as e:  # pragma: no cover
                 tmp.message = message = (
                     "exp and got are not equal but comparison timed out after %s seconds"
@@ -1566,12 +1568,12 @@ class Checker:
 
     else:
         #
-        def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
+        def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None,**kwargs):
             """fallback if timeout package is not available"""
             try:
                 # testee.assertEqual(exp, got, message)
                 #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(self, testee, exp, got, message)
+                self.provider.assert_equal(self, testee, exp, got, message,**kwargs)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
             except (Exception,) as e:
