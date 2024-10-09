@@ -139,7 +139,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
         """data to str"""
         try:
             assert isinstance(data,pl.DataFrame), f"only polars.DataFrame are supported.  {type(data)=}"
-            log(f"{cls}.datain_to_str.  conversion to str is not supported. returning unchanged as {type(data)}")
+            log(f"{cls}.datain_to_str.  conversion to str is not supported. returning unchanged as {type(data)}",flog=logger.info)
             return data
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
