@@ -22,6 +22,8 @@ def cpdb(*args, **kwargs):
 
 LOG_PREFIX ="🐻‍❄️polars"
 
+POLARS_ERR_DIM_MISMATCH = ('DataFrame dimensions do not match',)
+
 rpdb = breakpoints = cpdb
 
 
@@ -279,14 +281,17 @@ class compare_df_options:
     def get_counts(cls, df : pl.DataFrame, colstatus : str) -> "CompareCounts":
         """move from symbols in the status column to a name-based.  i.e `<<` become `left` `<` `leftdiff` """
         try:
+            di_symbol_count = {}
+            total = -1
             di_name_symbol = {name.removeprefix("status_"):val for name,val in vars(cls).items() if name.startswith("status_")}
-                                          
-            df_counts = df.group_by(colstatus).count().rename({colstatus:"status"})
+            if df is not None:          
+                total=len(df)
+                df_counts = df.group_by(colstatus).count().rename({colstatus:"status"})
 
-            di_symbol_count = {di["status"] : di["count"] for di in df_counts.to_dicts()}
+                di_symbol_count = {di["status"] : di["count"] for di in df_counts.to_dicts()}
 
             di_status = {name :  di_symbol_count.get(symbol,0) for name,symbol in di_name_symbol.items()}
-            res = CompareCounts(**di_status, total=len(df))
+            res = CompareCounts(**di_status, total=total)
 
             return res            
 
@@ -391,6 +396,8 @@ def compare_df(
 
     try:
 
+        dfdiff = None
+
         # first things first, Struct fields need different handling on nulls...
         if options.fill_nulls:
                 colnames_w_nulls = set(find_columns_with_nulls(df0) + find_columns_with_nulls(df1))
@@ -489,49 +496,54 @@ def compare_df(
         dfboth0 = dfboth0.with_row_index(name=options.cindex)
         dfboth1 = dfboth1.with_row_index(name=options.cindex)
 
+        res = None
+
+        if dfdiff is not None:
+
+            # flag differences across any of the non-work columns.  careful:  nulls will always compare False
+            dfdiff = dfdiff.with_columns(pl.all_horizontal(pl.col("*").exclude(*excludes)).alias(options.csame))
 
 
-        # flag differences across any of the non-work columns.  careful:  nulls will always compare False
-        dfdiff = dfdiff.with_columns(pl.all_horizontal(pl.col("*").exclude(*excludes)).alias(options.csame))
 
+            # OK, now who had differences and who was the same?
+            dfdiffsame = dfdiff.filter(pl.col(options.csame) == True)
+            dfdiffdiff1 = dfdiff.filter(pl.col(options.csame) == False)
+            #grrrr... nulls...
+            dfdiffdiff2 = dfdiff.filter(pl.col(options.csame).is_null())
 
+            dfdiffdiff = pl.concat([dfdiffdiff1,dfdiffdiff2])
 
-        # OK, now who had differences and who was the same?
-        dfdiffsame = dfdiff.filter(pl.col(options.csame) == True)
-        dfdiffdiff1 = dfdiff.filter(pl.col(options.csame) == False)
-        #grrrr... nulls...
-        dfdiffdiff2 = dfdiff.filter(pl.col(options.csame).is_null())
+            assert len(dfdiff) == len(dfdiffsame) + len(dfdiffdiff), "losing rows from dfdiff"
 
-        dfdiffdiff = pl.concat([dfdiffdiff1,dfdiffdiff2])
+            # if they are the same, doesn't matter which dataframe you get them from...  maybe parameter that as pick from df0, pick from df1
+            dfsame = (
+                dfboth0.join(dfdiffsame, on=options.cindex, how="semi")
+                .drop(options.cindex)
+                .with_columns(pl.lit(options.status_same).alias(colstatus))
+            )
 
-        assert len(dfdiff) == len(dfdiffsame) + len(dfdiffdiff), "losing rows from dfdiff"
+            # now bring back sides of the difference
+            dfdiff0 = (
+                dfboth0.join(dfdiffdiff, on=options.cindex, how="semi")
+                .with_columns(pl.lit(options.status_leftdiff).alias(colstatus))
+                .drop(options.cindex)
+            )
+            dfdiff1 = (
+                dfboth1.join(dfdiffdiff, on=options.cindex, how="semi")
+                .with_columns(pl.lit(options.status_rightdiff).alias(colstatus))
+                .drop(options.cindex)
+            )
 
-        # if they are the same, doesn't matter which dataframe you get them from...  maybe parameter that as pick from df0, pick from df1
-        dfsame = (
-            dfboth0.join(dfdiffsame, on=options.cindex, how="semi")
-            .drop(options.cindex)
-            .with_columns(pl.lit(options.status_same).alias(colstatus))
-        )
+            res = pl.concat([dfonly0, dfonly1, dfsame, dfdiff0, dfdiff1]).sort(colkey + [colstatus])
 
-        # now bring back sides of the difference
-        dfdiff0 = (
-            dfboth0.join(dfdiffdiff, on=options.cindex, how="semi")
-            .with_columns(pl.lit(options.status_leftdiff).alias(colstatus))
-            .drop(options.cindex)
-        )
-        dfdiff1 = (
-            dfboth1.join(dfdiffdiff, on=options.cindex, how="semi")
-            .with_columns(pl.lit(options.status_rightdiff).alias(colstatus))
-            .drop(options.cindex)
-        )
-
-        res = pl.concat([dfonly0, dfonly1, dfsame, dfdiff0, dfdiff1]).sort(colkey + [colstatus])
 
         return res
 
     # pragma: no cover pylint: disable=unused-variable
     #pragma: no cover pylint: disable=unused-variable
     except (CompareException,) as e: 
+        # breakpoint() #🛑
+        pass
         raise
     except (Exception,) as e:
         if cpdb():
@@ -539,7 +551,7 @@ def compare_df(
         raise
 
 #🎫105.framework.008.remove_v1v2_scaffolding.dead - move to lazy
-class CompareException(Exception):
+class CompareException(AssertionError):
     ...
 
 from dataclasses import dataclass
