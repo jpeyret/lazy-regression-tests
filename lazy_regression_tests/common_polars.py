@@ -22,7 +22,7 @@ class co:
 
     s_keywords = {from_,select,distinct}
 
-#🎫105.framework.008.remove_v1v2_scaffolding.dead - shared utils w lazy
+
 def find_columns_with_nulls(df : pl.DataFrame) -> list[str]:
     """return colnames with null data"""
     li_di = df.describe().filter(statistic="null_count").drop("statistic").to_dicts()
@@ -30,8 +30,8 @@ def find_columns_with_nulls(df : pl.DataFrame) -> list[str]:
     return need_fill
 
 
-#🎫105.framework.008.remove_v1v2_scaffolding.dead - shared utils w lazy
 def fill_nulls(df : pl.DataFrame):
+    """fill all columns having nulls"""
     try:
         need_fill = find_columns_with_nulls(df)
 
@@ -54,7 +54,6 @@ def fill_nulls(df : pl.DataFrame):
             filler = di_fill.get(typename)
             if filler is None:
                 type_ = df.schema[colname]
-                log("🧨polars_utils:fill_nulls({df.schema=}).  no filler for {colname} with {type_}",flog=logger.error)
                 continue
 
             dfo = dfo.with_columns(pl.col(colname).fill_null(filler))
@@ -73,9 +72,10 @@ def fill_nulls(df : pl.DataFrame):
 
 
 
+
 def get_colnames(sql : str) -> list[str]:
     """return colnames, taking into account aliases
-    !!!TODO!!! : seems fragile to embedded spaces and commas :  `select ',' as sep `
+    !!!TODO!!! : seems fragile to embedded spaces and commas and comments :  `select ',' as sep `
     """
     try:
 
@@ -87,7 +87,7 @@ def get_colnames(sql : str) -> list[str]:
         tmp2 = patre.split(tmp)[0]
 
         #split by , then keep only last bit (which nets either aliases or colname)
-        tmp3 = tmp2.split(",")
+        tmp3 = [v2 for v in tmp2.split(",") if (v2:=v.strip())]
         tmp4 = [v.split()[-1] for v in tmp3]
         #skip keywords
         tmp5 = [v for v in tmp4 if v.lower() not in co.s_keywords]
@@ -173,6 +173,76 @@ def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
 
 
             return df
+
+    #pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e: 
+        if cpdb():
+            breakpoint()
+        raise
+
+class SplitExists(NamedTuple):
+    exists : pl.DataFrame
+    not_exists : pl.DataFrame
+
+
+
+def reorder_as_other(df : pl.DataFrame, other : pl.DataFrame) -> pl.DataFrame:
+    "used for concats.  will not fix datatype errors"
+    return df.select(other.columns)
+
+
+def split_on_exist_notexist(df : pl.DataFrame, dfcheck : pl.DataFrame, on : Any, left_on =None, right_on=None) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """ split on an existance check
+    
+    df:1,2,3,4 dfcheck:1,3
+        => (df:1,3 , df:2,4) 
+
+        
+    
+    """
+    try:
+        df_exists = df.join(dfcheck, on=on, left_on=left_on,right_on=right_on, how="semi")
+        df_notexists = df.join(dfcheck, on=on, left_on=left_on,right_on=right_on, how="anti")
+
+        return SplitExists(df_exists, df_notexists)
+    #pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e: 
+        if cpdb():
+            breakpoint()
+        raise
+
+
+
+def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = False,keep_counts = False):
+    """check for duplicates.  mostly for debugging"""
+    try:
+        dfdupekeys = df.group_by(on).count().sort("count",descending=True).filter(pl.col("count").gt(1))
+
+        if keys_only:
+            return dfdupekeys
+
+        if not keep_counts:
+            dfwithdupes, _ = split_on_exist_notexist(df, dfdupekeys, on=on)
+
+        else:
+            dfwithdupes = df.join(dfdupekeys,on=on)
+            # breakpoint() #🛑
+            pass
+
+
+        dfwithdupes = dfwithdupes.sort(on)
+
+
+
+        if stop:
+            with pl.Config(fmt_str_lengths=60,tbl_rows=20, tbl_cols = 20):
+                print(dfwithdupes)
+
+
+                breakpoint() #🛑
+                pass
+
+        return dfwithdupes
 
     #pragma: no cover pylint: disable=unused-variable
     except (Exception,) as e: 
