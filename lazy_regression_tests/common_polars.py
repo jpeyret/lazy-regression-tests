@@ -54,7 +54,7 @@ def fill_nulls(df : pl.DataFrame):
             Float64 = 0.0,
             Boolean = False,
             Datetime = datetime(year=7777,month=7,day=7),
-            Date = datetime(year=7777,month=7,day=7),
+            Date = date(year=7777,month=7,day=7),
         )
 
         dfo = df
