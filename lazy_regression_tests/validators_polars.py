@@ -449,6 +449,7 @@ def compare_df(
 
             if options.fill_nulls:
 
+
                 # ok, thing is 
                 #🎫004.lazy.060.batch_diffing_polars
                 dfboth0 = fill_nulls(dfboth0)

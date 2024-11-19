@@ -406,6 +406,13 @@ def lazyinfo(
         outinfo.file_exp = fnp_exp
         outinfo.file_got = fnp_got
 
+        # breakpoint() #🛑
+        pass
+
+        if kwargs.get("polars"):
+            outinfo.app= "jplshowdiff.py"
+
+
         if tb:
             outinfo.filename = tb.tb_frame.f_code.co_filename
             outinfo.linenum = tb.tb_lineno
@@ -435,6 +442,7 @@ def lazyinfo(
             res = f"\n{res}\n"
 
         if error or write_on_success:
+
 
             with fnpo.open("w") as fo:
                 fo.write(out)

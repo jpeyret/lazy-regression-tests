@@ -11,6 +11,13 @@ from bemyerp.lib.utils import set_cpdb, set_rpdb, set_breakpoints3, cprint
 # pylint: enable=unused-import
 from bemyerp.lib.utils import fill_template, Subber
 
+from datetime import datetime, date
+
+from bemyerp.websec.log_settings import Log
+log = Log(__name__)
+
+
+
 POLARS_ERR_DIM_MISMATCH = ('DataFrame dimensions do not match',)
 LOG_PREFIX ="🐻‍❄️polars"
 
@@ -46,14 +53,21 @@ def fill_nulls(df : pl.DataFrame):
             Int32 = 0,
             Float64 = 0.0,
             Boolean = False,
+            Datetime = datetime(year=7777,month=7,day=7),
+            Date = datetime(year=7777,month=7,day=7),
         )
 
         dfo = df
 
         for colname, typename in todo:
+
+            typename = typename.split("(")[0]
+
             filler = di_fill.get(typename)
             if filler is None:
                 type_ = df.schema[colname]
+
+                log(f"fill_nulls:could not fill @{colname=} with :{typename=}: known=:{','.join(di_fill.keys())}:",loglevel="warning")
                 continue
 
             dfo = dfo.with_columns(pl.col(colname).fill_null(filler))
