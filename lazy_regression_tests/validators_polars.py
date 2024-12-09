@@ -394,6 +394,9 @@ def compare_df(
     if isinstance(colkey, str):
         colkey = [colkey]
 
+    #catch a tuple...
+    colkey = list(colkey)
+
     try:
 
         dfdiff = None
