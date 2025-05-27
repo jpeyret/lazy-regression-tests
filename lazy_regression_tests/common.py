@@ -18,7 +18,7 @@ from io import StringIO
 from abc import abstractmethod
 from inspect import signature
 import re
-from dataclasses import dataclass, field as dataclass_field 
+from dataclasses import dataclass, field as dataclass_field
 import unittest
 from pathlib import Path
 from enum import Enum
@@ -27,6 +27,7 @@ import sys
 import operator
 from collections.abc import Mapping
 from collections import defaultdict
+from unittest.signals import installHandler
 from pydantic import ConfigDict
 
 
@@ -67,6 +68,7 @@ except (ImportError,) as e:
     rin = NotImplemented
 
 from bemyerp.websec.log_settings import getLogger
+
 logger = getLogger(__name__, "debuglog")
 
 try:
@@ -77,13 +79,16 @@ except (ImportError,) as e:
     class CustomTimeoutError(Exception):
         """shouldnt see this"""
 
+
 import bemyerp.pssystem.constants as dbgconstants
 
 FLOG = logger.debug
 
-def log(msg, *args, flog=None, **kwargs): #custom lazy
+
+def log(msg, *args, flog=None, **kwargs):  # custom lazy
     flog = flog or FLOG
-    flog(f'{dbgconstants.LOG_PREFIX_DEBUG2.lazy }{msg}', *args, **kwargs)
+    flog(f"{dbgconstants.LOG_PREFIX_DEBUG2.lazy }{msg}", *args, **kwargs)
+
 
 verbose = "-v" in sys.argv
 
@@ -126,7 +131,6 @@ class _Control(object):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__},options={self.options},env={self.env}"
-    
 
     def __init__(
         self,
@@ -257,10 +261,12 @@ class LazyTemp:
         self.message = ""
         self.filtered = Dummy()
         self.testee = testee
-        #🎫004.lazy.052.polars_diffing  - we we have visibility on config here???
+        # 🎫004.lazy.052.polars_diffing  - we we have visibility on config here???
 
-        if breakpoints('providerclassname', {'providerclassname': type(provider).__name__}):  # pragma: no cover
-            print(f'\n\n🔬🔬🔬providerclassname:{type(provider).__name__}')
+        if breakpoints(
+            "providerclassname", {"providerclassname": type(provider).__name__}
+        ):  # pragma: no cover
+            print(f"\n\n🔬🔬🔬providerclassname:{type(provider).__name__}")
             breakpoint()
             pass
 
@@ -423,9 +429,9 @@ class PAbstractExtProvider(Protocol):
     cls_temp = ValidatorTemp
 
     TYPE_RAW: Any
-    text_based : bool = True
+    text_based: bool = True
 
-    #🎫004.lazy.052.polars_diffing - rename to differentiate
+    # 🎫004.lazy.052.polars_diffing - rename to differentiate
     def check_equal(
         self, testee: unittest.TestCase, validator: "Validator", exp, got
     ) -> bool:
@@ -450,19 +456,27 @@ class PAbstractExtProvider(Protocol):
                 breakpoint()
             raise
 
-
-    #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+    # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
     def assert_equal(
-        self, checker : "Checker", testee: unittest.TestCase, exp, got, message = None, list_to_set = True
+        self,
+        checker: "Checker",
+        testee: unittest.TestCase,
+        exp,
+        got,
+        message=None,
+        list_to_set=True,
     ) -> bool:
         """check if exp can be considered equal"""
         try:
             # breakpoint() #🛑
             # pass
-            if list_to_set and isinstance(got, (list, set)) and isinstance(exp, (list, set)):
+            if (
+                list_to_set
+                and isinstance(got, (list, set))
+                and isinstance(exp, (list, set))
+            ):
                 got = set(got)
                 exp = set(exp)
-
 
             testee.assertEqual(exp, got, message)
             return True
@@ -480,13 +494,11 @@ class PAbstractExtProvider(Protocol):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-
     @abstractmethod
     def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
         """convert data if needed"""
 
-
-    def strip(self, data : str|Any) -> str|Any:
+    def strip(self, data: str | Any) -> str | Any:
         if isinstance(data, str):
             return data.strip()
         return data
@@ -638,7 +650,7 @@ class PAbstractExtProvider(Protocol):
         except (ConfigurationException,) as e:
 
             if cpdb() and e.allow_cpdb():
-                breakpoint() #🛑
+                breakpoint()  # 🛑
                 pass
 
             raise
@@ -651,16 +663,15 @@ class PAbstractExtProvider(Protocol):
     def prep(self, tmp: Any, data: Any):
         return data
 
-
-    def write(self, fnp : str|Path, data : str, header : Any = None):
+    def write(self, fnp: str | Path, data: str, header: Any = None):
         pa = Path(fnp)
 
         with pa.open("w") as fo:
             if header:
                 fo.write(header)
             fo.write(data)
-        
-    def read(self, fnp : str|Path) -> Any:
+
+    def read(self, fnp: str | Path) -> Any:
         pa = Path(fnp)
 
         with pa.open() as fi:
@@ -872,7 +883,7 @@ class Filter(BFilter):
                 if not _check_function_has_one_parameter(v_in):
                     raise ValueError(
                         f"""
-                                     unsupported {v_in=}. A filter function takes one, and only one, parameter.  
+                                     unsupported {v_in=}. A filter function takes one, and only one, parameter.
                                      `f(a)`     is OK
                                      `f(*args)` is OK
                                      `f()`      is BAD
@@ -908,9 +919,21 @@ class Filter(BFilter):
         - line     : (potentially modified in other subclasses)
         """
         if not self.invert:
-            return self.f.match(line), line
+            res = self.f.match(line)
+            if isinstance(res, bool):
+                # return the flag and the original line
+                return res, line
+
+            # keep a modified line, if provided
+            return (res[0], res[1])
         else:
-            return not self.f.match(line), line
+            res = self.f.match(line)
+            if isinstance(res, tuple):
+
+                return (not res[0], res[1])
+
+            # return the inversion of the flag and the original line
+            return not res, line
 
     @pydantic.model_validator(mode="after")  # type: ignore
     def _init(self):
@@ -939,9 +962,16 @@ class Filter(BFilter):
 class TextFilterWrapper(PTextFilterWrapper):
     "concrete filter"
 
-    def match(self, line: str) -> bool:
+    def match(self, line: str) -> bool | tuple[bool, str]:
         "does a line match the filter?"
-        return bool(self.func(line))
+
+        res = self.func(line)
+        if isinstance(res, tuple):
+            return res
+
+        # breakpoint()
+
+        return bool(res)
 
     def __init__(self, func):
         "init"
@@ -1236,8 +1266,8 @@ class FilterMgr(pydantic.BaseModel):
 
 @dataclass
 class Checker:
-    #howto- hide dataclass field for less noisy debugs
-    _lz: ALazyRoot = dataclass_field(repr=False) 
+    # howto- hide dataclass field for less noisy debugs
+    _lz: ALazyRoot = dataclass_field(repr=False)
     f: FilterMgr
     v: "ValidatorMgr"
     ext: str
@@ -1255,7 +1285,6 @@ class Checker:
     def __post_init__(self):
         """link itself to its filters/validators"""
         try:
-            
 
             alias_v = alias_f = None
 
@@ -1271,7 +1300,7 @@ class Checker:
             else:
                 self.v = ValidatorMgr(checker=self, ext=self.ext, alias=self.alias)
 
-            #🎫004.lazy.052.polars_diffing - what about here, to link in the config... we do have its ValidatorMgr...
+            # 🎫004.lazy.052.polars_diffing - what about here, to link in the config... we do have its ValidatorMgr...
 
             self.alias = get_alias_check_equality([alias_f, alias_v])
 
@@ -1347,13 +1376,14 @@ class Checker:
 
             checker = SameAssertor(checker=self)
 
-            self._lazycheck(got, checker=checker, suffix=suffix, filter_=filter_,**kwargs)
+            self._lazycheck(
+                got, checker=checker, suffix=suffix, filter_=filter_, **kwargs
+            )
             return self.temp
 
         except (AssertionError,) as e:
             # we want to raise a new exception, minus all the info about finding diffs and formatting error
             # messages which is... what lazydiff does
-
 
             new_exc = AssertionError(str(e))
 
@@ -1380,11 +1410,11 @@ class Checker:
         lazy_save_got: bool = True,
         lazy_save_exp: bool = True,
         filter_: bool = True,
-        **kwargs
+        **kwargs,
     ) -> LazyTemp:
         try:
 
-            prefix=f"Checker._lazycheck:"
+            prefix = f"Checker._lazycheck:"
 
             self.lazy_save_got = lazy_save_got
             self.lazy_save_exp = lazy_save_exp
@@ -1408,7 +1438,7 @@ class Checker:
                 return tmp
 
             # calculate the paths of the exp/got files
-            #🎫004.lazy.054.underscore_lz
+            # 🎫004.lazy.054.underscore_lz
             testee = self._lz.testee
 
             # Issue.011.eval.tabulator
@@ -1423,21 +1453,25 @@ class Checker:
 
             log(f"{prefix}{fnp_exp=},{fnp_got=}")
 
-            if breakpoints('_lazycheck', {'always': 1}):  # pragma: no cover
-                print(f'\n\n🔬🔬🔬Checker.lazycheck')
+            if breakpoints("_lazycheck", {"always": 1}):  # pragma: no cover
+                print(f"\n\n🔬🔬🔬Checker.lazycheck")
                 breakpoint()
                 pass
-            
-
 
             log(f"{type(checker)}.write_raw")
-            checker.write_raw(provider=self.provider, suffix=suffix, testee=testee, control=control, got=got)
+            checker.write_raw(
+                provider=self.provider,
+                suffix=suffix,
+                testee=testee,
+                control=control,
+                got=got,
+            )
 
             # linefeeds have a tendency to creep in sometimes
 
             log(f"{prefix}1398:{got is None=}")
 
-            #🎫004.lazy.052.polars_diffing            
+            # 🎫004.lazy.052.polars_diffing
             log(f"{prefix}.got.stripping")
             if filter_:
                 formatted_got = self.temp.formatted_got
@@ -1452,7 +1486,6 @@ class Checker:
 
             log(f"{prefix}1413:{formatted_got is None=}")
 
-
             # at this point, we want to write the received, formatted, data regardless
             if self.lazy_save_got:
                 log(f"{prefix}:{fnp_got=}.open+write")
@@ -1466,11 +1499,11 @@ class Checker:
 
                 header = None
                 if metadata_header:
-                        if isinstance(metadata_header, list):
-                            metadata_header = "\n".join(metadata_header)
-                        else:
-                            metadata_header = str(metadata_header)
-                        header = f"""{metadata_header.strip()}
+                    if isinstance(metadata_header, list):
+                        metadata_header = "\n".join(metadata_header)
+                    else:
+                        metadata_header = str(metadata_header)
+                    header = f"""{metadata_header.strip()}
 {constants.LAZY_HEADER_SEPARATOR}
 """
 
@@ -1485,14 +1518,13 @@ class Checker:
 
             if external_exp is undefined:
                 try:
-                    #🎫004.lazy.052.polars_diffing
+                    # 🎫004.lazy.052.polars_diffing
 
                     exp = self.provider.read(fnp_exp)
                     exp = self.provider.strip(exp)
 
                     if isinstance(exp, str) and constants.LAZY_HEADER_SEPARATOR in exp:
                         exp = exp.split(constants.LAZY_HEADER_SEPARATOR)[1].strip()
-
 
                 except (IOError,):
                     # we just want to write the received data as our expectation
@@ -1518,8 +1550,7 @@ class Checker:
                 log(f"{prefix}1480{formatted_got is None=}")
                 log(f"{prefix}1481{exp is None=}")
 
-
-                self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp,**kwargs)
+                self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp, **kwargs)
             except (CustomTimeoutError,) as e:  # pragma: no cover
                 tmp.message = message = (
                     "exp and got are not equal but comparison timed out after %s seconds"
@@ -1544,7 +1575,9 @@ class Checker:
                 breakpoint()
             raise
 
-    if False and timeout:  #!!!TODO!!! 🎫004.lazy.052.polars_diffing - remove the False, which is only in place to facilitate debugging by not going off main Thread
+    if (
+        False and timeout
+    ):  #!!!TODO!!! 🎫004.lazy.052.polars_diffing - remove the False, which is only in place to facilitate debugging by not going off main Thread
 
         @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
         def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
@@ -1553,10 +1586,10 @@ class Checker:
             )
 
             try:
-                breakpoint() #🛑
+                breakpoint()  # 🛑
                 pass
                 # testee.assertEqual(exp, got, message)
-                #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
                 self.provider.assert_equal(self, testee, exp, got, message)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
@@ -1568,12 +1601,14 @@ class Checker:
 
     else:
         #
-        def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None,**kwargs):
+        def assertEqualTimed(
+            self, testee, exp, got, tmp: LazyTemp, message=None, **kwargs
+        ):
             """fallback if timeout package is not available"""
             try:
                 # testee.assertEqual(exp, got, message)
-                #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(self, testee, exp, got, message,**kwargs)
+                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+                self.provider.assert_equal(self, testee, exp, got, message, **kwargs)
             except (AssertionError,) as e:
                 raise self.format_assertion_message(e, tmp, testee)
             except (Exception,) as e:
@@ -1630,7 +1665,7 @@ class TextExtProvider(PAbstractExtProvider):
         try:
             if not isinstance(data, str):
                 raise ConfigurationException(
-                    #🎫004.lazy.054.underscore_lz
+                    # 🎫004.lazy.054.underscore_lz
                     f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                 )
             return data.strip()
@@ -1718,7 +1753,7 @@ class FunctionCheck(ValidatorCheck):
                 di["validator"] = validator
 
             try:
-                 #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
                 res = bool(self.f(value, **di))
 
                 # assume custom checkers
@@ -1845,8 +1880,7 @@ class Validator(pydantic.BaseModel):
                 breakpoint()
             raise
 
-
-    @pydantic.model_validator(mode='before')
+    @pydantic.model_validator(mode="before")
     @classmethod
     def pause_for_debug(cls, data: Any) -> Any:
         try:
@@ -1856,24 +1890,22 @@ class Validator(pydantic.BaseModel):
 
             lookup = (cls, name, selector, "ante")
 
-
-            if breakpoints('pause_for_debug', {'name': name}) and not lookup in seen:  # pragma: no cover
-                print(f'\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}')
+            if (
+                breakpoints("pause_for_debug", {"name": name}) and not lookup in seen
+            ):  # pragma: no cover
+                print(f"\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}")
                 seen.add(lookup)
                 breakpoint()
                 pass
-            
-
 
             return data
-        #pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e: 
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if cpdb():
                 breakpoint()
             raise
 
-
-    @pydantic.model_validator(mode='after')
+    @pydantic.model_validator(mode="after")
     @classmethod
     def pause_for_debug_post(cls, data: Any, **kwargs) -> Any:
         try:
@@ -1881,25 +1913,23 @@ class Validator(pydantic.BaseModel):
 
             selector = data.selector
 
-            lookup = (cls, name, selector,"post")
+            lookup = (cls, name, selector, "post")
 
-            if breakpoints('pause_for_debug_post', {'name': name}) and not lookup in seen:  # pragma: no cover
-                print(f'\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}')
+            if (
+                breakpoints("pause_for_debug_post", {"name": name})
+                and not lookup in seen
+            ):  # pragma: no cover
+                print(f"\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}")
                 seen.add(lookup)
                 breakpoint()
                 pass
-            
-
 
             return data
-        #pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e: 
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
             if 1 or cpdb():
                 breakpoint()
             raise
-
-
-
 
     def extend(self, val: Union[None, "Validator", Dict[str, Any]] = None, **kwargs):
         try:
@@ -1968,9 +1998,6 @@ def is_custom_checker(f: Any) -> bool:
         raise
 
 
-
-
-
 class ValidatorMgr(pydantic.BaseModel):
     """chains all the validators for a given extension"""
 
@@ -1983,9 +2010,9 @@ class ValidatorMgr(pydantic.BaseModel):
 
     alias: Optional[str] = None
 
-    #🎫004.lazy.052.polars_diffing - we may want it, but it's probably gonna have to come in via `ExtAlias`
+    # 🎫004.lazy.052.polars_diffing - we may want it, but it's probably gonna have to come in via `ExtAlias`
     #
-    config : dict[str,Any]|None = None
+    config: dict[str, Any] | None = None
 
     # @pydantic.model_validator(mode='before')
     # @classmethod
@@ -1997,17 +2024,13 @@ class ValidatorMgr(pydantic.BaseModel):
     #             print(f'\n\n🔬🔬🔬always:{1}')
     #             breakpoint()
     #             pass
-            
-
 
     #         return data
     #     #pragma: no cover pylint: disable=unused-variable
-    #     except (Exception,) as e: 
+    #     except (Exception,) as e:
     #         if cpdb():
     #             breakpoint()
     #         raise
-        
-
 
     def __sub__(self, value_in):
         """logically delete a validator by setting active to False"""
@@ -2148,7 +2171,7 @@ class ValidatorMgr(pydantic.BaseModel):
             for val in actuals:
                 if not val.active:
                     continue
-                 #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config... - `self.checker` ought to do it...
+                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config... - `self.checker` ought to do it...
                 valid = val.assert_valid(self.testee, rawdata, data)
                 if not valid:
                     raise ValidationError(f"{val.name}", validator=val)
@@ -2274,8 +2297,8 @@ class SameAssertor:
     )
 
     def __init__(self, checker: "Checker"):
-        #🎫004.lazy.052.polars_diffing (Pdb) rin(checker.provider) <class 'bemyerp.tests.validators_polars.Polars_Provider'>
- 
+        # 🎫004.lazy.052.polars_diffing (Pdb) rin(checker.provider) <class 'bemyerp.tests.validators_polars.Polars_Provider'>
+
         self.checker = checker
 
     def __repr__(self):
@@ -2355,10 +2378,9 @@ class SameAssertor:
                 breakpoint()
             raise
 
-
-
-    
-    def write_raw(self, provider :PAbstractExtProvider, suffix, testee, control, got): #🎫004.lazy.052.polars_diffing
+    def write_raw(
+        self, provider: PAbstractExtProvider, suffix, testee, control, got
+    ):  # 🎫004.lazy.052.polars_diffing
         """
         where do we save the raw received data,
         after formatting, but before filtering ?
@@ -2366,12 +2388,11 @@ class SameAssertor:
 
         # suffix=suffix, testee=testee, control=control, got=got
 
-
         try:
             if not control.env.get("save_raw_received_data"):
                 return
-            
-            #🎫004.lazy.052.polars_diffing - route some of this to checker.provider 
+
+            # 🎫004.lazy.052.polars_diffing - route some of this to checker.provider
 
             fnp = self.get_fnp_save(
                 testee=testee, exp_got="report", control=control, suffix=suffix
@@ -2381,8 +2402,7 @@ class SameAssertor:
             if provider.text_based:
                 got2 = str(got2)
 
-            provider.write(fnp,got2)
-
+            provider.write(fnp, got2)
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -2465,7 +2485,8 @@ class Selectors(str, Enum):
     # just as if Validator(name=status_code, selector="status_code")
     name = "name"
 
-#🎫004.lazy.052.polars_diffing - assertEqual on a variable, not the whole data
+
+# 🎫004.lazy.052.polars_diffing - assertEqual on a variable, not the whole data
 def check_equal(
     data: Any,
     testee: unittest.TestCase,
@@ -2482,12 +2503,12 @@ def check_equal(
             exp = exp.get_exp(validator, testee)
 
         if not isinstance(data, type(exp)):
-            #🎫004.lazy.052.polars_diffing - this is the old-style assertEqual applied to a variable, not the entire data p  
+            # 🎫004.lazy.052.polars_diffing - this is the old-style assertEqual applied to a variable, not the entire data p
             provider_check_equal = validator.mgr.provider.check_equal
             if provider_check_equal:
                 # breakpoint() #🛑
                 pass
-                #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
                 res = provider_check_equal(
                     testee=testee, validator=validator, exp=exp, got=data
                 )
@@ -2495,7 +2516,6 @@ def check_equal(
                     msg = f"{validator.name}\nexp\n{exp}\n!=\ngot\n{str(data):60.60}\n"
                     raise ValidationError(msg, validator=validator, got=data)
                 return res
-
 
         res = data == exp
         if not res and verbose:
@@ -2718,7 +2738,6 @@ class ActualValidator(Validator):
     ):
         """run self.v.is_valid() against part or all of data_in"""
 
- 
         tu_raises = get_immediate_raises(debug)
         try:
 
@@ -2761,7 +2780,7 @@ class ActualValidator(Validator):
                     raise NotImplementedError(f"unsupported {type(selector)=}")
             else:
                 data = data_in
-            #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+            # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
             valid = self.v.is_valid(data, testee=testee, validator=self)
             return valid
         except (tu_raises) as e:
