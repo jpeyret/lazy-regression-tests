@@ -1,4 +1,4 @@
-f"""
+"""
 common lazy functionality
 """
 import os
@@ -14,6 +14,8 @@ from typing import (
     List,
     Callable,
 )
+
+from importlib import import_module
 from io import StringIO
 from abc import abstractmethod
 from inspect import signature
@@ -1870,6 +1872,13 @@ class Validator(pydantic.BaseModel):
                 return FunctionCheck(f=value)
             elif isinstance(value, ValidatorCheck):
                 return value
+            elif isinstance(value, str) and "." in value:
+                modpath, name = value.rsplit(".", maxsplit=1)
+                module_ = import_module(modpath)
+                value = getattr(module_, name)
+                if not isinstance(value, FunctionCheck):
+                    value = FunctionCheck(value)
+
             elif value:
                 raise NotImplementedError(f"{cls}.build:value:?")
 
@@ -2497,6 +2506,8 @@ def check_equal(
 
     try:
 
+        # breakpoint()
+
         exp = exp or validator.exp
 
         if exp is AutoExp:
@@ -2769,13 +2780,18 @@ class ActualValidator(Validator):
                     else:
                         data = selector(**kwargs)
                 elif isinstance(selector, str):
-                    # is it a direct attribute?
-                    value = getattr(data_in, selector, undefined)
-                    if value is not undefined:
-                        data = value
+                    prefix_filter = ".filtered."
+                    if selector.startswith(prefix_filter):
+                        selector2 = selector.removeprefix(prefix_filter)
+                        data = self.mgr.temp.filtered.get(selector2)
                     else:
-                        kwargs["selector"] = selector
-                        data = self.mgr.provider.select_by_string(**kwargs)
+                        # is it a direct attribute?
+                        value = getattr(data_in, selector, undefined)
+                        if value is not undefined:
+                            data = value
+                        else:
+                            kwargs["selector"] = selector
+                            data = self.mgr.provider.select_by_string(**kwargs)
                 else:
                     raise NotImplementedError(f"unsupported {type(selector)=}")
             else:
