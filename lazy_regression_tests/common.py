@@ -2506,9 +2506,12 @@ def check_equal(
 
     try:
 
-        # breakpoint()
-
         exp = exp or validator.exp
+
+        if breakpoints("lazy", {"validator": validator.name}):  # pragma: no cover
+            print(f"\n\n🔬🔬🔬validator:{validator.name}")
+            breakpoint()
+            pass
 
         if exp is AutoExp:
             exp = exp.get_exp(validator, testee)
@@ -2548,6 +2551,10 @@ def check_equal(
         e.got = data
         raise
     except (ValidationError) as e:
+        if os.getenv("cpdb"):
+            breakpoint()
+            pass
+
         raise
     except (Exception,) as e:
 

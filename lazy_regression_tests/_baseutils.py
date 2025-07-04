@@ -12,6 +12,7 @@ import types
 import re
 import builtins
 import pprint
+from urllib.parse import urlparse, quote, urlunparse
 
 from pathlib import Path
 import subprocess
@@ -1110,7 +1111,7 @@ class UnavailableLibrary:
     def __repr__(self):
         """error message"""
         return f"""
-Third party package/library '{self.missing}' has not been installed.  
+Third party package/library '{self.missing}' has not been installed.
 You need to install it before using {self.name}
 {self.message}
 """
@@ -1399,7 +1400,9 @@ def oshow(self, nesting="", file=None, private=False):
             breakpoint()
         raise
 
+
 from _pickle import PicklingError
+
 
 def dropbad_dump(obj, fdump, seen: set | None = None):
     try:
@@ -1422,7 +1425,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
         fdump(obj)
         return obj
     # pragma: no cover pylint: disable=unused-variable
-    except (TypeError, ValueError,PicklingError) as e:
+    except (TypeError, ValueError, PicklingError) as e:
         res = {}
         if isinstance(obj, dict):
             for k, v in obj.items():
@@ -1430,7 +1433,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                     fdump(v)
                     res[k] = v
                 # pragma: no cover pylint: disable=unused-variable
-                except (TypeError, ValueError,PicklingError) as e:
+                except (TypeError, ValueError, PicklingError) as e:
                     try:
                         safe = dropbad_dump(v, fdump=fdump, seen=seen)
                         res[k] = safe
@@ -1451,7 +1454,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                     except (TypeError, ValueError) as e:
                         res.append(dropbad_dump(v, fdump=fdump, seen=seen))
                 return res
-            except (TypeError, ValueError) as e:
+            except (TypeError, ValueError, KeyError) as e:
                 res = str(obj)
                 return res
 
@@ -1476,3 +1479,18 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 def eprint(*args, **kwargs):
     """print to sys.stderr"""
     print(*args, file=sys.stderr, **kwargs)
+
+
+def format_url(url: str) -> str:
+    """format url"""
+    try:
+        parsed = urlparse(url)
+        parsed2 = parsed._replace(path=quote(parsed.path))
+        res = urlunparse(parsed2)
+        return res
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            breakpoint()
+        raise

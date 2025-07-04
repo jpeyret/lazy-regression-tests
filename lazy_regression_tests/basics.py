@@ -8,6 +8,7 @@ import json
 import sys
 from pathlib import Path
 
+
 #################################################################
 # Dependencies
 #################################################################
@@ -22,14 +23,14 @@ def cpdb(*args, **kwargs):
 rpdb = breakpoints = cpdb
 
 
-from lazy_regression_tests._baseutils import oshow as show, Subber, ppp
+from lazy_regression_tests._baseutils import oshow as show, Subber, ppp, format_url
 import lazy_regression_tests.constants as constants
 
 verbose = constants.verbose
 
 undefined = constants.undefined
 
-#🎫004.lazy.052.polars_diffing
+# 🎫004.lazy.052.polars_diffing
 class ExtAlias(pydantic.BaseModel):
     """allows uncoupling name from extension provider
 
@@ -45,7 +46,7 @@ class ExtAlias(pydantic.BaseModel):
     """
 
     alias: str
-    config : dict[str,Any]|None = None
+    config: dict[str, Any] | None = None
 
     @classmethod
     def is_instance(cls, v):
@@ -144,7 +145,7 @@ class ConfigurationException(ValueError):
         "adds header/footer"
         v = Exception.__repr__(self)
         return f"{constants.HDR}{v}{constants.FTR}"
-    
+
     def allow_cpdb(self):
         return os.getenv("bme_debug_allow_cpdb")
 
@@ -346,7 +347,7 @@ def lazyinfo(
         if exception:
             type_, _, tb = sys.exc_info()
         else:
-            #we actually dont do all that much with lazyinfo when nothing happened
+            # we actually dont do all that much with lazyinfo when nothing happened
             return f"{testee}.  no exception "
 
         dn_out = os.getenv("lzrt_info_dir")
@@ -401,31 +402,28 @@ def lazyinfo(
 
         if not outinfo:
             str_exc = str(exception)
-            return f"🧨 {outinfo=} for exception:{str_exc:100.100}"        
+            return f"🧨 {outinfo=} for exception:{str_exc:100.100}"
 
         outinfo.file_exp = fnp_exp
         outinfo.file_got = fnp_got
 
-        # breakpoint() #🛑
-        pass
-
         if kwargs.get("polars"):
-            outinfo.app= "jplshowdiff.py"
-
+            outinfo.app = "jplshowdiff.py"
 
         if tb:
             outinfo.filename = tb.tb_frame.f_code.co_filename
             outinfo.linenum = tb.tb_lineno
 
-        out = outinfo.dumps()
-
         fnpo = Path(dn_out) / fn_o
 
         if exception:
             res += f"\n  info@ {fnpo}"
+
             url = getattr(outinfo, "url", None)
             if url:
-                res += f"\n  url: {url}"
+                url2 = format_url(url)
+                res += f"\n  url: {url2}"
+                outinfo.url = url2
 
             testclass = getattr(outinfo, "testclass", None)
             testmethod = getattr(outinfo, "testmethod", None)
@@ -438,11 +436,12 @@ def lazyinfo(
             if filename and linenum:
                 res += f"\n  edit@ {filename}:{linenum}"
 
+        out = outinfo.dumps()
+
         if res:
             res = f"\n{res}\n"
 
         if error or write_on_success:
-
 
             with fnpo.open("w") as fo:
                 fo.write(out)
@@ -467,7 +466,6 @@ def lazyinfo(
             breakpoint()
         raise
 
+
 class ALazyRoot:
     "keep annos happy"
-
-

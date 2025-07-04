@@ -2,9 +2,10 @@
 
 from typing import Any, Callable
 import copy
-
+import os
 import json
 from collections.abc import Mapping
+from typing import Iterable
 import unittest
 
 
@@ -208,13 +209,13 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
                         res = json.loads(res)
                     if not isinstance(res, dict):
                         raise ConfigurationException(
-                            #🎫004.lazy.054.underscore_lz
+                            # 🎫004.lazy.054.underscore_lz
                             f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                         )
 
                     return res
             raise ConfigurationException(
-                #🎫004.lazy.054.underscore_lz
+                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
@@ -314,7 +315,7 @@ class HTML_Provider(HTTP_Provider):
                     return soup
 
             raise ConfigurationException(
-                #🎫004.lazy.054.underscore_lz
+                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
@@ -369,7 +370,7 @@ class HTML_Provider(HTTP_Provider):
                     return json.dumps(d3, indent=2, sort_keys=True).strip()
 
             raise ConfigurationException(
-                #🎫004.lazy.054.underscore_lz
+                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
@@ -398,32 +399,53 @@ class HTML_Provider(HTTP_Provider):
         res = temp.soup.select(selector)
         return res
 
-    #🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+    # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
     def check_equal(
         self, testee: unittest.TestCase, validator: Validator, exp, got
     ) -> bool:
         """check if exp can be considered equal"""
         try:
-            if isinstance(exp, str) and isinstance(got, bs4.element.ResultSet):
-                got2 = got[0].text.strip()
-                res = exp.strip() == got2
-                if not res:
-                    msg = f"{repr(validator)}\nexp\n{exp}\n!=\ngot\n{str(got2):60.60}\n"
-                    raise ValidationError(msg, validator, got2)
+            if isinstance(got, bs4.element.ResultSet):
+                got = got[0].text.strip()
 
-                return res
+            is_iter = isinstance(exp, Iterable) and not isinstance(exp, str)
+            if not isinstance(exp, type(got)):
+                type_exp = type(exp)
+                if is_iter:
+                    type_exp = type(exp[0])
 
-            elif not (type(exp) is type(got)):
-                if isinstance(exp, (list, tuple, set)) and isinstance(got, (int, str)):
-                    return got in exp
+                got = type_exp(got)
 
+            if is_iter:
+                testee.assertTrue((got in exp), f"{got=} {exp=}")
+                return True
             else:
+                testee.assertEqual(exp, got, f"{got=} {exp=}")
+                return True
 
-                msg = f"{exp} =! {got}"
-                raise ValidationError(msg=msg, validator=validator, got=got)
+        #     if isinstance(exp, str) and isinstance(got, bs4.element.ResultSet):
+        #         got2 = got[0].text.strip()
+        #         res = exp.strip() == got2
+        #         if not res:
+        #             msg = f"{repr(validator)}\nexp\n{exp}\n!=\ngot\n{str(got2):60.60}\n"
+        #             raise ValidationError(msg, validator, got2)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (ValidationError,):
+        #         return res
+
+        #     elif not (type(exp) is type(got)):
+        #         if isinstance(exp, (list, tuple, set)) and isinstance(got, (int, str)):
+        #             return got in exp
+
+        #     else:
+
+        #         msg = f"{exp} =! {got}"
+        #         raise ValidationError(msg=msg, validator=validator, got=got)
+
+        # # pragma: no cover pylint: disable=unused-variable
+        except (AssertionError,) as e:
+            if os.getenv("cpdb"):
+                breakpoint()
+                pass
             raise
         except (Exception,) as e:
             if cpdb():
