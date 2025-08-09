@@ -63,15 +63,17 @@ from lazy_regression_tests._baseutils import (
     oshow as show,
 )
 
+from bemyerp.websec.log_settings import Log
+
+log = Log(__name__)
+
+
 try:
     from rich import inspect as rin
 # pragma: no cover pylint: disable=unused-variable
 except (ImportError,) as e:
     rin = NotImplemented
 
-from bemyerp.websec.log_settings import getLogger
-
-logger = getLogger(__name__, "debuglog")
 
 try:
     from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
@@ -83,13 +85,6 @@ except (ImportError,) as e:
 
 
 import bemyerp.pssystem.constants as dbgconstants
-
-FLOG = logger.debug
-
-
-def log(msg, *args, flog=None, **kwargs):  # custom lazy
-    flog = flog or FLOG
-    flog(f"{dbgconstants.LOG_PREFIX_DEBUG2.lazy }{msg}", *args, **kwargs)
 
 
 verbose = "-v" in sys.argv
@@ -1620,6 +1615,9 @@ class Checker:
 
     def format_assertion_message(self, ori, tmp: LazyTemp, testee):
         """message thrown on assert_same failures"""
+
+        log(f"{testee}:diff:fnp_exp={tmp.fnp_exp}", loglevel="warning")
+        log(f"{testee}:diff:fnp_got={tmp.fnp_got}", loglevel="warning")
 
         message = f"""
 

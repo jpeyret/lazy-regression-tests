@@ -16,15 +16,20 @@ import pydantic
 from pydantic import ConfigDict
 
 
+from lazy_regression_tests._baseutils import oshow as show, Subber, ppp, format_url
+import lazy_regression_tests.constants as constants
+
+from bemyerp.websec.log_settings import Log
+
+log = Log(__name__)
+
+
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
 
 rpdb = breakpoints = cpdb
 
-
-from lazy_regression_tests._baseutils import oshow as show, Subber, ppp, format_url
-import lazy_regression_tests.constants as constants
 
 verbose = constants.verbose
 
@@ -442,6 +447,8 @@ def lazyinfo(
             res = f"\n{res}\n"
 
         if error or write_on_success:
+
+            log(f"lazy:fnp_json={fnpo}", loglevel="warning")
 
             with fnpo.open("w") as fo:
                 fo.write(out)
