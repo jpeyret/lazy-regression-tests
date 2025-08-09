@@ -1,69 +1,67 @@
 """
 common lazy functionality
 """
+import inspect
+import operator
 import os
+import re
+import sys
+import unittest
+from abc import abstractmethod
+from collections import defaultdict
+from collections.abc import Mapping
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
+from enum import Enum
+from importlib import import_module
+from inspect import signature
+from io import StringIO
+from pathlib import Path
 from typing import (
-    Tuple,
-    Protocol,
-    runtime_checkable,
-    Optional,
-    Dict,
     Any,
-    Sequence,
-    Union,
-    List,
     Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    Union,
+    runtime_checkable,
 )
 
-from importlib import import_module
-from io import StringIO
-from abc import abstractmethod
-from inspect import signature
-import re
-from dataclasses import dataclass, field as dataclass_field
-import unittest
-from pathlib import Path
-from enum import Enum
-import inspect
-import sys
-import operator
-from collections.abc import Mapping
-from collections import defaultdict
-from unittest.signals import installHandler
-from pydantic import ConfigDict
-
+import lazy_regression_tests.constants as constants
 
 #################################################################
 # Dependencies
 #################################################################
 import pydantic
-
-import lazy_regression_tests.constants as constants
-
-from lazy_regression_tests.basics import (
-    ExtAlias,
-    ExecInfo,
-    MediatedEnvironDict,
-    BFilter,
-    ConfigurationException,
-    AutoExp,
-    Auto,
-    get_alias_check_equality,
-    ValidationError,
-    DisableAll,
-    ALazyRoot,
-)
-
+from bemyerp.websec.log_settings import Log
 from lazy_regression_tests._baseutils import (
     DictFormatter,
     Dummy,
-    def_repr,
+    InvalidConfigurationException,
     Subber,
+    def_repr,
     fill_template,
+)
+from lazy_regression_tests._baseutils import (
     oshow as show,
 )
-
-from bemyerp.websec.log_settings import Log
+from lazy_regression_tests.basics import (
+    ALazyRoot,
+    Auto,
+    AutoExp,
+    BFilter,
+    ConfigurationException,
+    DisableAll,
+    ExecInfo,
+    ExtAlias,
+    MediatedEnvironDict,
+    ValidationError,
+    get_alias_check_equality,
+)
+from pydantic import ConfigDict
 
 log = Log(__name__)
 
@@ -76,15 +74,13 @@ except (ImportError,) as e:
 
 
 try:
-    from timeout_decorator import timeout, TimeoutError as CustomTimeoutError
+    from timeout_decorator import TimeoutError as CustomTimeoutError
+    from timeout_decorator import timeout
 except (ImportError,) as e:
     timeout = None
 
     class CustomTimeoutError(Exception):
         """shouldnt see this"""
-
-
-import bemyerp.pssystem.constants as dbgconstants
 
 
 verbose = "-v" in sys.argv
@@ -107,8 +103,9 @@ def _checktypes(got, exp, validator: "Validator"):
             selector_msg = f" using {validator.selector=}"
         else:
             selector_msg = ""
-        logger.warning(
-            f"{warning}{repr(validator)}: Possible type mismatch exp={type(exp)} vs got={type(got)=} {selector_msg}\n"
+        log(
+            f"{warning}{repr(validator)}: Possible type mismatch exp={type(exp)} vs got={type(got)=} {selector_msg}\n",
+            loglevel="warning",
         )
 
 
@@ -131,9 +128,9 @@ class _Control(object):
 
     def __init__(
         self,
-        lazy: "LazyChecker",
+        lazy,
         env: MediatedEnvironDict,
-        options: "LazyCheckerOptions",
+        options,
     ):
 
         self.lazy = lazy
@@ -735,11 +732,6 @@ class FilterDict(dict):
         return self[attrname]
 
 
-class ExecInfo:
-    def __init__(self):
-        self.ioerror_exp = self.ioerror_got = None
-
-
 #################################################################
 # Filter building blocks
 #################################################################
@@ -1247,7 +1239,7 @@ class FilterMgr(pydantic.BaseModel):
                 f.show(file=file, nesting=indent)
 
             if plocal:
-                logger.info(file.getvalue())
+                log(file.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1337,7 +1329,7 @@ class Checker:
                 self.temp.show(nesting=indent, file=file)
 
             if plocal:
-                logger.info(file.getvalue())
+                log(file.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1411,7 +1403,7 @@ class Checker:
     ) -> LazyTemp:
         try:
 
-            prefix = f"Checker._lazycheck:"
+            prefix = "Checker._lazycheck:"
 
             self.lazy_save_got = lazy_save_got
             self.lazy_save_exp = lazy_save_exp
@@ -1451,7 +1443,7 @@ class Checker:
             log(f"{prefix}{fnp_exp=},{fnp_got=}")
 
             if breakpoints("_lazycheck", {"always": 1}):  # pragma: no cover
-                print(f"\n\n🔬🔬🔬Checker.lazycheck")
+                print("\n\n🔬🔬🔬Checker.lazycheck")
                 breakpoint()
                 pass
 
@@ -2774,7 +2766,7 @@ class ActualValidator(Validator):
                 if isinstance(selector, (operator.itemgetter, operator.attrgetter)):
                     data = selector(data_in)
 
-                if type(selector) == type and issubclass(selector, Auto):
+                if type(selector) is type and issubclass(selector, Auto):
                     data = data_in
                 elif selector is select_by_provider:
                     data = select_by_provider(**kwargs)
