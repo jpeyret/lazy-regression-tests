@@ -446,7 +446,9 @@ def lazyinfo(
         if res:
             res = f"\n{res}\n"
 
-        if error or write_on_success:
+        showinfo = os.getenv("showinfo") or write_on_success
+
+        if error or showinfo:
 
             log(f"lazy:fnp_json={fnpo}", loglevel="warning")
 

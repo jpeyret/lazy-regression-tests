@@ -2340,7 +2340,7 @@ class SameAssertor:
                 return None
 
             _litd = t_dirname.split(os.path.sep)
-            _litd = self._handle_dirname_extras(_litd)
+            _litd = self._handle_dirname_extras(_litd, testee)
             _lid = ["/"] + [fill_template(t_, subber) for t_ in _litd]
             dirname = os.path.join(*_lid)
 
@@ -2440,7 +2440,7 @@ class SameAssertor:
                 breakpoint()
             raise
 
-    def _handle_dirname_extras(self, _litd):
+    def _handle_dirname_extras(self, _litd, testee):
         """allows injection of extra instance-set attributes into the directory hierarchies
         The intent of `lazy_dirname_extras` is to partition tests by other attributes, like say
         a site name or a test database name.
@@ -2452,8 +2452,19 @@ class SameAssertor:
         """
 
         try:
+            if os.getenv("lazyrpdb"):
+                from bemyerp.lib.utils import (
+                    pp,
+                    ppp,
+                    rin,
+                    rindebug,
+                    show,
+                )  # noqa - debug
 
-            dirname_extras = getattr(self, "lazy_dirname_extras", "")
+                breakpoint()
+                pass
+
+            dirname_extras = getattr(testee, "lazy_dirname_extras", "")
             if not dirname_extras:
                 return _litd
 

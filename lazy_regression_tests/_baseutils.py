@@ -177,7 +177,9 @@ def real_cpdb(**kwds):  # pragma: no cover
     return real_cpdb.count > 0
 
 
-real_cpdb.count = 3
+real_cpdb.count = int(os.getenv("cpdb_count", 3))
+# breakpoint()
+# pass
 
 
 def cpdb():
