@@ -3,6 +3,7 @@ from typing import Any, Union
 from io import StringIO
 import pprint
 import json
+import re
 
 from lazy_regression_tests.common import (
     ConfigurationException,
@@ -52,13 +53,13 @@ class DictExtProvider(PAbstractExtProvider):
                         res = json.loads(res)
                     if not isinstance(res, dict):
                         raise ConfigurationException(
-                            #🎫004.lazy.054.underscore_lz
+                            # 🎫004.lazy.054.underscore_lz
                             f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                         )
 
                     return res
             raise ConfigurationException(
-                #🎫004.lazy.054.underscore_lz
+                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
@@ -85,7 +86,7 @@ class DictExtProvider(PAbstractExtProvider):
                     data = f()
                 else:
                     raise ConfigurationException(
-                        #🎫004.lazy.054.underscore_lz
+                        # 🎫004.lazy.054.underscore_lz
                         f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                     )
 
@@ -176,7 +177,7 @@ class JsonExtProvider(DictExtProvider):
                     return v
 
             raise ConfigurationException(
-                #🎫004.lazy.054.underscore_lz
+                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
@@ -230,7 +231,7 @@ class JsonExtProvider(DictExtProvider):
                     return res.strip()
 
                 raise ConfigurationException(
-                    #🎫004.lazy.054.underscore_lz
+                    # 🎫004.lazy.054.underscore_lz
                     f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                 )
 
@@ -240,12 +241,46 @@ class JsonExtProvider(DictExtProvider):
                 breakpoint()
             raise
 
+
 from _pickle import PicklingError
+
+
+def yaml_strip(data: str | Any) -> str | Any:
+
+    if isinstance(data, str):
+
+        patre = re.compile(" \*id\d+$")
+
+        if "&id" in data or "*id" in data:
+
+            lines = data.splitlines()
+            lines2 = []
+            for line in lines:
+                if "&id" in line:
+                    repad = (len(line) - len(line.lstrip())) * " "
+                    words = line.split()
+                    words.pop(1)
+                    line2 = repad + " ".join(words)
+                    lines2.append(line2)
+                elif hit := patre.search(line):
+                    line2 = line[: hit.regs[0][0] + 4]
+                    lines2.append(line2)
+                else:
+                    lines2.append(line)
+
+            data = "\n".join(lines2)
+
+        return data.strip()
+    return data
+
 
 class YamlProvider(DictExtProvider):
     """support dict data and dumps via json.dumps"""
 
     extension = "yaml"
+
+    def strip(self, data: str | Any) -> str | Any:
+        return yaml_strip(data)
 
     def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
         """no conversion needed, that's the point of using yaml"""
@@ -261,7 +296,8 @@ class YamlProvider(DictExtProvider):
 
                 # from yaml import dump as ydump
                 import yaml
-                
+
+                # breakpoint()
 
                 # https://stackoverflow.com/a/66853182
 
@@ -269,32 +305,39 @@ class YamlProvider(DictExtProvider):
                     def ignore_aliases(self, data):
                         return True
 
-                return yaml.dump(data, default_flow_style=False).strip()
+                res = yaml.dump(data, default_flow_style=False)
+
+                res = yaml_strip(res)
+
+                return res
+
             # pragma: no cover pylint: disable=unused-variable
-            except (TypeError, ValueError,PicklingError) as e:
+            except (TypeError, ValueError, PicklingError) as e:
                 data2 = dropbad_dump(data, ydump)
-                return ydump(data2, default_flow_style=False).strip()
+                res2 = ydump(data2, default_flow_style=False).strip()
+                res2 = yaml_strip(res2)
+
+                return res2
         # pragma: no cover pylint: disable=unused-variable
         except (TypeError,) as e:
             raise
 
-        #pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover pylint: disable=unused-variable
         except (PicklingError,) as e:
             if 1:
-                for k,v in vars(data).items():
-                    print(k,end="")
+                for k, v in vars(data).items():
+                    print(k, end="")
                     try:
                         _ = yaml.dump(v)
                         print("✅")
-                    #pragma: no cover pylint: disable=unused-variable
-                    except (Exception,) as e2: 
+                    # pragma: no cover pylint: disable=unused-variable
+                    except (Exception,) as e2:
                         print("🧨")
-            
 
             # if cpdb():
             #     breakpoint()
             raise TypeError(e)
-        
+
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
             if cpdb():

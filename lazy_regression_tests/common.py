@@ -1462,6 +1462,7 @@ class Checker:
 
             # 🎫004.lazy.052.polars_diffing
             log(f"{prefix}.got.stripping")
+            # breakpoint()
             if filter_:
                 formatted_got = self.temp.formatted_got
                 log(f"{prefix}1404:{formatted_got is None=}")
