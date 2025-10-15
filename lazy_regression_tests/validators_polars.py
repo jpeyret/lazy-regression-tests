@@ -436,6 +436,17 @@ def compare_df(
     # catch a tuple...
     colkey = list(colkey)
 
+    # check that the join key(s) is present in both dfs
+    for col in colkey:
+        if col not in df0.columns:
+            raise ValueError(
+                f"{col=} not found in df0.  known:{','.join(sorted(df0.columns))}"
+            )
+        if col not in df1.columns:
+            raise ValueError(
+                f"{col=} not found in df1.  known:{','.join(sorted(df1.columns))}"
+            )
+
     try:
 
         dfdiff = None
