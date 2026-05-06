@@ -1,6 +1,7 @@
 """
 common lazy functionality
 """
+
 import inspect
 import operator
 import os
@@ -98,7 +99,6 @@ warning = "\n🧨 "
 def _checktypes(got, exp, validator: "Validator"):
     """warn if there was type mismatch"""
     if not isinstance(got, type(exp)):
-
         if validator:
             selector_msg = f" using {validator.selector=}"
         else:
@@ -292,7 +292,6 @@ class ValidatorTemp:
         """filter if needed, then format input data"""
         try:
             if self._formatted_got is undefined:
-
                 # apply filters if not done yet
                 # this will also populate self._formatted_got
                 if self._filtered is None:
@@ -333,7 +332,6 @@ class ValidatorTemp:
     def filtered(self, di: Dict[str, Any]):
         """update the filtered with new values"""
         try:
-
             if self._filtered is None:
                 self._filtered = FilterDict()
 
@@ -533,7 +531,6 @@ class PAbstractExtProvider(Protocol):
     def get_temp(self, checker: "Checker", data_in: Any, **kwargs) -> ValidatorTemp:
         """return temp work"""
         try:
-
             try:
                 hash_ = hash(self.datain_to_str(data_in, checker))
             # pragma: no cover pylint: disable=unused-variable
@@ -569,7 +566,6 @@ class PAbstractExtProvider(Protocol):
     def build_filter(self, v_in: Any) -> BFilter:
         "build filter"
         try:
-
             filter_class = getattr(self, "filter_class", Filter)
 
             if isinstance(v_in, dict):
@@ -605,7 +601,6 @@ class PAbstractExtProvider(Protocol):
     ):
         """select data by string selector"""
         try:
-
             if isinstance(data_in, Mapping):
                 data = data_in
                 if "." not in selector:
@@ -629,7 +624,6 @@ class PAbstractExtProvider(Protocol):
                     return res
 
             else:
-
                 if "." in selector:
                     data = nested_get(data_in, selector)
                     return data
@@ -642,7 +636,6 @@ class PAbstractExtProvider(Protocol):
             return data
         # pragma: no cover pylint: disable=unused-variable
         except (ConfigurationException,) as e:
-
             if cpdb() and e.allow_cpdb():
                 breakpoint()  # 🛑
                 pass
@@ -676,7 +669,6 @@ class PAbstractExtProvider(Protocol):
 def parse_pydantic_validation_error(src):
     """extract some validation error info"""
     try:
-
         errors = getattr(src, "errors", None)
         if not errors:
             src = src._excinfo[1]
@@ -807,7 +799,6 @@ class RegexSubstitFilter(BFilter):
         it is faster to test and then sub on a match.
         """
         try:
-
             hit = self.patre.search(line)
 
             if not hit:
@@ -863,7 +854,6 @@ class Filter(BFilter):
     def build_filter(cls, v_in, values) -> PAbstractFilterWrapper:
         """prep the filter wrapper"""
         try:
-
             if isinstance(v_in, str):
                 v = re.compile(v_in).search
                 values["label"] = f"regex.{v_in}"
@@ -918,7 +908,6 @@ class Filter(BFilter):
         else:
             res = self.f.match(line)
             if isinstance(res, tuple):
-
                 return (not res[0], res[1])
 
             # return the inversion of the flag and the original line
@@ -928,7 +917,6 @@ class Filter(BFilter):
     def _init(self):
 
         try:
-
             if self.f is None:
                 name = self.name
                 if name:
@@ -1132,7 +1120,6 @@ class FilterMgr(pydantic.BaseModel):
     def filter(self, data_in: Any = None) -> str:
         """filter data and return as string representation"""
         try:
-
             if data_in:
                 temp = self.checker.provider.get_temp(
                     checker=self.checker, data_in=data_in
@@ -1215,7 +1202,6 @@ class FilterMgr(pydantic.BaseModel):
             if value:
                 self.filters.append(value)
             else:
-
                 raise ConfigurationException(
                     f"{self.__class__}: could not add Filter from {value_in=}"
                 )
@@ -1274,7 +1260,6 @@ class Checker:
     def __post_init__(self):
         """link itself to its filters/validators"""
         try:
-
             alias_v = alias_f = None
 
             if self.f:
@@ -1357,7 +1342,6 @@ class Checker:
     ):
         """is the data same as the last time?"""
         try:
-
             if reset:
                 self.temp = None
 
@@ -1402,7 +1386,6 @@ class Checker:
         **kwargs,
     ) -> LazyTemp:
         try:
-
             prefix = "Checker._lazycheck:"
 
             self.lazy_save_got = lazy_save_got
@@ -1551,7 +1534,6 @@ class Checker:
             return self.lazytemp
 
         except (AssertionError,) as exc:
-
             for attrname in "fnp_exp fnp_got".split():
                 v = getattr(tmp, attrname, undefined)
 
@@ -1732,7 +1714,6 @@ class FunctionCheck(ValidatorCheck):
 
         """
         try:
-
             di = {}
 
             implicit_res = is_custom_checker(self.f)
@@ -1850,7 +1831,6 @@ class Validator(pydantic.BaseModel):
                 # options.validate_with_testee = options.validate_with_validator = True
                 return FunctionCheck(f=value)
             if callable(value):
-
                 # sign = inspect.signature(value)
                 # validator = sign.parameters.get("validator")
                 # if validator:
@@ -1933,7 +1913,6 @@ class Validator(pydantic.BaseModel):
 
     def extend(self, val: Union[None, "Validator", Dict[str, Any]] = None, **kwargs):
         try:
-
             di_update = {}
 
             if isinstance(val, Validator):
@@ -2076,7 +2055,6 @@ class ValidatorMgr(pydantic.BaseModel):
             if value:
                 self.validators.append(value)
             else:
-
                 raise ConfigurationException(
                     f"{self.__class__}: could not add validator from {value_in=}"
                 )
@@ -2141,7 +2119,6 @@ class ValidatorMgr(pydantic.BaseModel):
     ):
         """runs the validations"""
         try:
-
             tu_raise = (
                 (
                     AssertionError,
@@ -2192,7 +2169,6 @@ class ValidatorMgr(pydantic.BaseModel):
     def extend(self, *adds, ext: str = None, alias: str = None) -> "ValidatorMgr":
         """returns a new ValidationMgr with additional configuration"""
         try:
-
             # TODO:  delete debug code
             before = after_val = replacer = add = None
 
@@ -2309,12 +2285,14 @@ class SameAssertor:
         testee: Any,
         exp_got: str,
         control: _Control,
-        suffix: Optional[str] = "",
+        suffix: str | None = "",
         basename_prefix: str = "",
     ) -> Path:
         """get the save path"""
 
         try:
+            if suffix is None:
+                suffix = ""
 
             subber = Subber(
                 # testee,
@@ -2413,7 +2391,6 @@ class SameAssertor:
     def _lazy_get_t_dirname(self, exp_got, subber, control, testee):
         """get the template for the directory names where to save files"""
         try:
-
             env_name = dict(
                 exp="template_dirname_exp",
                 got="template_dirname_got",
@@ -2507,7 +2484,6 @@ def check_equal(
     """check testee.exp == data"""
 
     try:
-
         exp = exp or validator.exp
 
         if breakpoints("lazy", {"validator": validator.name}):  # pragma: no cover
@@ -2538,7 +2514,6 @@ def check_equal(
             _checktypes(data, exp, validator)
 
         if not res:
-
             if isinstance(exp, Enum):
                 s_exp = f"{str(exp._value_):60.60}"
             else:
@@ -2549,17 +2524,16 @@ def check_equal(
 
         return res
     # pragma: no cover pylint: disable=unused-variable
-    except (ConfigurationException) as e:
+    except ConfigurationException as e:
         e.got = data
         raise
-    except (ValidationError) as e:
+    except ValidationError as e:
         if os.getenv("cpdb"):
             breakpoint()
             pass
 
         raise
     except (Exception,) as e:
-
         if cpdb():
             breakpoint()
         raise
@@ -2573,7 +2547,6 @@ def check_exp_in_data(
 ) -> bool:
     """check data in testee.exp"""
     try:
-
         exp = exp or validator.exp
 
         if type(exp) is type(AutoExp) and issubclass(exp, AutoExp):
@@ -2585,7 +2558,6 @@ def check_exp_in_data(
         res = exp in data
 
         if not res:
-
             msg = f"{validator.name}: {str(exp)} not in {data}"
             raise ValidationError(msg, validator=validator, got=data)
 
@@ -2608,12 +2580,10 @@ def check_in(
 ) -> bool:
     """check data in testee.exp"""
     try:
-
         exp = exp or validator.exp
         res = data in exp
 
         if not res:
-
             msg = f"{validator.name}: {str(data)} not in {exp}"
             raise ValidationError(msg, validator=validator, got=data)
 
@@ -2668,7 +2638,6 @@ def flatten_to_validators_dicts(
     """flatten nested one or more Validator ValidatorMgr dict to a list of Validator, dict"""
 
     try:
-
         if isinstance(values, (list, tuple)):
             [
                 flatten_to_validators_dicts(li, v)
@@ -2737,7 +2706,6 @@ class ActualValidator(Validator):
     @pydantic.model_validator(mode="after")
     def _init(self):
         try:
-
             selector = self.selector
             if selector is None:
                 self.selector = self.name
@@ -2760,13 +2728,11 @@ class ActualValidator(Validator):
 
         tu_raises = get_immediate_raises(debug)
         try:
-
             selector = self.selector
 
             # if a selector has been been provided, call it to extract
             # the data from compound data
             if selector:
-
                 kwargs = dict(
                     testee=testee,
                     validator=self,
@@ -2808,7 +2774,7 @@ class ActualValidator(Validator):
             # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
             valid = self.v.is_valid(data, testee=testee, validator=self)
             return valid
-        except (tu_raises) as e:
+        except tu_raises as e:
             raise
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:

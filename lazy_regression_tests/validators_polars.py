@@ -15,6 +15,7 @@ from pathlib import Path
 
 import polars as pl
 
+
 from lazy_regression_tests.common import ValidatorTemp, BFilter
 
 from lazy_regression_tests.common_polars import (
@@ -27,6 +28,8 @@ from lazy_regression_tests.common_polars import (
 from bemyerp.websec.log_settings import getLogger
 
 import bemyerp.pssystem.constants as dbgconstants
+
+from bemyerp.lib.utils import _fmt_as_tuple_str
 
 
 def cpdb(*args, **kwargs):
@@ -88,7 +91,6 @@ from typing import Type
 
 
 class Diffs:
-
     # def __set_name__(self, owner, name):
     #     self.name = name
 
@@ -101,7 +103,6 @@ class Diffs:
 
 
 class DiffView:
-
     diff = Diffs()
 
     def __init__(self, df) -> None:
@@ -111,9 +112,7 @@ class DiffView:
 def view_diffs(testee, source):
     df = get_diffs(source)
     if df is not None:
-
         with pl.Config(fmt_str_lengths=120, tbl_rows=20):
-
             print(df.group_by("_lazydiff_compare").count())
 
             print(df)
@@ -133,9 +132,9 @@ class Polars_Provider(providers.PAbstractExtProvider):
     def prep_rawdata(self, checker: "Checker", data: pl.DataFrame) -> pl.DataFrame:
         """convert data if needed"""
         try:
-            assert isinstance(
-                data, pl.DataFrame
-            ), f"only polars.DataFrame are supported.  {type(data)=}"
+            assert isinstance(data, pl.DataFrame), (
+                f"only polars.DataFrame are supported.  {type(data)=}"
+            )
             return data
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -151,9 +150,9 @@ class Polars_Provider(providers.PAbstractExtProvider):
     ) -> pl.DataFrame:
         """data to str"""
         try:
-            assert isinstance(
-                data, pl.DataFrame
-            ), f"only polars.DataFrame are supported.  {type(data)=}"
+            assert isinstance(data, pl.DataFrame), (
+                f"only polars.DataFrame are supported.  {type(data)=}"
+            )
             log(
                 f"{cls}.datain_to_str.  conversion to str is not supported. returning unchanged as {type(data)}",
                 flog=logger.info,
@@ -169,9 +168,9 @@ class Polars_Provider(providers.PAbstractExtProvider):
         "build filter"
         try:
             log(f"{type(self)}.build_filter: filtering is not yet supported")
-            assert isinstance(
-                self.data_in, pl.DataFrame
-            ), f"only polars.DataFrame are supported.  {type(self.data_in)=}"
+            assert isinstance(self.data_in, pl.DataFrame), (
+                f"only polars.DataFrame are supported.  {type(self.data_in)=}"
+            )
             self._filtered = self.data_in
             # return self
         # pragma: no cover pylint: disable=unused-variable
@@ -190,10 +189,8 @@ class Polars_Provider(providers.PAbstractExtProvider):
         message=None,
         **kwargs,
     ) -> bool:
-
         """check if exp can be considered equal"""
         try:
-
             assert isinstance(exp, pl.DataFrame)
             assert isinstance(got, pl.DataFrame)
 
@@ -209,7 +206,6 @@ class Polars_Provider(providers.PAbstractExtProvider):
 
             join_on = kwargs.get("join_on")
             if not join_on:
-
                 config = kwargs.get("config") or checker.v.config
                 if callable(config):
                     config = config(testee)
@@ -267,7 +263,6 @@ def check_unique(
 ) -> bool:
     """check that a dataframe is unique on its keys"""
     try:
-
         if not len(data):
             log(f"check_unique({data=}) is empty", flog=logger.warning)
             return True
@@ -430,8 +425,10 @@ def compare_df(
     else:
         exclude_compare = []
 
-    if isinstance(colkey, str):
-        colkey = [colkey]
+    # if isinstance(colkey, str):
+    #     colkey = [colkey]
+
+    colkey = _fmt_as_tuple_str(colkey)
 
     # catch a tuple...
     colkey = list(colkey)
@@ -448,7 +445,6 @@ def compare_df(
             )
 
     try:
-
         dfdiff = None
 
         # first things first, Struct fields need different handling on nulls...
@@ -483,7 +479,6 @@ def compare_df(
 
         # check the shapes...
         if not (dfboth0.shape == dfboth1.shape):
-
             if not len(dfboth0) == len(dfboth1):
                 df_dup0 = check_for_duplicates(df0, on=colkey, keys_only=True)
                 df_dup1 = check_for_duplicates(df1, on=colkey, keys_only=True)
@@ -497,17 +492,14 @@ def compare_df(
                 raise CompareException(msg)
 
             else:
-
                 raise CompareException(f" shape mismatch {df0.shape=}<>{df1.shape}:")
 
         try:
-
             # df7 = df6.with_columns(pl.col(cosided.visright).fill_null(0))
             # import polars.selectors as cs
             # dfboth000 = dfboth0.with_columns(pl.col(cs.numeric)).fill_null(0)
 
             if options.fill_nulls:
-
                 # ok, thing is
                 # 🎫004.lazy.060.batch_diffing_polars
                 dfboth0 = fill_nulls(dfboth0)
@@ -518,7 +510,6 @@ def compare_df(
 
         # pragma: no cover pylint: disable=unused-variable
         except (ValueError,) as e:
-
             chk = POLARS_ERR_DIM_MISMATCH
             if e.args == chk:
                 # marker invalid dimensions which probably indicates non-unique on colkeys
@@ -560,7 +551,6 @@ def compare_df(
         res = None
 
         if dfdiff is not None:
-
             # flag differences across any of the non-work columns.  careful:  nulls will always compare False
             dfdiff = dfdiff.with_columns(
                 pl.all_horizontal(pl.col("*").exclude(*excludes)).alias(options.csame)
@@ -574,9 +564,9 @@ def compare_df(
 
             dfdiffdiff = pl.concat([dfdiffdiff1, dfdiffdiff2])
 
-            assert len(dfdiff) == len(dfdiffsame) + len(
-                dfdiffdiff
-            ), "losing rows from dfdiff"
+            assert len(dfdiff) == len(dfdiffsame) + len(dfdiffdiff), (
+                "losing rows from dfdiff"
+            )
 
             # if they are the same, doesn't matter which dataframe you get them from...  maybe parameter that as pick from df0, pick from df1
             dfsame = (
@@ -616,8 +606,7 @@ def compare_df(
 
 
 # 🎫105.framework.008.remove_v1v2_scaffolding.dead - move to lazy
-class CompareException(AssertionError):
-    ...
+class CompareException(AssertionError): ...
 
 
 from dataclasses import dataclass
@@ -641,7 +630,6 @@ class CompareCounts:
 
 
 class LazyCompareOptions(compare_df_options):
-
     _lookup = undefined
 
     identity_status = "same"
@@ -650,7 +638,6 @@ class LazyCompareOptions(compare_df_options):
     @property
     def lookup(self):
         try:
-
             prefix = "status_"
             res = {}
 
@@ -682,7 +669,6 @@ class LazyCompareOptions(compare_df_options):
         colstatus: str,
     ) -> tuple[bool, str]:
         try:
-
             counts = compare_df_options.get_counts(df, colstatus)
             return counts.is_equal, str(counts)
 
