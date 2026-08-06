@@ -457,16 +457,7 @@ class HTML_Provider(HTTP_Provider):
         try:
 
             name = v_in["name"]
-            log(f"\n\n{self}.build_filter:name={name}")
-            # breakpoint() #🛑
-            # pass
 
-            if breakpoints("build_filter", {"name": name}):  # pragma: no cover
-                print(f"\n\n🔬🔬🔬name:{name}")
-                breakpoint()
-
-            # breakpoint() #🛑
-            # pass
 
             if isinstance(v_in, dict):
                 raw = v_in.get("raw")
