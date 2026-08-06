@@ -1,4 +1,9 @@
 from typing import Any, Callable
+import unittest
+
+from pathlib import Path
+
+
 import lazy_regression_tests.providers as providers
 from lazy_regression_tests.common import (
     LazyTemp,
@@ -8,9 +13,7 @@ from lazy_regression_tests.common import (
     ValidatorMgr,
 )
 
-import unittest
-
-from pathlib import Path
+from lazy_regression_tests._baseutils import eprint
 
 
 import polars as pl
