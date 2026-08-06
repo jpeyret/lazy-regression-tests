@@ -37,7 +37,6 @@ import lazy_regression_tests.constants as constants
 # Dependencies
 #################################################################
 import pydantic
-from bemyerp.websec.log_settings import Log
 from lazy_regression_tests._baseutils import (
     DictFormatter,
     Dummy,
@@ -63,8 +62,6 @@ from lazy_regression_tests.basics import (
     get_alias_check_equality,
 )
 from pydantic import ConfigDict
-
-log = Log(__name__)
 
 
 try:
@@ -103,10 +100,6 @@ def _checktypes(got, exp, validator: "Validator"):
             selector_msg = f" using {validator.selector=}"
         else:
             selector_msg = ""
-        log(
-            f"{warning}{repr(validator)}: Possible type mismatch exp={type(exp)} vs got={type(got)=} {selector_msg}\n",
-            loglevel="warning",
-        )
 
 
 undefined = NotImplemented

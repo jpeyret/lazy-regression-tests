@@ -13,10 +13,6 @@ from bemyerp.lib.utils import fill_template, Subber
 
 from datetime import datetime, date
 
-from bemyerp.websec.log_settings import Log
-log = Log(__name__)
-
-
 
 POLARS_ERR_DIM_MISMATCH = ('DataFrame dimensions do not match',)
 LOG_PREFIX ="🐻‍❄️polars"
@@ -67,7 +63,6 @@ def fill_nulls(df : pl.DataFrame):
             if filler is None:
                 type_ = df.schema[colname]
 
-                log(f"fill_nulls:could not fill @{colname=} with :{typename=}: known=:{','.join(di_fill.keys())}:",loglevel="warning")
                 continue
 
             dfo = dfo.with_columns(pl.col(colname).fill_null(filler))
@@ -79,7 +74,7 @@ def fill_nulls(df : pl.DataFrame):
 
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    except (Exception,) as e:
         if cpdb():
             breakpoint()
         raise
@@ -93,7 +88,7 @@ def get_colnames(sql : str) -> list[str]:
     """
     try:
 
-        
+
         tmp = sql.replace("\n"," ")
         patre = re.compile("\sfrom\s",re.IGNORECASE)
 
@@ -109,7 +104,7 @@ def get_colnames(sql : str) -> list[str]:
         return tmp5
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    except (Exception,) as e:
         if cpdb():
             breakpoint()
         raise
@@ -135,7 +130,7 @@ class PLReadSubber(Subber): # !!!TODO!!! move to polars_utils
         res = f"{self.prefix}{keyname}"
 
         self._data[keyname] = super().__getitem__(keyname)
-    
+
         return res
 
 
@@ -144,7 +139,7 @@ class PLReadSubber(Subber): # !!!TODO!!! move to polars_utils
 
 
 class PolarsPrepared(NamedTuple):  # !!!TODO!!! move to polars_utils
-    """ tqry_for_polars : %(varname)s gets replaced with :varname 
+    """ tqry_for_polars : %(varname)s gets replaced with :varname
         parameters      : {"varname" : somevalue }"""
     tqry_for_polars : str
     parameters_for_polars : dict[str,Any]
@@ -164,7 +159,7 @@ def prep_polars_query_params(tqry, *args, colnames : list[str]|None=None) -> tup
         parameters_for_polars = subber.as_dict()
         return PolarsPrepared(tqry_for_polars,parameters_for_polars,colnames)
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    except (Exception,) as e:
         if cpdb():
             breakpoint()
         raise
@@ -189,7 +184,7 @@ def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
             return df
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    except (Exception,) as e:
         if cpdb():
             breakpoint()
         raise
@@ -207,12 +202,12 @@ def reorder_as_other(df : pl.DataFrame, other : pl.DataFrame) -> pl.DataFrame:
 
 def split_on_exist_notexist(df : pl.DataFrame, dfcheck : pl.DataFrame, on : Any, left_on =None, right_on=None) -> tuple[pl.DataFrame, pl.DataFrame]:
     """ split on an existance check
-    
-    df:1,2,3,4 dfcheck:1,3
-        => (df:1,3 , df:2,4) 
 
-        
-    
+    df:1,2,3,4 dfcheck:1,3
+        => (df:1,3 , df:2,4)
+
+
+
     """
     try:
         df_exists = df.join(dfcheck, on=on, left_on=left_on,right_on=right_on, how="semi")
@@ -220,7 +215,7 @@ def split_on_exist_notexist(df : pl.DataFrame, dfcheck : pl.DataFrame, on : Any,
 
         return SplitExists(df_exists, df_notexists)
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    except (Exception,) as e:
         if cpdb():
             breakpoint()
         raise
@@ -259,7 +254,7 @@ def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = Fa
         return dfwithdupes
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    except (Exception,) as e:
         if cpdb():
             breakpoint()
         raise
