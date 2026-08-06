@@ -1218,14 +1218,10 @@ class FilterMgr(pydantic.BaseModel):
         try:
             plocal = not file
             file = file or StringIO()
-            log(f"{self.__class__.__name__}:{self.ext=},{self.alias=}")
-            log("Filters:")
             indent = nesting + "  "
             for f in self.filters:
                 f.show(file=file, nesting=indent)
 
-            if plocal:
-                log(file.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1298,11 +1294,6 @@ class Checker:
             plocal = not file
             file = file or StringIO()
 
-            log(
-                nesting,
-                f"{self.__class__.__name__}:ext={self.ext},provider={self.provider}",
-                file=file,
-            )
             indent = nesting + "  "
             if self.f:
                 self.f.show(file=file, nesting=indent)
@@ -1313,8 +1304,6 @@ class Checker:
             if showtemp and self.temp:
                 self.temp.show(nesting=indent, file=file)
 
-            if plocal:
-                log(file.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -1397,7 +1386,6 @@ class Checker:
 
             self._lazy_control = control = _Control(self, env, checker)
 
-            log(f"{prefix}{control=}")
 
             # only create the lazy temp the first time.
             tmp = self.lazytemp = getattr(self, "lazytemp", None) or LazyTemp(
@@ -1423,14 +1411,12 @@ class Checker:
                 exp_got="exp", suffix=suffix, testee=testee, control=control
             )
 
-            log(f"{prefix}{fnp_exp=},{fnp_got=}")
 
             if breakpoints("_lazycheck", {"always": 1}):  # pragma: no cover
                 print("\n\n🔬🔬🔬Checker.lazycheck")
                 breakpoint()
                 pass
 
-            log(f"{type(checker)}.write_raw")
             checker.write_raw(
                 provider=self.provider,
                 suffix=suffix,
@@ -1441,34 +1427,27 @@ class Checker:
 
             # linefeeds have a tendency to creep in sometimes
 
-            log(f"{prefix}1398:{got is None=}")
 
             # 🎫004.lazy.052.polars_diffing
-            log(f"{prefix}.got.stripping")
             # breakpoint()
             if filter_:
                 formatted_got = self.temp.formatted_got
-                log(f"{prefix}1404:{formatted_got is None=}")
             else:
                 formatted_got = checker.checker.provider.datain_to_str(
                     got, checker.checker
                 )
-                log(f"{prefix}1409:{formatted_got is None=}")
 
             formatted_got = self.provider.strip(formatted_got)
 
-            log(f"{prefix}1413:{formatted_got is None=}")
 
             # at this point, we want to write the received, formatted, data regardless
             if self.lazy_save_got:
-                log(f"{prefix}:{fnp_got=}.open+write")
 
                 self.provider.write(fnp_got, formatted_got)
 
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
             if control.baseline() and self.lazy_save_exp:
-                log(f"{prefix}:{fnp_exp=}.open+write")
 
                 header = None
                 if metadata_header:
@@ -1520,8 +1499,6 @@ class Checker:
 
             try:
                 # supports a timeout mechanism, if the module is available
-                log(f"{prefix}1480{formatted_got is None=}")
-                log(f"{prefix}1481{exp is None=}")
 
                 self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp, **kwargs)
             except (CustomTimeoutError,) as e:  # pragma: no cover
@@ -1591,8 +1568,6 @@ class Checker:
     def format_assertion_message(self, ori, tmp: LazyTemp, testee):
         """message thrown on assert_same failures"""
 
-        log(f"{testee}:diff:fnp_exp={tmp.fnp_exp}", loglevel="warning")
-        log(f"{testee}:diff:fnp_got={tmp.fnp_got}", loglevel="warning")
 
         message = f"""
 
@@ -2238,27 +2213,7 @@ class ValidatorMgr(pydantic.BaseModel):
             raise
 
     def show(self, nesting="", file=None, header: Any = None):
-        try:
-            plocal = not file
-            file = file or StringIO()
-
-            if header:
-                log(header)
-
-            log(f"{self.__class__.__name__}:{self.alias=}")
-
-            for v in self.validators:
-                v.show(nesting=nesting, file=file)
-
-            if plocal:
-                log(file.getvalue())
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            if cpdb():
-                breakpoint()
-            raise
-
+        "do-nothing !!!TODELETE!!!"
 
 #################################################################
 # assert_same
