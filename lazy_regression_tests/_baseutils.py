@@ -238,12 +238,10 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
                     if existing:
                         if existing.__doc__ == "disabled":
                             # if verbose:
-                            #     logger.info("matching cpdb")
                             pass
                         else:
                             # # breakpoint()
                             # if 0 and verbose:
-                            #     logger.info("old style cpdb on %s" % (module))
                             # else:
                             #     pass
                             pass
@@ -997,11 +995,6 @@ class Breakpoints(object):
 
         try:
             breakpoints = self.config.get("breakpoints", {})
-            # logger.debug("\n"+"*" * 80)
-            # logger.debug("lookup:%s" % (lookup))
-            # logger.debug("caller_variables:%s" % (caller_variables))
-            # logger.debug("breakpoints:%s" % (breakpoints.keys()))
-            # logger.debug("*" * 80 + "\n")
             # breakpoint()
 
             conditions = breakpoints.get(lookup, [])
