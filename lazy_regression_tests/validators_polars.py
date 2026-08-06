@@ -49,14 +49,6 @@ rpdb = breakpoints = cpdb
 undefined = NotImplemented
 
 
-logger = getLogger(__name__, "debuglog")
-
-FLOG = logger.warning
-
-
-def log(msg, *args, flog=None, **kwargs):  # custom lazy
-    flog = flog or FLOG
-    flog(f"{LOG_PREFIX}{msg}", *args, **kwargs)
 
 
 class ValidatorTempPolars(ValidatorTemp):
@@ -156,10 +148,6 @@ class Polars_Provider(providers.PAbstractExtProvider):
             assert isinstance(data, pl.DataFrame), (
                 f"only polars.DataFrame are supported.  {type(data)=}"
             )
-            log(
-                f"{cls}.datain_to_str.  conversion to str is not supported. returning unchanged as {type(data)}",
-                flog=logger.info,
-            )
             return data
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e:
@@ -170,7 +158,6 @@ class Polars_Provider(providers.PAbstractExtProvider):
     def build_filter(self, v_in: Any) -> BFilter:
         "build filter"
         try:
-            log(f"{type(self)}.build_filter: filtering is not yet supported")
             assert isinstance(self.data_in, pl.DataFrame), (
                 f"only polars.DataFrame are supported.  {type(self.data_in)=}"
             )
@@ -267,7 +254,6 @@ def check_unique(
     """check that a dataframe is unique on its keys"""
     try:
         if not len(data):
-            log(f"check_unique({data=}) is empty", flog=logger.warning)
             return True
 
         keys = validator.mgr.config["join_on"]
