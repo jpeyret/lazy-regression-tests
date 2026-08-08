@@ -20,16 +20,42 @@ from bs4 import element
 #################################################################
 
 
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
 
 from lazy_regression_tests.core_assist2 import _LazyMeta
 
 from lazy_regression_tests.tests.helper_tst import get_mock_env
 from lazy_regression_tests.constants import OPT_DIRECTIVE_BASELINE
+
+from lazy_regression_tests.common import Checker
+
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
+import lazy_regression_tests.filters as filters
+from lazy_regression_tests.tests.helper_tst import (
+    get_fake_response,
+    get_fake_response_from_html,
+)
+from lazy_regression_tests.validators_http import (
+    validator_html,
+    Validator,
+    validator_json,
+)
+from lazy_regression_tests.common import ValidationError
+
+from lazy_regression_tests.utils  import (
+    set_cpdb,
+    set_rpdb,
+    set_breakpoints3,
+    first,
+    Subber,
+)
+
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
 
 
 di_mock_env = get_mock_env()
@@ -39,14 +65,6 @@ di_mock_env_baseline.update(lzrt_directive=OPT_DIRECTIVE_BASELINE)
 #################################################################
 
 
-from lazy_regression_tests.utils  import (
-    set_cpdb,
-    set_rpdb,
-    set_breakpoints3,
-    ppp,
-    first,
-    Subber,
-)
 
 
 def cpdb(*args, **kwargs):
@@ -61,24 +79,10 @@ if __name__ == "__main__":
     breakpoints = set_breakpoints3() or breakpoints
 
 
-import lazy_regression_tests.core_assist2 as core_assist2
-import lazy_regression_tests.validators as validators
-import lazy_regression_tests.filters as filters
-from lazy_regression_tests.tests.helper_tst import (
-    get_fake_response,
-    TData,
-    get_fake_response_from_html,
-)
 
 # force verbosity flag
 verbose = core_assist2.verbose = validators.verbose = True
 
-from lazy_regression_tests.validators_http import (
-    validator_html,
-    Validator,
-    validator_json,
-)
-from lazy_regression_tests.common import ValidationError
 
 
 do_test_assertsame = os.getenv("do_test_assertsame")
@@ -91,7 +95,7 @@ class Base(unittest.TestCase):
 
     template = """
         <html><head><title>{{title}}</title></head>
-        <body>Hi <span id="name" class="field" >{{ name }}</span>! It is now 
+        <body>Hi <span id="name" class="field" >{{ name }}</span>! It is now
         <span class="timestamp">{{ now }}</span>.
         </body></html>
     """
@@ -126,11 +130,11 @@ class Base(unittest.TestCase):
                 return extlz.assert_same(got=data)
 
             # pragma: no cover pylint: disable=unused-variable
-            except (AssertionError,) as e:
+            except (AssertionError,) as e: # noqa F841
                 pass
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -200,7 +204,7 @@ class Test_Validation(Base):
 
                     return value
                 # pragma: no cover pylint: disable=unused-variable
-                except (Exception,) as e:
+                except (Exception,) as e: # noqa F841
                     if cpdb():
                         breakpoint()
                     raise
@@ -213,7 +217,7 @@ class Test_Validation(Base):
             v(self.response)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -236,7 +240,7 @@ class Test_Validation(Base):
             v(self.response)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -265,7 +269,7 @@ class Test_Assert_Json(Base):
             self.testee._testMethodName = self.__class__.__name__.lower()
             self.checker: Checker = self.testee._lz.http_json
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -280,7 +284,7 @@ class Test_Assert_Json(Base):
                 self.checker.v(response)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -305,7 +309,7 @@ class Test_Assert_Json(Base):
             )
             self.assertIsInstance(tmp2.rawdata, dict)
 
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
 
             if verbose:
                 checker.show()
@@ -354,7 +358,7 @@ class Test_Assert_Same(Base):
                 "expected :'timestamp' in %s" % (tmp2._filtered.timestamp),
             )
 
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             print(tmp.soup.prettify())
             if cpdb():
                 breakpoint()
