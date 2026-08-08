@@ -6,37 +6,24 @@ import os
 import json
 from typing import Iterable
 import unittest
-
-
-# from enum import Enum
+from logging import getLogger
 
 #################################################################
 # Dependencies
 #################################################################
 import pydantic
 import requests
-
-# import lxml
-# import cchardet
+import bs4
 
 
 from lazy_regression_tests.utils import first
-
 from lazy_regression_tests.common import Checker
-
-from logging import getLogger
-
-
-
 from lazy_regression_tests.validators import ValidatorMgr, Validator
-
 from lazy_regression_tests.common import (
     check_equal,
     select_by_provider,
     check_exp_in_data,
 )
-
-
 import lazy_regression_tests.providers as providers
 
 from lazy_regression_tests.common import (
@@ -48,14 +35,8 @@ from lazy_regression_tests.common import (
     ConfigurationException,
 )
 
-
-import bs4
-
 bs = bs4.BeautifulSoup
-
 undefined = NotImplemented
-
-
 logger = getLogger("lazy")
 log = logger.debug
 

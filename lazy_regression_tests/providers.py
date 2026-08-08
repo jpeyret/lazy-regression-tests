@@ -4,6 +4,14 @@ from io import StringIO
 import pprint
 import json
 import re
+from _pickle import PicklingError
+
+#################################################################
+# Dependencies
+#################################################################
+from yaml import dump as ydump
+import requests
+
 
 from lazy_regression_tests.common import (
     ConfigurationException,
@@ -14,6 +22,7 @@ from lazy_regression_tests.common import (
     DictFilter,
     DictFilterWrapper,
     BFilter,
+    Checker,
     ValidationError,
     undefined,
 )
@@ -27,11 +36,6 @@ def cpdb(*args, **kwargs):
 
 rpdb = breakpoints = cpdb
 
-#################################################################
-# Dependencies
-#################################################################
-from yaml import dump as ydump
-import requests
 
 
 class DictExtProvider(PAbstractExtProvider):
@@ -41,7 +45,7 @@ class DictExtProvider(PAbstractExtProvider):
 
     TYPE_RAW = (dict, list)
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """convert data if needed"""
         try:
 
@@ -66,14 +70,14 @@ class DictExtProvider(PAbstractExtProvider):
         except (json.decoder.JSONDecodeError):
             raise
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     @classmethod
     def datain_to_str(
-        cls, data: dict, checker: "Checker", temp: LazyTemp = None
+        cls, data: dict, checker: Checker, temp: LazyTemp = None
     ) -> str:
         """pretty print dict to string"""
         try:
@@ -94,7 +98,7 @@ class DictExtProvider(PAbstractExtProvider):
             pprint.pprint(data, out, width=1)
             return out.getvalue().strip()
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -121,7 +125,7 @@ class DictExtProvider(PAbstractExtProvider):
             return filter2
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -146,18 +150,18 @@ class JsonExtProvider(DictExtProvider):
                     break
 
             if content_type is not None:
-                if not "json" in content_type:
+                if "json" not in content_type:
                     raise ValidationError(
                         f"did not get a json response {content_type=} with {status_code=}{url_msg}"
                     )
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """convert data if needed"""
         try:
 
@@ -183,14 +187,14 @@ class JsonExtProvider(DictExtProvider):
 
             # raise NotImplementedError()
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     @classmethod
     def datain_to_str(
-        cls, data: dict, checker: "Checker", temp: LazyTemp = None
+        cls, data: dict, checker: Checker, temp: LazyTemp = None
     ) -> str:
         """pretty print dict to string"""
         try:
@@ -212,7 +216,7 @@ class JsonExtProvider(DictExtProvider):
                 if isinstance(res, (str, bytes)):
                     try:
                         res = json.loads(res)
-                    except (json.decoder.JSONDecodeError,) as e:
+                    except (json.decoder.JSONDecodeError,) as e: # noqa F841
                         cls.check_is_json(data, checker, temp)
 
                 elif isinstance(res, dict):
@@ -236,13 +240,12 @@ class JsonExtProvider(DictExtProvider):
                 )
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
 
-from _pickle import PicklingError
 
 
 def yaml_strip(data: str | Any) -> str | Any:
@@ -282,13 +285,13 @@ class YamlProvider(DictExtProvider):
     def strip(self, data: str | Any) -> str | Any:
         return yaml_strip(data)
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """no conversion needed, that's the point of using yaml"""
         return data
 
     @classmethod
     def datain_to_str(
-        cls, data: dict, checker: "Checker", temp: LazyTemp = None
+        cls, data: dict, checker: Checker, temp: LazyTemp = None
     ) -> str:
         """yaml dump"""
         try:
@@ -312,18 +315,18 @@ class YamlProvider(DictExtProvider):
                 return res
 
             # pragma: no cover pylint: disable=unused-variable
-            except (TypeError, ValueError, PicklingError) as e:
+            except (TypeError, ValueError, PicklingError) as e: # noqa F841
                 data2 = dropbad_dump(data, ydump)
                 res2 = ydump(data2, default_flow_style=False).strip()
                 res2 = yaml_strip(res2)
 
                 return res2
         # pragma: no cover pylint: disable=unused-variable
-        except (TypeError,) as e:
+        except (TypeError,) as e: # noqa F841
             raise
 
         # pragma: no cover pylint: disable=unused-variable
-        except (PicklingError,) as e:
+        except (PicklingError,) as e: # noqa F841
             if 1:
                 for k, v in vars(data).items():
                     print(k, end="")
@@ -331,7 +334,7 @@ class YamlProvider(DictExtProvider):
                         _ = yaml.dump(v)
                         print("✅")
                     # pragma: no cover pylint: disable=unused-variable
-                    except (Exception,) as e2:
+                    except (Exception,) as e2: # noqa F841
                         print("🧨")
 
             # if cpdb():
@@ -339,7 +342,7 @@ class YamlProvider(DictExtProvider):
             raise TypeError(e)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise

@@ -1,11 +1,8 @@
-import re
-import os
-import difflib
-from collections import deque, namedtuple
-from functools import partial
 
-
+# ruff: disable[F401]
 import pdb
+from traceback import print_exc as xp  # pylint: disable=unused-import
+import logging
 
 from lazy_regression_tests._baseutils import (
     set_cpdb,
@@ -28,9 +25,6 @@ from lazy_regression_tests._baseutils import (
 )
 
 
-from traceback import print_exc as xp  # pylint: disable=unused-import
-
-import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -63,8 +57,8 @@ class InvalidConfigurationException(ValueError):
 
 
 class UnavailableLibrary(BaseUnavailableLibrary):
-    """ exception with message detailing what was not installed 
-        with emoji banner 
+    """ exception with message detailing what was not installed
+        with emoji banner
     """
 
     exception_cls = InvalidConfigurationException
