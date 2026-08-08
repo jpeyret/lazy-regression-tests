@@ -174,7 +174,7 @@ class AutoExp:
         try:
             return getattr(testee, validator.name)
         # pragma: no cover pylint: disable=unused-variable
-        except (AttributeError,) as e:
+        except (AttributeError,) as e: # noqa F841
             msg = f"{repr(validator)} : {e}:  Known fields on `testee` {repr(testee)} : {list(vars(testee).keys())}"
 
             if verbose:
@@ -199,7 +199,7 @@ def get_alias_check_equality(li_in: List[Optional[ExtAlias]]) -> Optional[ExtAli
         return lia[0]
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -225,13 +225,13 @@ def get_alias_from_ancestors(
                         if found:
                             return found.alias
             # pragma: no cover pylint: disable=unused-variable
-            except (AttributeError,) as e:
+            except (AttributeError,) as e: # noqa F841
                 pass
 
         return None
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -290,7 +290,7 @@ class ValidationError(AssertionError):
             return "\n".join(li)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -301,7 +301,7 @@ class ValidationError(AssertionError):
         "returns a dictionary of relevant data"
         try:
             validator = self.validator.dict()
-        except (AttributeError,) as e:
+        except (AttributeError,) as e: # noqa F841
             validator = self.validator
 
         return dict(msg=str(self), validator=validator)
@@ -465,7 +465,7 @@ def lazyinfo(
         return res
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
