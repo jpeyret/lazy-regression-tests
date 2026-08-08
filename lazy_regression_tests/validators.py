@@ -1,16 +1,15 @@
 """ provide validation building blocks """
 
-from typing import List, Any, Optional, Dict
+from typing import List, Dict
 from collections import defaultdict
-import unittest
 
 #################################################################
 # Dependencies
 #################################################################
 from more_itertools import partition
 
-from lazy_regression_tests.utils import ppp
 
+# ruff: disable[F401]
 from lazy_regression_tests.basics import (
     ExtAlias,
     get_alias_from_ancestors,
@@ -20,8 +19,6 @@ from lazy_regression_tests.basics import (
 )
 
 
-undefined = NotImplemented
-verbose = False
 
 from lazy_regression_tests.providers import di_ext_provider, DEFAULT_PROVIDER
 from lazy_regression_tests.common import (
@@ -41,6 +38,11 @@ from lazy_regression_tests.common import (
 # pylint: disable=no-self-argument,super-init-not-called,no-member,bad-mcs-method-argument
 # pylint: disable=bad-mcs-classmethod-argument,no-name-in-module,line-too-long
 from pydantic import BaseModel, Field, validator as pyd_validator
+
+# ruff: enable[F401]
+
+undefined = NotImplemented
+verbose = False
 
 
 def cpdb(*args, **kwargs):
@@ -77,7 +79,7 @@ def build_validators_for_class(
                 print(f"{ix:02} ancestor={acls.__name__}")
             for ext, values in acls.cls_validators.items():
 
-                mgr_cls = alias = None
+                alias = None
 
                 if isinstance(values, (list, tuple)):
                     values, aliases = [
@@ -211,7 +213,7 @@ def build_validators_for_class(
         return res
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
