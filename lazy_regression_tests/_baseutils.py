@@ -4,228 +4,46 @@
     most libraries won't use much of its functionality.
 
 """
-from contextlib import contextmanager
-from dataclasses import dataclass, field
-import logging
-import sys
-import types
-import re
 import builtins
-import pprint
-from urllib.parse import urlparse, quote, urlunparse
-from typing import Sequence
-
-from pathlib import Path
-import subprocess
-from time import time
+import copy
+import json
+import logging
 import os
+import pprint
+import re
 import shutil
 import stat
-
+import sys
+import types
+from _pickle import PicklingError
 from collections import namedtuple
-
-try:
-    # 3.8
-    from collections import MutableMapping
-# pragma: no cover pylint: disable=unused-variable
-except (ImportError,) as e:
-    # 3.10
-    from collections.abc import MutableMapping
-
-from string import Template
+from collections.abc import MutableMapping
+from contextlib import contextmanager
+from datetime import datetime
 from functools import partial, wraps
 from io import StringIO  # 223ed
-import json
-import copy
+from pathlib import Path
+from string import Template
+from time import time
 
 #######################################################
 # Typing
 #######################################################
-from typing import Optional, Any, Union, List, Dict, Callable
-
+from typing import Any, Callable, Optional, Sequence
+from urllib.parse import quote, urlparse, urlunparse
 
 #################################################################
 # Dependencies
 #################################################################
-from yaml import safe_load as yload, safe_dump as ydump
-from more_itertools import partition
+from yaml import safe_load as yload
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("lazy")
 type_regex_hack = re.compile("").__class__
 undefined = NotImplemented
 verbose = "-v" in sys.argv
 cache = {}
 
-def fill_template(tmpl: str, *args: Any) -> str:
-    """fill in the template with % and dict based formatting"""
-    return tmpl % Subber(*args)
-    # try:
-    #     return tmpl % Subber(*args)
-    # #pragma: no cover pylint: disable=unused-variable
-    # except (Exception,) as e:
-    #     if cpdb():
-    #         breakpoint()
-    #     raise
-class Subber(object):
-    """implement a first found getter for lookup keys
-    each obj in li_arg is asked, via getattr & get, whether
-    it holds a key.  if found it is returned immediately
-    Else
-    """
-
-    def __init__(self, *args: Any, verbose=False):
-        self.li_arg = list(args)
-        # raise NotImplementedError, "li_arg:%s" % (self.li_arg)
-        self.di_res = {}
-        self.verbose = verbose
-
-    def removed(self, *remove_args: Any) -> "Subber":
-        """return a new Subber without some args
-        a common use would be not have `self` as a subber on property
-        lookups
-        """
-        args2 = [arg for arg in self.li_arg if arg not in remove_args]
-        return Subber(*args2)
-
-    def append(self, obj: Any):
-        self.li_arg.append(obj)
-
-    def insert(self, pos, obj: Any):
-        self.li_arg.insert(pos, obj)
-
-    def __repr__(self):
-        def fmt(arg, maxlen=20):
-            msg = "%s" % (arg)
-            if len(msg) > maxlen:
-                return msg[:maxlen] + "..."
-            else:
-                return msg
-
-        return "Subber([" + ",".join([fmt(arg) for arg in self.li_arg]) + "])"
-
-    @classmethod
-    def factory(cls, obj, *args):
-        li_sub = []
-
-        for arg in args:
-            if isinstance(arg, str):
-                li = arg.split(",")
-                for arg2 in li:
-                    arg2 = arg2.strip()
-                    if arg2 == "self":
-                        li_sub.append(obj)
-                        continue
-                    elif "." not in arg2:
-                        sub = getattr(obj, arg2)
-                        li_sub.append(sub)
-                        continue
-                    else:
-                        raise NotImplementedError("!!!todo!!! rgetattr")
-            else:
-                li_sub.append(arg)
-        return cls(*li_sub)
-
-    def _get_from_args(self, key):
-        """generic way to look for a key in the arg list"""
-
-        for arg in self.li_arg:
-            try:
-                got = arg[key]
-                if self.verbose:
-                    print("got:%s from %s.return" % (key, arg))
-                return got
-            except KeyError:
-                try:
-                    # try getattr
-                    got = getattr(arg, key)
-                    if self.verbose:
-                        print("got:%s from %s.return" % (key, arg))
-                    return got
-                except AttributeError:  # pragma: no cover
-                    if self.verbose:
-                        print("no luck:%s from %s.continue" % (key, arg))
-
-                    continue
-
-            except (AttributeError, TypeError):
-                # no __getitem__, try getattr
-                try:
-                    got = getattr(arg, key)
-                    if self.verbose:
-                        print("got:%s from %s.return" % (key, arg))
-                    return got
-                except AttributeError:  # pragma: no cover
-                    if self.verbose:
-                        print("no luck:%s from %s.continue" % (key, arg))
-                    continue
-
-        try:
-            if self.verbose:
-                print("no luck:%s .  KeyError using subber: %s" % (key, self))
-            raise KeyError(key)
-        except Exception as e:  # pragma: no cover
-            raise
-
-    def get(self, key, default=None):
-        try:
-            res = self._get_from_args(key)
-            return res
-        except KeyError:  # pragma: nocover
-            return default
-
-    def __getitem__(self, keyname):
-        """
-        implement dictionary, attribute, func/method call lookup - a la Django Templates, but across
-        a number of passed in arguments.
-        if it's func/method call, then func(keyname, li_arg) is called (which includes the callable itself.
-        """
-        res = self._get_from_args(keyname)
-        self.di_res[keyname] = res
-        return res
-
-    def nested_path_getter(self, path: str):
-        """do a nested lookup deep in the constituents, usefully for fine-grained configurations, among others
-        look in all constituents
-
-        consider using bemyerp.pssystem.tags.writers.ResultGud/Bad as an approach here
-        problem:  Subber would itself have to know to check for ResultGud/Bad...
-
-        """
-        try:
-            for src in self.li_arg:
-                try:
-                    res = nested_path_getter(src, path)
-                    return res
-                # pragma: no cover pylint: disable=unused-variable
-                except (
-                    KeyError,
-                    AttributeError,
-                ):
-                    pass
-
-            # raise since not found
-            raise AttributeError(path)
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            if cpdb():
-                breakpoint()
-            raise
-
-    def as_dict(self):
-        """expand contents to a dict for example to pass on to a Jinja template"""
-
-        di = {}
-        for src in reversed(self.li_arg):
-            if isinstance(src, dict):
-                di.update(**src)
-            elif isinstance(src, Subber):
-                di2 = src.as_dict()
-                di.update(di2)
-            else:
-                di2 = vars(src) if hasattr(src, "__dict__") else {}
-                di.update(**di2)
-        return di
-
+#
 
 
 def def_repr(self):
@@ -290,9 +108,12 @@ def _pseudo_decor(fn, attrname):
 cast_contentbytes2str = partial(_pseudo_decor, attrname="content")
 
 
-def cpdb(*args, **kwargs):
-    "disabled"
+def cpdb(*args, **kwargs) -> bool:
+    "disabled by default, but can be replaced"
+    return False
 
+# always returns False
+fake_cpdb = cpdb
 
 def rpdb(*args, **kwargs):
     "disabled"
@@ -307,7 +128,7 @@ def real_rpdb() -> bool:  # pragma: no cover
 
     try:
         res = bool(cache.get("rpdb_enabled"))
-    except Exception as e:
+    except Exception as _e:
         # that's probably a redis.exceptions.ConnectionError, but don't want
         # to couple this too much at this point
         res = None
@@ -331,7 +152,7 @@ def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
 
         try:
             from django.core.cache import cache
-        except (Exception,) as e:
+        except (Exception,) as _e:
             cache.set("rpdb_enabled", 1, 300)
 
     if recurse:
@@ -346,7 +167,7 @@ def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
     if remove:
         try:
             sys.argv.remove("--rpdb")
-        except (ValueError,) as e:
+        except (ValueError,) as _e:
             pass
 
     return real_rpdb
@@ -367,8 +188,6 @@ real_cpdb.count = int(os.getenv("cpdb_count", 3))
 # pass
 
 
-def cpdb():
-    "disabled"
 
 
 def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callable:
@@ -399,7 +218,7 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
         for flag in flags:
             try:
                 sys.argv.remove(flag)
-            except (ValueError,) as e:
+            except (ValueError,) as _e:
                 pass
 
     if boolvalue is None:
@@ -524,8 +343,8 @@ def debugObject(
                 continue
             try:
                 attrval = di[attrname] = getattr(obj, attrname, "???")
-            except Exception as e:  # pragma: no cover
-                attrval = "exception:%s" % (e)
+            except Exception as _e:  # pragma: no cover
+                attrval = "exception:%s" % (_e)
 
             if type(attrval) in li_skiptype:
                 li_skipfield.append(attrname)
@@ -567,7 +386,7 @@ def debugDict(
 
     try:
         li.sort()
-    except (TypeError,) as e:
+    except (TypeError,) as _e:
         logger.debug("debugDict:li.sort() error on %s" % (li))
         pass
 
@@ -659,7 +478,7 @@ class Subber(object):
         a common use would be not have `self` as a subber on property
         lookups
         """
-        args2 = [arg for arg in self.li_arg if not arg in remove_args]
+        args2 = [arg for arg in self.li_arg if arg not in remove_args]
         return Subber(*args2)
 
     def append(self, obj: Any):
@@ -691,7 +510,7 @@ class Subber(object):
                     if arg2 == "self":
                         li_sub.append(obj)
                         continue
-                    elif not "." in arg2:
+                    elif "." not in arg2:
                         sub = getattr(obj, arg2)
                         li_sub.append(sub)
                         continue
@@ -740,7 +559,7 @@ class Subber(object):
             if self.verbose:
                 print("no luck:%s .  KeyError using subber: %s" % (key, self))
             raise KeyError(key)
-        except Exception as e:  # pragma: no cover
+        except Exception as _e:  # pragma: no cover
             raise
 
     def get(self, key, default=None):
@@ -777,7 +596,7 @@ class Subber(object):
 
             return di
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -838,7 +657,7 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
         for key in li_approach:
             try:
                 di = di[key]
-            except (KeyError,) as e:  # pragma: no cover
+            except (KeyError,) as _e:  # pragma: no cover
                 raise
 
         if default is not undefined:
@@ -850,7 +669,7 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
 
     except (
         Exception,
-    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+    ):  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
             breakpoint()
         raise
@@ -882,7 +701,7 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
 
     except (
         Exception,
-    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+    ):  # pragma: no cover pylint: disable=unused-variable, broad-except
         if cpdb():
             breakpoint()
         raise
@@ -896,7 +715,7 @@ class Dummy(object):
     def setdefault(self, attrname, value):
         try:
             return getattr(self, attrname)
-        except (AttributeError,) as e:  # pragma: nocover
+        except (AttributeError,) as _e:  # pragma: nocover
             setattr(self, attrname, value)
             return value
 
@@ -948,7 +767,7 @@ def getpath(src: Any, path: str) -> Any:
                 try:
                     current = current[accessor]
                 # pragma: no cover pylint: disable=unused-variable
-                except (KeyError,) as e:
+                except (KeyError,) as _e:
                     raise AttributeError(accessor)
             else:
                 current = getattr(current, accessor)
@@ -956,11 +775,11 @@ def getpath(src: Any, path: str) -> Any:
         return current
 
     # pragma: no cover pylint: disable=unused-variable
-    except (AttributeError,) as e:
+    except (AttributeError,) as _e:
         raise
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -1119,7 +938,7 @@ class DictFormatter:
             return di
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -1142,6 +961,8 @@ class InvalidConfigurationException(ValueError):
         super(InvalidConfigurationException, self).__init__(
             new_message, *args, **kwargs
         )
+
+
 
 
 class Breakpoints(object):
@@ -1207,11 +1028,27 @@ class Breakpoints(object):
 
             return False
 
-        except Exception as e:  # pragma: no cover
-            logger.error(repr(e)[:100])
+        except Exception as _e:  # pragma: no cover
+            logger.error(repr(_e)[:100])
             if cpdb():
                 breakpoint()
             raise
+
+    __call__ = breakpoint
+
+
+class DisabledBreakpoints(Breakpoints):  # pragma: no cover
+    "do-nothing"
+
+    active = enabled = False
+
+    __repr__ = def_repr
+
+    def __init__(self, *args, **kwds):
+        pass
+
+    def breakpoint(self, *args, **kwds):
+        pass
 
     __call__ = breakpoint
 
@@ -1235,7 +1072,7 @@ def set_breakpoints3(recurse=True, fnp_config=None):
 
         argv = sys.argv
 
-        if not "-b" in argv:
+        if "-b" not in argv:
             print("no breakpoints")
             return None
 
@@ -1268,7 +1105,7 @@ class UnavailableLibrary:
         try:
             from yaml import dump as ydump
         #use this to get a path to the client module
-        except (ImportError,) as e:
+        except (ImportError,) as _e:
             class Foo:
                 pass
 
@@ -1329,7 +1166,7 @@ class CacheDict(MutableMapping):
             return is_ok
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -1343,9 +1180,9 @@ class CacheDict(MutableMapping):
 
             return res.value
         # pragma: no cover pylint: disable=unused-variable
-        except (KeyError,) as e:
+        except (KeyError,) as _e:
             raise
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -1354,7 +1191,7 @@ class CacheDict(MutableMapping):
         try:
             del self.mapping[key]
         # pragma: no cover pylint: disable=unused-variable
-        except (KeyError,) as e:
+        except (KeyError,) as _e:
             pass
 
     def __setitem__(self, key, value):
@@ -1362,8 +1199,6 @@ class CacheDict(MutableMapping):
         self.mapping[key] = tvalue
 
     def __iter__(self):
-
-        keys = iter(self.mapping)
 
         for key in iter(self.mapping):
             if self._check_age(key, self.mapping[key]):
@@ -1420,7 +1255,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
                     st = os.lstat(s)
                     mode = stat.S_IMODE(st.st_mode)
                     os.lchmod(d, mode)
-                except:
+                except (Exception):
                     pass  # lchmod not available
             elif os.path.isdir(s):
                 copytree(s, d, symlinks, ignore)
@@ -1428,7 +1263,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
                 shutil.copy2(s, d)
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -1507,7 +1342,7 @@ class YAMLAncestorLoader:
             return data
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -1551,11 +1386,11 @@ def oshow(self, nesting="", file=None, private=False):
         try:
             dict_ = self.dict()
         # pragma: no cover pylint: disable=unused-variable
-        except (AttributeError,) as e:
+        except (AttributeError,) as _e:
             dict_ = self.__dict__.copy()
 
         skipshow = getattr(self, "skipshow", [])
-        dict_ = {k: v for k, v in self.__dict__.items() if not k in skipshow}
+        dict_ = {k: v for k, v in self.__dict__.items() if k not in skipshow}
 
         if not private:
             dict_ = {k: v for k, v in dict_.items() if not k.startswith("_")}
@@ -1575,14 +1410,10 @@ def oshow(self, nesting="", file=None, private=False):
             print(file.getvalue())
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
-
-
-from _pickle import PicklingError
-
 
 def dropbad_dump(obj, fdump, seen: set | None = None):
     try:
@@ -1597,15 +1428,10 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 
         seen.add(id_)
 
-        # _dropbad_dump = getattr(obj,"_dropbad_dump",None)
-        # if _dropbad_dump:
-        #     return obj._dropbad_dump()
-
-        # print(f"dropbad_dump({obj=})", flush=True)
         fdump(obj)
         return obj
     # pragma: no cover pylint: disable=unused-variable
-    except (TypeError, ValueError, PicklingError) as e:
+    except (TypeError, ValueError, PicklingError) as _e:
         res = {}
         if isinstance(obj, dict):
             for k, v in obj.items():
@@ -1613,12 +1439,12 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                     fdump(v)
                     res[k] = v
                 # pragma: no cover pylint: disable=unused-variable
-                except (TypeError, ValueError, PicklingError) as e:
+                except (TypeError, ValueError, PicklingError) as _e:
                     try:
                         safe = dropbad_dump(v, fdump=fdump, seen=seen)
                         res[k] = safe
                     # pragma: no cover pylint: disable=unused-variable
-                    except (Exception,) as e:
+                    except (Exception,) as _e:
                         res[k] = str(v)
 
         elif hasattr(obj, "__iter__"):
@@ -1631,10 +1457,10 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                         fdump(v)
                         res.append(v)
                     # pragma: no cover pylint: disable=unused-variable
-                    except (TypeError, ValueError) as e:
+                    except (TypeError, ValueError) as _e:
                         res.append(dropbad_dump(v, fdump=fdump, seen=seen))
                 return res
-            except (TypeError, ValueError, KeyError) as e:
+            except (TypeError, ValueError, KeyError) as _e:
                 res = str(obj)
                 return res
 
@@ -1645,7 +1471,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                     fdump(v)
                     res[k] = v
                 # pragma: no cover pylint: disable=unused-variable
-                except (TypeError, ValueError) as e:
+                except (TypeError, ValueError) as _e:
                     safe = dropbad_dump(v, fdump=fdump, seen=seen)
                     res[k] = safe
         else:
@@ -1670,7 +1496,7 @@ def format_url(url: str) -> str:
         return res
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
