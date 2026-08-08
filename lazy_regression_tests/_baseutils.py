@@ -13,6 +13,7 @@ import re
 import builtins
 import pprint
 from urllib.parse import urlparse, quote, urlunparse
+from typing import Sequence
 
 from pathlib import Path
 import subprocess
@@ -55,6 +56,177 @@ undefined = NotImplemented
 verbose = "-v" in sys.argv
 cache = {}
 
+def fill_template(tmpl: str, *args: Any) -> str:
+    """fill in the template with % and dict based formatting"""
+    return tmpl % Subber(*args)
+    # try:
+    #     return tmpl % Subber(*args)
+    # #pragma: no cover pylint: disable=unused-variable
+    # except (Exception,) as e:
+    #     if cpdb():
+    #         breakpoint()
+    #     raise
+class Subber(object):
+    """implement a first found getter for lookup keys
+    each obj in li_arg is asked, via getattr & get, whether
+    it holds a key.  if found it is returned immediately
+    Else
+    """
+
+    def __init__(self, *args: Any, verbose=False):
+        self.li_arg = list(args)
+        # raise NotImplementedError, "li_arg:%s" % (self.li_arg)
+        self.di_res = {}
+        self.verbose = verbose
+
+    def removed(self, *remove_args: Any) -> "Subber":
+        """return a new Subber without some args
+        a common use would be not have `self` as a subber on property
+        lookups
+        """
+        args2 = [arg for arg in self.li_arg if arg not in remove_args]
+        return Subber(*args2)
+
+    def append(self, obj: Any):
+        self.li_arg.append(obj)
+
+    def insert(self, pos, obj: Any):
+        self.li_arg.insert(pos, obj)
+
+    def __repr__(self):
+        def fmt(arg, maxlen=20):
+            msg = "%s" % (arg)
+            if len(msg) > maxlen:
+                return msg[:maxlen] + "..."
+            else:
+                return msg
+
+        return "Subber([" + ",".join([fmt(arg) for arg in self.li_arg]) + "])"
+
+    @classmethod
+    def factory(cls, obj, *args):
+        li_sub = []
+
+        for arg in args:
+            if isinstance(arg, str):
+                li = arg.split(",")
+                for arg2 in li:
+                    arg2 = arg2.strip()
+                    if arg2 == "self":
+                        li_sub.append(obj)
+                        continue
+                    elif "." not in arg2:
+                        sub = getattr(obj, arg2)
+                        li_sub.append(sub)
+                        continue
+                    else:
+                        raise NotImplementedError("!!!todo!!! rgetattr")
+            else:
+                li_sub.append(arg)
+        return cls(*li_sub)
+
+    def _get_from_args(self, key):
+        """generic way to look for a key in the arg list"""
+
+        for arg in self.li_arg:
+            try:
+                got = arg[key]
+                if self.verbose:
+                    print("got:%s from %s.return" % (key, arg))
+                return got
+            except KeyError:
+                try:
+                    # try getattr
+                    got = getattr(arg, key)
+                    if self.verbose:
+                        print("got:%s from %s.return" % (key, arg))
+                    return got
+                except AttributeError:  # pragma: no cover
+                    if self.verbose:
+                        print("no luck:%s from %s.continue" % (key, arg))
+
+                    continue
+
+            except (AttributeError, TypeError):
+                # no __getitem__, try getattr
+                try:
+                    got = getattr(arg, key)
+                    if self.verbose:
+                        print("got:%s from %s.return" % (key, arg))
+                    return got
+                except AttributeError:  # pragma: no cover
+                    if self.verbose:
+                        print("no luck:%s from %s.continue" % (key, arg))
+                    continue
+
+        try:
+            if self.verbose:
+                print("no luck:%s .  KeyError using subber: %s" % (key, self))
+            raise KeyError(key)
+        except Exception as e:  # pragma: no cover
+            raise
+
+    def get(self, key, default=None):
+        try:
+            res = self._get_from_args(key)
+            return res
+        except KeyError:  # pragma: nocover
+            return default
+
+    def __getitem__(self, keyname):
+        """
+        implement dictionary, attribute, func/method call lookup - a la Django Templates, but across
+        a number of passed in arguments.
+        if it's func/method call, then func(keyname, li_arg) is called (which includes the callable itself.
+        """
+        res = self._get_from_args(keyname)
+        self.di_res[keyname] = res
+        return res
+
+    def nested_path_getter(self, path: str):
+        """do a nested lookup deep in the constituents, usefully for fine-grained configurations, among others
+        look in all constituents
+
+        consider using bemyerp.pssystem.tags.writers.ResultGud/Bad as an approach here
+        problem:  Subber would itself have to know to check for ResultGud/Bad...
+
+        """
+        try:
+            for src in self.li_arg:
+                try:
+                    res = nested_path_getter(src, path)
+                    return res
+                # pragma: no cover pylint: disable=unused-variable
+                except (
+                    KeyError,
+                    AttributeError,
+                ):
+                    pass
+
+            # raise since not found
+            raise AttributeError(path)
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def as_dict(self):
+        """expand contents to a dict for example to pass on to a Jinja template"""
+
+        di = {}
+        for src in reversed(self.li_arg):
+            if isinstance(src, dict):
+                di.update(**src)
+            elif isinstance(src, Subber):
+                di2 = src.as_dict()
+                di.update(di2)
+            else:
+                di2 = vars(src) if hasattr(src, "__dict__") else {}
+                di.update(**di2)
+        return di
+
+
 
 def def_repr(self):
     """dummy repr"""
@@ -72,6 +244,19 @@ def cast_bytes2str(fn):
         return res
 
     return decorated
+
+
+def _fmt_as_tuple_str(input_: Sequence[str] | str | None, sep: str = " ") -> tuple[str, ...]:
+    """transforms input_ into a tuple of strings. better than lists for caching"""
+    if not input_:
+        return tuple()
+
+    if isinstance(input_, str):
+        input_ = input_.replace(",", " ").strip()
+        input_ = input_.split(sep)
+    tu = tuple(v2 for v in input_ if (v2 := v.strip(r"\ ")))
+    return tu
+
 
 
 #################################

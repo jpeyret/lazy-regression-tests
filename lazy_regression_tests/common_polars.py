@@ -7,9 +7,8 @@ import polars as pl
 import re
 
 # pylint: disable=unused-import
-from bemyerp.lib.utils import set_cpdb, set_rpdb, set_breakpoints3, cprint
 # pylint: enable=unused-import
-from bemyerp.lib.utils import fill_template, Subber
+from lazy_regression_tests._baseutils import fill_template, Subber
 
 from datetime import datetime, date
 

@@ -32,7 +32,7 @@ from bemyerp.websec.log_settings import getLogger
 
 import bemyerp.pssystem.constants as dbgconstants
 
-from bemyerp.lib.utils import _fmt_as_tuple_str
+from lazy_regression_tests._baseutils import _fmt_as_tuple_str
 
 
 def cpdb(*args, **kwargs):
