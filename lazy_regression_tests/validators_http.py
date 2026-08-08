@@ -4,7 +4,6 @@ from typing import Any, Callable
 import copy
 import os
 import json
-from collections.abc import Mapping
 from typing import Iterable
 import unittest
 
@@ -20,35 +19,21 @@ import requests
 # import lxml
 # import cchardet
 
-import bs4
 
-bs = bs4.BeautifulSoup
+from lazy_regression_tests.utils import first
 
-undefined = NotImplemented
-
-from lazy_regression_tests.utils import set_cpdb, set_rpdb, ppp, first
+from lazy_regression_tests.common import Checker
 
 from logging import getLogger
 
-logger = getLogger("lazy")
-log = logger.debug
 
 
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
-
-
-from lazy_regression_tests.validators import ValidationError, ValidatorMgr, Validator
+from lazy_regression_tests.validators import ValidatorMgr, Validator
 
 from lazy_regression_tests.common import (
     check_equal,
     select_by_provider,
     check_exp_in_data,
-    check_in,
-    cpdblazy,
 )
 
 
@@ -61,8 +46,25 @@ from lazy_regression_tests.common import (
     BFilter,
     RawFilter,
     ConfigurationException,
-    ExtAlias,
 )
+
+
+import bs4
+
+bs = bs4.BeautifulSoup
+
+undefined = NotImplemented
+
+
+logger = getLogger("lazy")
+log = logger.debug
+
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
 
 
 class CSSFilter(RawFilter):
@@ -173,7 +175,7 @@ class HTTP_Provider(providers.PAbstractExtProvider):
         try:
             return data.status_code
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -194,7 +196,7 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
 
     TYPE_RAW = dict
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """convert data if needed"""
         try:
             if isinstance(data, str):
@@ -222,7 +224,7 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
         except (json.decoder.JSONDecodeError):
             raise
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -241,10 +243,10 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
 
             data = rawdata
 
-            if not "." in selector:
+            if "." not in selector:
                 try:
                     res = data[selector]
-                except (KeyError,) as e:
+                except (KeyError,) as e: # noqa F841
                     msg = f"{repr(self)} validator={validator.name} : {e}:  Known keys : {list(data.keys())}"
                     raise ConfigurationException(msg)
             else:
@@ -253,7 +255,7 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
                     path += f".{part}"
                     try:
                         data = data[part]
-                    except (KeyError,) as e:
+                    except (KeyError,) as e: # noqa F841
                         msg = f"{repr(self)} : {validator.name} {e}:  {path=} Known keys : {list(data.keys())}"
                         raise ConfigurationException(msg)
 
@@ -261,10 +263,10 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
 
             return res
         # pragma: no cover pylint: disable=unused-variable
-        except (ConfigurationException,) as e:
+        except (ConfigurationException,) as e: # noqa F841
             raise
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -276,7 +278,7 @@ class HTML_Provider(HTTP_Provider):
 
     def adjust_value_for_validation(
         self,
-        checker: "Checker",
+        checker: Checker,
         validator: "Validator",
         fn: Callable,
         value: Any,
@@ -290,12 +292,12 @@ class HTML_Provider(HTTP_Provider):
 
             raise NotImplementedError()
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """convert data if needed"""
         try:
 
@@ -310,7 +312,7 @@ class HTML_Provider(HTTP_Provider):
 
             for name in ["content", "html"]:
                 v = getattr(data, name, undefined)
-                if not v is undefined:
+                if v is not undefined:
                     soup = bs(v, "lxml")
                     return soup
 
@@ -319,13 +321,13 @@ class HTML_Provider(HTTP_Provider):
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     @classmethod
-    def datain_to_str(cls, data: Any, checker: "Checker", temp: LazyTemp = None) -> str:
+    def datain_to_str(cls, data: Any, checker: Checker, temp: LazyTemp = None) -> str:
         """data to str"""
         try:
 
@@ -375,7 +377,7 @@ class HTML_Provider(HTTP_Provider):
             )
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -442,12 +444,12 @@ class HTML_Provider(HTTP_Provider):
         #         raise ValidationError(msg=msg, validator=validator, got=got)
 
         # # pragma: no cover pylint: disable=unused-variable
-        except (AssertionError,) as e:
+        except (AssertionError,) as e: # noqa F841
             if os.getenv("cpdb"):
                 breakpoint()
                 pass
             raise
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -455,9 +457,6 @@ class HTML_Provider(HTTP_Provider):
     def build_filter(self, v_in: Any) -> BFilter:
         "build filter"
         try:
-
-            name = v_in["name"]
-
 
             if isinstance(v_in, dict):
                 raw = v_in.get("raw")
@@ -477,12 +476,12 @@ class HTML_Provider(HTTP_Provider):
             return filter2
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
-    def get_filtered_as_str(self, checker: "Checker"):
+    def get_filtered_as_str(self, checker: Checker):
         "convert filtered to string"
         return self.datain_to_str(checker.temp.soup, checker)
 

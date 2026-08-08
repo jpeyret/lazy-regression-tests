@@ -42,13 +42,13 @@ def validate_json_schema(data: Any, testee: unittest.TestCase, validator: Valida
         for got in data:
             try:
                 jsonschema.validate(instance=got, schema=exp)
-            except (jsonschema.exceptions.ValidationError,) as e:
+            except (jsonschema.exceptions.ValidationError,) as e: # noqa F841
                 raise ValidationError(msg=str(e), validator=validator, exp=exp, got=got)
     # pragma: no cover
     except (ValidationError,):
         raise
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
