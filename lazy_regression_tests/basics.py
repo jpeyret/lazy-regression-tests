@@ -2,7 +2,7 @@
 basic building blocks that do not reference each other
 used to offload common.py
 """
-from typing import Optional, Callable, Any, List, Tuple, cast
+from typing import Optional, Callable, Any, List
 import os
 import json
 import sys
@@ -23,15 +23,10 @@ import lazy_regression_tests.constants as constants
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
-
 rpdb = breakpoints = cpdb
-
-
 verbose = constants.verbose
-
 undefined = constants.undefined
 
-# 🎫004.lazy.052.polars_diffing
 class ExtAlias(pydantic.BaseModel):
     """allows uncoupling name from extension provider
 
@@ -169,11 +164,11 @@ class AutoExp:
     """allows exp lookup by testee.attrname"""
 
     @classmethod
-    def get_exp(cls, validator: "Validator", testee: Any):
+    def get_exp(cls, validator: "Validator", testee: Any):  # noqa F821 - !!!TODO!!! Validator needs to move from common.py to basics.py, here
         """allows exp lookup by testee.attrname"""
         try:
             return getattr(testee, validator.name)
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (AttributeError,) as e: # noqa F841
             msg = f"{repr(validator)} : {e}:  Known fields on `testee` {repr(testee)} : {list(vars(testee).keys())}"
 
@@ -198,24 +193,20 @@ def get_alias_check_equality(li_in: List[Optional[ExtAlias]]) -> Optional[ExtAli
 
         return lia[0]
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
 
 
-def get_alias_from_ancestors(
-    cls: type, ancestors: List[type], ext: str
-) -> Optional[str]:
-    """get the ancestors' provider"""
+def get_alias_from_ancestors(cls: type, ancestors: List[type], ext: str) -> str|None:
+    """get the ancestors' alias"""
     try:
         for ancestor in ancestors:
-            name = ancestor.__name__
             if ancestor is cls:
                 continue
             try:
-
                 for attrname in ["cls_validators", "cls_filters"]:
                     source = getattr(ancestor, attrname, {})
                     if not source:
@@ -224,13 +215,11 @@ def get_alias_from_ancestors(
                         found = source.get(ext)
                         if found:
                             return found.alias
-            # pragma: no cover pylint: disable=unused-variable
+            # pragma: no cover
             except (AttributeError,) as e: # noqa F841
                 pass
-
         return None
-
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -243,7 +232,7 @@ class ValidationError(AssertionError):
     def __init__(
         self,
         msg=None,
-        validator: Optional["Validator"] = None,
+        validator = None,
         got=undefined,
         exp=undefined,
         testee=undefined,
@@ -276,7 +265,7 @@ class ValidationError(AssertionError):
                     if name == "exp":
                         if exp_seen:
                             continue
-                        if type(v) == type and issubclass(v, (AutoExp,)):
+                        if type(v) is type and issubclass(v, (AutoExp,)):
                             v = v.__name__
                     elif name == "v":
                         if getattr(v, "__class__", None) and v.__class__.__name__ in (
@@ -289,7 +278,7 @@ class ValidationError(AssertionError):
 
             return "\n".join(li)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -354,7 +343,7 @@ def lazyinfo(
         dn_out = os.getenv("lzrt_info_dir")
         if not dn_out:
             print(
-                f"env variable $lzrt_info_dir is not set.  No diagnostics can be written."
+                "env variable $lzrt_info_dir is not set.  No diagnostics can be written."
             )
             return
 
@@ -464,7 +453,7 @@ def lazyinfo(
                     exception.args = (arg0,) + exception.args[1:]
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
