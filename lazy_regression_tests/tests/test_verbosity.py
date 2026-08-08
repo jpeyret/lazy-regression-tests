@@ -1,5 +1,5 @@
-""" 
-Test verbose flag 
+"""
+Test verbose flag
 Do not test generic lazy behavior here, only the verbose-dependent debug code
 """
 # -*- coding: utf-8 -*-
@@ -14,6 +14,9 @@ import pytest
 
 from lazy_regression_tests.utils import set_cpdb, set_rpdb, set_breakpoints3
 
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
+from lazy_regression_tests.tests.helper_tst import TData
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -28,9 +31,6 @@ if __name__ == "__main__":
 
 print(f"\n\n\n{os.getcwd()=}\n\n\n")
 
-import lazy_regression_tests.core_assist2 as core_assist2
-import lazy_regression_tests.validators as validators
-from lazy_regression_tests.tests.helper_tst import TData
 
 # force verbosity flag
 verbose = core_assist2.verbose = validators.verbose = True
@@ -59,7 +59,7 @@ class Test_Verbose(unittest.TestCase):
         data = TData(status_code="200")
         checker = testee._lz.dict
         v = checker.v
-        with pytest.raises(validators.ValidationError) as tmp:
+        with pytest.raises(validators.ValidationError) as _tmp:
             v(data)
 
 
