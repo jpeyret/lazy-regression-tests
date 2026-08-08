@@ -30,10 +30,6 @@ from lazy_regression_tests.common_polars import (
 
 from bemyerp.websec.log_settings import getLogger
 
-import bemyerp.pssystem.constants as dbgconstants
-
-from lazy_regression_tests._baseutils import _fmt_as_tuple_str
-
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"

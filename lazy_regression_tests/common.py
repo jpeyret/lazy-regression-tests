@@ -2378,17 +2378,6 @@ class SameAssertor:
         """
 
         try:
-            if os.getenv("lazyrpdb"):
-                from bemyerp.lib.utils import (
-                    pp,
-                    ppp,
-                    rin,
-                    rindebug,
-                    show,
-                )  # noqa - debug
-
-                breakpoint()
-                pass
 
             dirname_extras = getattr(testee, "lazy_dirname_extras", "")
             if not dirname_extras:
