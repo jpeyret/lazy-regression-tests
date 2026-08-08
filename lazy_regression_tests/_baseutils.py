@@ -971,7 +971,7 @@ class Breakpoints(object):
 
     @classmethod
     def factory(cls, options=None, active=False, fnp_config=None):  # pragma: no cover
-        fnp_config = fnp_config or getattr(options, OPTION_NAME, None)
+        fnp_config = fnp_config or getattr(options, "breakpoints", None)
         if fnp_config:
             try:
                 return Breakpoints(fnp_config, active)
