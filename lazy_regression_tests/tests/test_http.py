@@ -56,16 +56,11 @@ def cpdb(*args, **kwargs):
 
 
 rpdb = breakpoints = cpdb
-
-
 di_mock_env = get_mock_env()
 di_mock_env_baseline = di_mock_env.copy()
 di_mock_env_baseline.update(lzrt_directive=OPT_DIRECTIVE_BASELINE)
 
 #################################################################
-
-
-
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"

@@ -1,9 +1,8 @@
 """
-support testing 
+support testing
 """
 import bs4
 
-bs = bs4.BeautifulSoup
 import jinja2
 import responses
 import requests
@@ -23,13 +22,12 @@ from lazy_regression_tests.constants import (
     LAZY_KEEP_TEST_PREFIX,
 )
 
-from lazy_regression_tests.basics import ConfigurationException
-
-import lazy_regression_tests.core_assist2 as core_assist2
+from lazy_regression_tests.common import Checker
 from lazy_regression_tests.core_assist2 import _LazyMeta, Filter
 
 from lazy_regression_tests._baseutils import eprint
 
+bs = bs4.BeautifulSoup
 
 verbose = "-v" in sys.argv or "--verbose" in sys.argv
 
@@ -96,7 +94,7 @@ def get_mock_env(seed={}):
             return res
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -161,7 +159,7 @@ def get_fake_response_from_html(
         return response
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -196,7 +194,7 @@ def get_fake_response(
         return response
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -228,11 +226,11 @@ class TstMixinSeeder:
                 data = data.copy()
                 res = checker.assert_same(data)
                 return res
-            except (AssertionError,) as e:
+            except (AssertionError,) as e: # noqa F841
                 pass
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -290,7 +288,7 @@ class TstMixin(unittest.TestCase):
 
     def get_classes_oi(self, vars):
         """filter lazymeta-d classes from a locals/globals"""
-        classes = [v for v in vars.values() if type(v) == _LazyMeta]
+        classes = [v for v in vars.values() if type(v) is _LazyMeta]
 
         return classes
 
@@ -322,7 +320,7 @@ class TstMixin(unittest.TestCase):
         try:
             self.assertEqual(di_exp, di_got)
         # pragma: no cover pylint: disable=unused-variable
-        except (AssertionError,) as e:
+        except (AssertionError,) as e: # noqa F841
             msg = f"\nFilter:{ext=}{label=}\n{e.args[0]}"
             e.args = (msg, filter)
             raise
