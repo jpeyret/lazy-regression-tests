@@ -2,12 +2,12 @@ from typing import Any, Callable
 import unittest
 
 from pathlib import Path
+from dataclasses import dataclass
 
 
 import lazy_regression_tests.providers as providers
 from lazy_regression_tests.common import (
     LazyTemp,
-    ConfigurationException,
     Checker,
     Validator,
     ValidatorMgr,
@@ -24,11 +24,9 @@ from lazy_regression_tests.common import ValidatorTemp, BFilter
 from lazy_regression_tests.common_polars import (
     find_columns_with_nulls,
     fill_nulls,
-    read_df,
     check_for_duplicates,
 )
 
-from bemyerp.websec.log_settings import getLogger
 
 
 def cpdb(*args, **kwargs):
@@ -68,7 +66,7 @@ class ValidatorTempPolars(ValidatorTemp):
                 assert isinstance(self.data_in, pl.DataFrame)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -128,7 +126,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
             )
             return data
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -146,7 +144,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
             )
             return data
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -160,7 +158,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
             self._filtered = self.data_in
             # return self
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -215,11 +213,11 @@ class Polars_Provider(providers.PAbstractExtProvider):
             testee.assertEqual(True, is_equal, msg)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (AssertionError,) as e:
+        except (AssertionError,) as e: # noqa F841
             raise
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -267,11 +265,11 @@ def check_unique(
 
         return True
     # pragma: no cover pylint: disable=unused-variable
-    except (AssertionError,) as e:
+    except (AssertionError,) as e: # noqa F841
         e.args += (df_dupekeys,)
         raise
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -319,7 +317,7 @@ class compare_df_options:
             return res
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -494,7 +492,7 @@ def compare_df(
             dfdiff = (dfboth0 == dfboth1).with_row_index(name=options.cindex)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (ValueError,) as e:
+        except (ValueError,) as e: # noqa F841
             chk = POLARS_ERR_DIM_MISMATCH
             if e.args == chk:
                 # marker invalid dimensions which probably indicates non-unique on colkeys
@@ -580,22 +578,17 @@ def compare_df(
 
     # pragma: no cover pylint: disable=unused-variable
     # pragma: no cover pylint: disable=unused-variable
-    except (CompareException,) as e:
+    except (CompareException,) as e: # noqa F841
         # breakpoint() #🛑
         pass
         raise
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
 
 
-# 🎫105.framework.008.remove_v1v2_scaffolding.dead - move to lazy
 class CompareException(AssertionError): ...
-
-
-from dataclasses import dataclass
-
 
 @dataclass
 class CompareCounts:
@@ -642,7 +635,7 @@ class LazyCompareOptions(compare_df_options):
                 type(self)._lookup = res
             return type(self)._lookup
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -658,7 +651,7 @@ class LazyCompareOptions(compare_df_options):
             return counts.is_equal, str(counts)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -679,7 +672,7 @@ def get_diffs(source: ValidatorMgr | ValidatorTemp | Checker) -> pl.DataFrame | 
             return diff
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
