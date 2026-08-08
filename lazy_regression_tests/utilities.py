@@ -1,17 +1,17 @@
-import os
 import re
 import types
-from pathlib import Path
 import sys
 from importlib import import_module
 from typing import Callable
+import click
 
-from lazy_regression_tests.core_assist2 import LazyRoot, _LazyMeta
-from lazy_regression_tests.utils import ppp, Dummy
+
+from lazy_regression_tests.utils import set_cpdb, set_rpdb, set_breakpoints3
+
+from lazy_regression_tests.core_assist2 import _LazyMeta
+from lazy_regression_tests.utils import ppp
 from lazy_regression_tests.common import (
     ValidatorMgr,
-    FilterMgr,
-    Checker,
     Validator,
     FunctionCheck,
 )
@@ -19,7 +19,6 @@ from lazy_regression_tests.common import (
 from lazy_regression_tests.constants import undefined
 
 from typing import List, Tuple, Any, Dict, Optional
-import re
 
 from rich.console import Console
 
@@ -200,15 +199,10 @@ class PrinterClassValidatorContributions:
                 attr_value = tu[1]
 
                 if isinstance(attr_value, tuple):
-                    if type(attr_value[0]) == _LazyMeta:
+                    if type(attr_value[0]) is _LazyMeta:
                         attr_value = attr_value[1]
-                    # breakpoint() #🛑
-                    # pass
-
-                fc = None
 
                 if isinstance(attr_value, FunctionCheck):
-                    fc = attr_value
                     attr_value = attr_value.f
 
                 module = getattr(attr_value, "__module__", None)
@@ -216,7 +210,7 @@ class PrinterClassValidatorContributions:
                     style_start = self._get_module_style(module)
                     style_end = "[/]"
 
-                if type(attr_value) == types.FunctionType:
+                if type(attr_value) is types.FunctionType:
                     saval = attr_value.__name__
 
                 elif isinstance(attr_value, str):
@@ -227,7 +221,7 @@ class PrinterClassValidatorContributions:
                 elif callable(attr_value) and attr_value.__doc__ == searchdoc:
                     saval = "regex.search"
 
-                elif type(attr_value) == type:
+                elif type(attr_value) is type:
                     saval = attr_value.__name__
 
                 elif attr_name in ("exp",):
@@ -237,8 +231,7 @@ class PrinterClassValidatorContributions:
                     print(
                         f"validator attribute:{attr_name}={attr_value}{type(attr_value)=}"
                     )
-                    breakpoint()  # 🛑
-                    pass
+                    # we shouldn't be here, I think...
 
                     saval = attr_value
 
@@ -247,7 +240,7 @@ class PrinterClassValidatorContributions:
                 )
                 classname = cargo.indent2 + " " * 20
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -289,7 +282,7 @@ class PrinterClassValidatorContributions:
                             .selector   : select_by_provider
                             .exp        : 200
                             .v          : FunctionCheck:lazy_regression_tests.common.check_equal (data: Any, testee: unit
-        CustomLazyMixin     . ,,                    
+        CustomLazyMixin     . ,,
                     """
 
     def _print_ancestor(self, val: Validator, ancestor, got_from: Dict):
@@ -318,7 +311,7 @@ class PrinterClassValidatorContributions:
             self._print(val, ancestor, to_print=to_print)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -337,7 +330,7 @@ class PrinterClassValidatorContributions:
 
             # self._print(ancestor)
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -378,7 +371,7 @@ def print_validator(
                     attrvalue = getattr(aval, attrname, undefined)
 
                 if attrvalue == checker_vals[attrname]:
-                    if not attrname in got_from:
+                    if attrname not in got_from:
                         got_from[attrname] = (anc, attrvalue)
 
         if breakpoints("print_validator", {"validator_name": name}):  # pragma: no cover
@@ -397,7 +390,7 @@ def print_validator(
             printer.print(val, ancestor[0], got_from)
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -423,10 +416,6 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
 
         cargo = Cargo(palette=palette, print=print, testee_cls=cls)
 
-        validator_attribute_names = "active selector exp v".split()
-
-        undefined_ante = {name: undefined for name in cargo.validator_attribute_names}
-
         cur = getattr(cls.lz, ext)
 
         ext_ancestors = filter_lz_cls(cls.mro(), ext)
@@ -451,31 +440,20 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
         for acls in mro_validators:
             print(f"  {acls.__name__}")
 
-        # breakpoint() #🛑
-        pass
 
         if rpdb():  # pragma: no cover
             breakpoint()
             pass
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
 
 
-#!/usr/bin/env python
 """analyze ancestry/configuration"""
 
-import sys
-import click
-
-
-# pylint: disable=unused-import
-from lazy_regression_tests.utils import set_cpdb, set_rpdb, set_breakpoints3
-
-# pylint: enable=unused-import
 
 
 def cpdb(*args, **kwargs):
@@ -510,7 +488,7 @@ def run(**kwargs):
         return res
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -547,13 +525,12 @@ class Main:
             clsoi = {}
             for name, cls in vars(module).items():
                 print(f"{name} => {type(cls)=}")
-                if type(cls) == _LazyMeta:
+                if type(cls) is _LazyMeta:
                     clsoi[cls.__name__] = cls
 
-            ppp(clsoi, "clsoi")
+            # ppp(clsoi, "clsoi")
 
             if self.classname:
-                patre = re.compile(self.classname)
                 clsoi2 = {
                     name: cls for name, cls in clsoi.items() if name == self.classname
                 }
@@ -572,7 +549,7 @@ class Main:
                     trace_ancestry(cls, ext=ext)
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise

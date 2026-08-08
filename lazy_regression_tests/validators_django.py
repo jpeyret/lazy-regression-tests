@@ -4,7 +4,7 @@ from django.forms.utils import ErrorDict
 import unittest
 
 from lazy_regression_tests.validators import Validator, AutoExp
-
+from lazy_regression_tests.basics import ValidationError
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -28,7 +28,7 @@ def check_form_errors(data: ErrorDict, testee: unittest.TestCase, validator: Val
 
             exp = expectations.pop(fieldname, None)
             if exp is None:
-                msg = f"{field=} unexpected error(s): {got}"
+                msg = f"{fieldname=} unexpected error(s): {got}"
                 raise ValidationError(msg, exp=exp, got=got, validator=validator)
 
             if isinstance(exp, str):
@@ -37,7 +37,7 @@ def check_form_errors(data: ErrorDict, testee: unittest.TestCase, validator: Val
                 exp = set(exp)
 
             if exp != got:
-                msg = f"{field=} unexpected error(s): {got}"
+                msg = f"{fieldname=} unexpected error(s): {got}"
                 raise ValidationError(msg, exp=exp, got=got, validator=validator)
 
         if expectations:
@@ -47,7 +47,7 @@ def check_form_errors(data: ErrorDict, testee: unittest.TestCase, validator: Val
         return 1
 
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
