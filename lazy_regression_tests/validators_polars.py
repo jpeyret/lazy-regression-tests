@@ -3,7 +3,8 @@ import unittest
 
 from pathlib import Path
 from dataclasses import dataclass
-
+from typing import Type
+from logging import getLogger
 
 import lazy_regression_tests.providers as providers
 from lazy_regression_tests.common import (
@@ -13,7 +14,7 @@ from lazy_regression_tests.common import (
     ValidatorMgr,
 )
 
-from lazy_regression_tests._baseutils import eprint
+from lazy_regression_tests._baseutils import _fmt_as_tuple_str
 
 
 import polars as pl
@@ -42,7 +43,7 @@ rpdb = breakpoints = cpdb
 
 undefined = NotImplemented
 
-
+logger = getLogger("lazy")
 
 
 class ValidatorTempPolars(ValidatorTemp):
@@ -76,20 +77,13 @@ class ValidatorTempPolars(ValidatorTemp):
         return self.data_in
 
 
-from typing import Type
 
 
 class Diffs:
-    # def __set_name__(self, owner, name):
-    #     self.name = name
 
     def __get__(self, inst, objtype=None):
         ...
         return inst.df.filter(pl.col("_lazydiff_compare").str.contains_any(["<", ">"]))
-
-    # def __set__(self, obj, value):
-    #     ...
-
 
 class DiffView:
     diff = Diffs()
@@ -106,8 +100,9 @@ def view_diffs(testee, source):
 
             print(df)
             dv = DiffView(df)
+            print(f"\n\ndiff dv[{type(dv)}]:\n", dv)
 
-            breakpoint()  # 🛑
+            breakpoint()
             pass
 
 
@@ -393,7 +388,7 @@ def compare_df(
 
     def logerr(msg, *args, **kwargs):
         msg = f"⚙️🧨⚙️🧨⚙️🧨 compare_df {msg}"
-        eprint(msg, *args, **kwargs)
+        logger.error(msg)
 
     oi = False
     if breakpoints("df_compare", {"always": 1}):  # pragma: no cover
@@ -407,9 +402,6 @@ def compare_df(
             exclude_compare = [exclude_compare]
     else:
         exclude_compare = []
-
-    # if isinstance(colkey, str):
-    #     colkey = [colkey]
 
     colkey = _fmt_as_tuple_str(colkey)
 
@@ -441,7 +433,7 @@ def compare_df(
                 if isinstance(df0.schema.get(colname), (pl.Struct,))
             }
             if oi:
-                breakpoint()  # 🛑
+                breakpoint()
                 pass
             df0 = df0.unnest(colnames_struct_w_nulls)
             df1 = df1.unnest(colnames_struct_w_nulls)
@@ -540,8 +532,8 @@ def compare_df(
             )
 
             # OK, now who had differences and who was the same?
-            dfdiffsame = dfdiff.filter(pl.col(options.csame) == True)
-            dfdiffdiff1 = dfdiff.filter(pl.col(options.csame) == False)
+            dfdiffsame = dfdiff.filter(pl.col(options.csame))
+            dfdiffdiff1 = dfdiff.filter(not pl.col(options.csame))
             # grrrr... nulls...
             dfdiffdiff2 = dfdiff.filter(pl.col(options.csame).is_null())
 
