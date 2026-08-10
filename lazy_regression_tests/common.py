@@ -2204,8 +2204,6 @@ class SameAssertor:
     )
 
     def __init__(self, checker: "Checker"):
-        # 🎫004.lazy.052.polars_diffing (Pdb) rin(checker.provider) <class 'bemyerp.tests.validators_polars.Polars_Provider'>
-
         self.checker = checker
 
     def __repr__(self):

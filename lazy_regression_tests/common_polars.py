@@ -73,7 +73,7 @@ def fill_nulls(df : pl.DataFrame):
 
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -103,7 +103,7 @@ def get_colnames(sql : str) -> list[str]:
         return tmp5
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -158,7 +158,7 @@ def prep_polars_query_params(tqry, *args, colnames : list[str]|None=None) -> tup
         parameters_for_polars = subber.as_dict()
         return PolarsPrepared(tqry_for_polars,parameters_for_polars,colnames)
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -183,7 +183,7 @@ def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
             return df
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -214,7 +214,7 @@ def split_on_exist_notexist(df : pl.DataFrame, dfcheck : pl.DataFrame, on : Any,
 
         return SplitExists(df_exists, df_notexists)
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -253,7 +253,7 @@ def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = Fa
         return dfwithdupes
 
     #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
