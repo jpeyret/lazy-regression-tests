@@ -55,30 +55,18 @@ def fill_nulls(df : pl.DataFrame):
         dfo = df
 
         for colname, typename in todo:
-
             typename = typename.split("(")[0]
-
             filler = di_fill.get(typename)
             if filler is None:
-                type_ = df.schema[colname]
-
                 continue
-
             dfo = dfo.with_columns(pl.col(colname).fill_null(filler))
-
-
-
         return dfo
-
-
 
     #pragma: no cover pylint: disable=unused-variable
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
-
-
 
 
 def get_colnames(sql : str) -> list[str]:

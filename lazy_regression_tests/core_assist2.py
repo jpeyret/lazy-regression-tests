@@ -1,14 +1,10 @@
 """
 supports class-level aggregation of Lazy Filters and Validators
 """
-import os
-import sys
-from typing import List, Any, Dict, cast, Tuple, Optional
+from typing import List, Any, Dict
 from collections import defaultdict
-import pprint
 from dataclasses import dataclass
 
-from pathlib import Path
 
 #################################################################
 # Dependencies
@@ -16,31 +12,26 @@ from pathlib import Path
 from more_itertools import partition
 
 from lazy_regression_tests.basics import get_alias_from_ancestors,ALazyRoot
+from lazy_regression_tests._baseutils import set_cpdb, set_rpdb, set_breakpoints3, ppp
 
 from lazy_regression_tests.providers import (
     di_ext_provider,
-    PAbstractExtProvider,
-    DEFAULT_PROVIDER,
 )
 from lazy_regression_tests.validators import ValidatorMgr, build_validators_for_class
 from lazy_regression_tests.constants import (
-    ENVIRONMENT_VARNAME_ROOT,
-    LAZY_HEADER_SEPARATOR,
     TIMEOUT_MAXTIME_TO_ALLOW,
 )
 from lazy_regression_tests.common import (
     ExtAlias,
     ConfigurationException,
     TU_NOCATCH,
-    LazyTemp,
-    ValidatorTemp,
     timeout,
     Checker,
 )
 
 # import constants
 
-from lazy_regression_tests.filters import Filter, FilterMgr, BFilter
+from lazy_regression_tests.filters import FilterMgr, BFilter
 
 
 def cpdb(*args, **kwargs):
@@ -59,9 +50,7 @@ undefined = NotImplemented
 # pylint: disable=no-self-argument,super-init-not-called,no-member,bad-mcs-method-argument
 # pylint: disable=bad-mcs-classmethod-argument,no-name-in-module,line-too-long
 
-from pydantic import BaseModel, Field
 
-from lazy_regression_tests._baseutils import set_cpdb, set_rpdb, set_breakpoints3, ppp
 
 
 if __name__ == "__main__":
@@ -114,9 +103,9 @@ class _HelperRoot:
             return checker
 
         # pragma: no cover pylint: disable=unused-variable
-        except (AttributeError,) as e:
+        except (AttributeError,) as _e:
             raise
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -159,7 +148,7 @@ class LazyRoot(ALazyRoot):
                 dupe.testee = testee
             return dupe
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -194,7 +183,7 @@ class LazyRoot(ALazyRoot):
             print(out.getvalue())
 
         # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -236,7 +225,6 @@ def build_filters_for_class(
         di_filtermgr = {}
         for name, filters in di_filter.items():
             di = {}
-            filters0 = filters
             alias_ = None
 
             # ExtProvider by name or alias
@@ -291,10 +279,10 @@ def build_filters_for_class(
         return di_filtermgr
 
     # pragma: no cover pylint: disable=unused-variable
-    except (TU_NOCATCH) as e:
+    except (TU_NOCATCH) as _e:
         raise
     # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -310,7 +298,6 @@ class LazyMixin:
 
     # populated by _LazyMeta
     cls_filters: Dict[str, FilterMgr]
-    #🎫004.lazy.054.underscore_lz
     _lz: LazyRoot
 
     #######################################################
@@ -326,8 +313,8 @@ class LazyMixin:
             )
             try:
                 self.assertEqual(exp, got, message)
-            except (AssertionError,) as e:
-                raise self.format_assertion_message(e)
+            except (AssertionError,) as _e:
+                raise self.format_assertion_message(_e)
 
     else:
         #
@@ -335,8 +322,8 @@ class LazyMixin:
             """fallback if timeout package is not available"""
             try:
                 self.assertEqual(exp, got, message)
-            except (AssertionError,) as e:
-                raise self.format_assertion_message(e)
+            except (AssertionError,) as _e:
+                raise self.format_assertion_message(_e)
 
 
 class _LazyMeta(type):
@@ -373,14 +360,14 @@ class _LazyMeta(type):
             setattr(newclass, "__init__", initialize_instance)
             return newclass
         # pragma: no cover pylint: disable=unused-variable
-        except (TypeError,) as e:
-            print(f"\n\n{e=}")
+        except (TypeError,) as _e:
+            print(f"\n\n{_e=}")
             ppp(dict(clsname=clsname, found=found, basesold=basesold, bases=bases))
             if cpdb():
                 breakpoint()
             raise
 
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -428,11 +415,11 @@ class _LazyMeta(type):
 
             super().__init__(name, bases, attrs)
         # pragma: no cover pylint: disable=unused-variable
-        except (ConfigurationException,) as e:
-            cls.lz = e
-        except (TU_NOCATCH) as e:
+        except (ConfigurationException,) as _e:
+            cls.lz = _e
+        except (TU_NOCATCH) as _e:
             raise
-        except (Exception,) as e:
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
