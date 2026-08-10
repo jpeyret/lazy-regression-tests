@@ -10,7 +10,6 @@ from _pickle import PicklingError
 # Dependencies
 #################################################################
 from yaml import dump as ydump
-import requests
 
 
 from lazy_regression_tests.common import (
@@ -208,7 +207,12 @@ class JsonExtProvider(DictExtProvider):
                 return json.dumps(data, indent=2, sort_keys=True).strip()
             elif data is None:
                 return "{}"
-            elif isinstance(data, requests.models.Response):
+            elif (
+                callable(getattr(data, "json", None))
+                and hasattr(data, "status_code")
+                and hasattr(data, "headers")
+            ):
+                #this is intended for requests.models.Response objects
                 return json.dumps(data.json(), indent=2, sort_keys=True).strip()
 
             elif hasattr(data, "getvalue") and callable(data.getvalue):

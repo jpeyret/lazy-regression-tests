@@ -43,7 +43,7 @@ undefined = NotImplemented
 verbose = "-v" in sys.argv
 cache = {}
 
-#
+log = logger.info
 
 
 def def_repr(self):
@@ -74,6 +74,43 @@ def _fmt_as_tuple_str(input_: Sequence[str] | str | None, sep: str = " ") -> tup
         input_ = input_.split(sep)
     tu = tuple(v2 for v in input_ if (v2 := v.strip(r"\ ")))
     return tu
+
+
+def read_data(content: str | Path | dict | Any, passthru_on_unhandled=False) -> dict | Any:
+    try:
+        ispath = isinstance(content, Path)
+
+        if isinstance(content, str) and '"' in content:
+            try:
+                j_data = json.loads(content)
+                return j_data
+            # pragma: no cover pylint: disable=unused-variable
+            except (Exception,) as e:
+                pass
+
+        pa = Path(content)
+        with pa.open() as fi:
+            match pa.suffix:
+                case ".json":
+                    j_data = json.load(fi)
+                case ".yaml":
+                    j_data = yload(fi)
+                case ".toml":
+                    with pa.open("rb") as fi:
+                        j_data = tomllib.load(fi)
+                case _:
+                    raise NotImplementedError(f"{pa.suffix=}")
+            return j_data
+
+        if not passthru_on_unhandled:
+            raise NotImplementedError(f"{content=}")
+        return content
+
+    # pragma: no cover pylint: disable=unused-variable
+    except (Exception,) as e:
+        if cpdb():
+            breakpoint()
+        raise
 
 
 
@@ -1500,3 +1537,130 @@ def format_url(url: str) -> str:
         if cpdb():
             breakpoint()
         raise
+
+
+class JDataProvDescriptor:  # Config file provider
+    def __init__(self, src: Any, as_simplenamespace=False, attrname_dict_backup: str | None = None, cache=True, subdomain: str = ""):
+        self.src = src
+        self.as_simplenamespace = as_simplenamespace
+        self.attrname_dict_backup = attrname_dict_backup
+        self.cache = cache
+        self.subdomain = subdomain
+
+    def __set_name__(self, owner, name):
+        self.name = name
+        self.cachename = f"_{name}"
+
+    def _parse_dict_to_simplenamespaces(self, data) -> SimpleNamespace:
+        try:
+            res = parse_dict_to_simplenamespaces(data)
+
+            if self.attrname_dict_backup:
+                setattr(self.tmpinstance, self.attrname_dict_backup, data)
+
+            return res
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def _cache_and_return(self, data):
+        try:
+            prefix = f"{self}.cache_and_return:"
+            # log(f"{prefix}3310")
+            if self.subdomain:
+                data = data[self.subdomain]
+
+            if self.as_simplenamespace:
+                data = self._parse_dict_to_simplenamespaces(data)
+            if self.cache:
+                setattr(self.tmpinstance, self.cachename, data)
+
+            # log(f"{prefix}3319")
+            return data
+
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise
+
+    def __get__(self, instance, owner) -> dict[str, Any]:
+        "load json, somehow"
+        try:
+            try:
+                lookfor = self.src
+
+                # breakpoint()
+                prefix = f"{self}.__get__:"
+
+                if (v := getattr(instance, self.cachename, undefined)) is not undefined:
+                    return v
+                log(f"{prefix}.3342")
+
+                self.tmpinstance = instance
+
+                if isinstance(lookfor, str) and lookfor.startswith("<") and lookfor.endswith(">"):
+                    lookfor = getattr(instance, lookfor[1:-1])
+
+                if isinstance(lookfor, Path):
+                    j_data = read_data(lookfor)
+                    log(f"{prefix}3351.return via cache")
+                    return self._cache_and_return(j_data)
+
+                elif isinstance(lookfor, dict):
+                    res = lookfor.copy()
+                    log(f"{prefix}3355.return via cache")
+                    return self._cache_and_return(res)
+
+                elif isinstance(lookfor, (str, Path)):
+                    if str(lookfor).startswith("$"):  # environment variable
+                        lookfor = os.getenv(str(lookfor)[1:])
+                        if lookfor is None:
+                            raise InvalidConfigurationException(f"Environment variable {lookfor} is not set")
+
+                    if lookfor.startswith("{") or lookfor.startswith("["):
+                        res = json.loads(lookfor)
+                        log(f"{prefix}3365.return via cache")
+                        return self._cache_and_return(res)
+
+                    else:
+                        pa = Path(lookfor)
+
+                        suffix = pa.suffix
+                        if suffix == ".json":
+                            with pa.open() as fi:
+                                res = json.load(fi)
+                        elif suffix == ".toml":
+                            with pa.open("rb") as fi:
+                                res = tomllib.load(fi)
+                        elif suffix == ".yaml":
+                            with pa.open() as fi:
+                                res = yload(fi)
+
+                        else:
+                            raise NotImplementedError(f"lookfor: {lookfor}")
+
+                        log(f"{prefix}3384.return via cache")
+                        return self._cache_and_return(res)
+
+                else:
+                    raise NotImplementedError(f"lookfor: {lookfor}")
+
+            except (FileNotFoundError, NotImplementedError) as e:
+                if cpdb():
+                    breakpoint()
+                    pass
+                raise
+
+            # pragma: no cover pylint: disable=unused-variable
+            except (Exception,) as e:
+                if cpdb():
+                    breakpoint()
+                raise
+        # pragma: no cover pylint: disable=unused-variable
+        except (Exception,) as e:
+            if cpdb():
+                breakpoint()
+            raise

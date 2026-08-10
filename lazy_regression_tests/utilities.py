@@ -268,22 +268,6 @@ class PrinterClassValidatorContributions:
         cargo.print(cargo.indent2, "." * 20, sep="")
         # console.rule("")
 
-    """"
-    status_code
-        Test_Compare_404    .active     : True
-                            .selector   : select_by_provider
-                            .exp        : [302, 200]
-                            .v          : FunctionCheck:lazy_regression_tests.common.check_equal (data: Any, testee: unit
-
-        Mixin404            . ,,  👈 this is precisely where you want to show
-                                     html=dict(name="status_code", exp=[302, 200]),
-
-        MixinBaseLazy       .active     : True
-                            .selector   : select_by_provider
-                            .exp        : 200
-                            .v          : FunctionCheck:lazy_regression_tests.common.check_equal (data: Any, testee: unit
-        CustomLazyMixin     . ,,
-                    """
 
     def _print_ancestor(self, val: Validator, ancestor, got_from: Dict):
         try:
