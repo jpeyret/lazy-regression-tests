@@ -564,37 +564,24 @@ class Subber(object):
 
             try:
                 got = arg[key]
-                if self.verbose:
-                    print("got:%s from %s.return" % (key, arg))
                 return got
             except (KeyError):
                 try:
                     # try getattr
                     got = getattr(arg, key)
-                    if self.verbose:
-                        print("got:%s from %s.return" % (key, arg))
                     return got
                 except AttributeError:  # pragma: no cover
-                    if self.verbose:
-                        print("no luck:%s from %s.continue" % (key, arg))
-
                     continue
 
             except (AttributeError, TypeError):
                 # no __getitem__, try getattr
                 try:
                     got = getattr(arg, key)
-                    if self.verbose:
-                        print("got:%s from %s.return" % (key, arg))
                     return got
                 except AttributeError:  # pragma: no cover
-                    if self.verbose:
-                        print("no luck:%s from %s.continue" % (key, arg))
                     continue
 
         try:
-            if self.verbose:
-                print("no luck:%s .  KeyError using subber: %s" % (key, self))
             raise KeyError(key)
         except Exception as _e:  # pragma: no cover
             raise

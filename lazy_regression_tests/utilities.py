@@ -46,12 +46,11 @@ PALETTE = """#add8e6
 #7777ff
 #9dc6e0""".splitlines()
 
-
 def debug_ancestors(header, ancestors):
     newline = "\n"
-    print(header, ":")
-    print(f"{newline.join([anc.__name__ for anc in ancestors])}")
-    print("\n")
+    logger.debug(header, ":")
+    logger.debug(f"{newline.join([anc.__name__ for anc in ancestors])}")
+    logger.debug("\n")
 
 
 def filter_lz_cls(li: List[type], ext: str) -> List[type]:
@@ -106,7 +105,7 @@ def filter_val(li_cls: List[type], ext: str, name: str) -> List[Tuple[type, Any]
                 if defined_on_class:
                     defined_on_class = defined_on_class[-1]
             else:
-                print(f"{ori_validators=}{type(ori_validators)=}")
+                logger.debug(f"{ori_validators=}{type(ori_validators)=}")
 
             if defined_on_class:
                 res.append((cls, defined_on_class))
@@ -173,7 +172,6 @@ class PrinterClassValidatorContributions:
 
     def _get_module_style(self, module: str):
         res = f"[{self.cargo.palette[module]}]"
-        # breakpoint() #🛑
         # pass
         return res
 
@@ -226,7 +224,7 @@ class PrinterClassValidatorContributions:
                     saval = attr_value
 
                 else:
-                    print(
+                    logger.debug(
                         f"validator attribute:{attr_name}={attr_value}{type(attr_value)=}"
                     )
                     # we shouldn't be here, I think...
@@ -264,7 +262,6 @@ class PrinterClassValidatorContributions:
 
         self._print(val, ancestor, to_print=to_print)
         cargo.print(cargo.indent2, "." * 20, sep="")
-        # console.rule("")
 
 
     def _print_ancestor(self, val: Validator, ancestor, got_from: Dict):
@@ -274,19 +271,17 @@ class PrinterClassValidatorContributions:
             for attrname, tu in got_from.items():
                 if tu[0] == ancestor:
                     attr_value = tu[1]
-                    # assert isinstance(attr_value, )
                     res = (attrname, attr_value)
                     to_print.append(res)
 
             if breakpoints(
                 "print_validator", {"validator_name": self.name}
             ):  # pragma: no cover
-                print(f"\n\n🔬🔬🔬validator_name:{self.name} {ancestor=}")
-                ppp(got_from, "\ngot_from")
-                print("to_print:")
+                logger.debug(f"\n\n🔬🔬🔬validator_name:{self.name} {ancestor=}")
+                logger.debug("to_print:")
                 for tu in to_print:
-                    print("  ", tu)
-                print("")
+                    logger.debug("  ", tu)
+                logger.debug("")
                 breakpoint()
                 pass
 
@@ -300,17 +295,14 @@ class PrinterClassValidatorContributions:
 
     def print(self, val: Validator, ancestor: type, di_print: dict):
         try:
-            # print("\n\n")
 
             meth_print = self._print_ancestor
             is_testcase = ancestor == self.cargo.testee_cls
-            # print(f"{ancestor} == {self.cargo.testee_cls} => {is_testcase}")
             if is_testcase:
                 meth_print = self._print_testcase
 
             meth_print(val, ancestor, di_print)
 
-            # self._print(ancestor)
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e: # noqa F841
             if cpdb():
@@ -333,10 +325,9 @@ def print_validator(
         checker_vals = {wname: getattr(val, wname) for wname in attrnames}
 
         if verbose:
-            ppp(
-                dict(cls=cls, name=name, checker_vals=checker_vals),
-                "\n\nprint_validator",
-            )
+            #ppp(
+                #"\n\nprint_validator",
+            #)
             debug_ancestors("\n  ancestors:", [v[0] for v in ancestors])
 
         # 🎗 probably location error
@@ -344,7 +335,7 @@ def print_validator(
         li_calc = reversed(ancestors)
         for anc, aval in li_calc:
             if verbose:
-                print(f"{anc=} , {aval=}")
+                logger.debug(f"{anc=} , {aval=}")
 
             for attrname in attrnames:
                 if isinstance(aval, dict):
@@ -357,15 +348,13 @@ def print_validator(
                         got_from[attrname] = (anc, attrvalue)
 
         if breakpoints("print_validator", {"validator_name": name}):  # pragma: no cover
-            print(f"\n\n🔬🔬🔬validator_name:{name}")
-            ppp(got_from, "got_from")
-            ppp(checker_vals, "checker_varls")
+            logger.debug(f"\n\n🔬🔬🔬validator_name:{name}")
             breakpoint()
             pass
 
         if verbose:
             for attrname, ori in got_from.items():
-                print(f"{attrname:10.10} ancestor:{ori[0]} {ori[1]}")
+                logger.debug(f"{attrname:10.10} ancestor:{ori[0]} {ori[1]}")
 
         printer.print(val, cls, checker_vals)
         for ancestor in ancestors:
@@ -394,7 +383,7 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
 
             s += f"[{v}]{v}[/]\n"
         sys.stdout.write(s + "\n\n.")
-        print(s)
+        logger.debug(s)
 
         cargo = Cargo(palette=palette, print=print, testee_cls=cls)
 
@@ -402,25 +391,25 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
 
         ext_ancestors = filter_lz_cls(cls.mro(), ext)
 
-        print("validators:")
+        logger.debug("validators:")
         for name, val in sorted(cur.validators.items()):
 
             filtered_ancestors_mro = filter_val(ext_ancestors, ext, name)
 
             print_validator(cls, name, val, filtered_ancestors_mro, cargo=cargo)
 
-        print("\nlegend:")
+        logger.debug("\nlegend:")
         for k, color in cargo.palette.items():
             if isinstance(k, str) and k.startswith("style-"):
                 continue
-            print(f"  [{color}]{k}[/]")
-        print("\n\n")
+            logger.debug(f"  [{color}]{k}[/]")
+        logger.debug("\n\n")
 
         mro_validators = [acls for acls in cls.mro() if hasattr(acls, "cls_validators")]
 
-        print("\n\nancestors with validator definitions:")
+        logger.debug("\n\nancestors with validator definitions:")
         for acls in mro_validators:
-            print(f"  {acls.__name__}")
+            logger.debug(f"  {acls.__name__}")
 
 
         if rpdb():  # pragma: no cover
@@ -448,12 +437,10 @@ if __name__ == "__main__":
     cpdb = set_cpdb()
     rpdb = set_rpdb()
     breakpoints = set_breakpoints3() or breakpoints
-    # breakpoint() #🛑
     pass
 
 
 @click.command()
-# @click.argument('testscript', type=click.Path(exists=True, dir_okay=False))
 @click.argument("testscript")
 @click.option("--classname")
 @click.option("--extension")
@@ -494,23 +481,17 @@ class Main:
         "process"
         try:
 
-            # pa = Path(self.testscript)
-            # pa = pa.resolve()
 
-            # # os.chdir(pa.parent)
-            # sys.path.insert(0, pa.parent)
 
-            # module = import_module(pa.stem)
 
             module = import_module(self.testscript)
 
             clsoi = {}
             for name, cls in vars(module).items():
-                print(f"{name} => {type(cls)=}")
+                logger.debug(f"{name} => {type(cls)=}")
                 if type(cls) is _LazyMeta:
                     clsoi[cls.__name__] = cls
 
-            # ppp(clsoi, "clsoi")
 
             if self.classname:
                 clsoi2 = {
@@ -521,7 +502,7 @@ class Main:
                 clsoi2 = clsoi
 
             for name, cls in sorted(clsoi2.items()):
-                print(f"\n\nanalyze {name}:")
+                logger.debug(f"\n\nanalyze {name}:")
 
                 extensions = cls._lz.extensions
                 if self.extension:
