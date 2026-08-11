@@ -10,3 +10,15 @@ dependencies = [
 
 [tool.uv.sources]
 bemyerp = { path = "../bemyerp", editable = true }
+
+[dependency-groups]
+data = [
+    "polars>=1.43.2",
+]
+web = [
+    "beautifulsoup4>=4.15.0",
+    "requests>=2.34.2",
+]
+test = [
+    "jinja2>=3.1.6",
+]

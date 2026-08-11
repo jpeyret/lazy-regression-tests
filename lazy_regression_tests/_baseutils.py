@@ -1540,6 +1540,12 @@ def format_url(url: str) -> str:
 
 
 class JDataProvDescriptor:  # Config file provider
+    """loads config files"""
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}"
+
+
     def __init__(self, src: Any, as_simplenamespace=False, attrname_dict_backup: str | None = None, cache=True, subdomain: str = ""):
         self.src = src
         self.as_simplenamespace = as_simplenamespace
@@ -1568,7 +1574,6 @@ class JDataProvDescriptor:  # Config file provider
     def _cache_and_return(self, data):
         try:
             prefix = f"{self}.cache_and_return:"
-            # log(f"{prefix}3310")
             if self.subdomain:
                 data = data[self.subdomain]
 
@@ -1577,7 +1582,6 @@ class JDataProvDescriptor:  # Config file provider
             if self.cache:
                 setattr(self.tmpinstance, self.cachename, data)
 
-            # log(f"{prefix}3319")
             return data
 
         # pragma: no cover pylint: disable=unused-variable
@@ -1597,7 +1601,6 @@ class JDataProvDescriptor:  # Config file provider
 
                 if (v := getattr(instance, self.cachename, undefined)) is not undefined:
                     return v
-                log(f"{prefix}.3342")
 
                 self.tmpinstance = instance
 
@@ -1606,12 +1609,10 @@ class JDataProvDescriptor:  # Config file provider
 
                 if isinstance(lookfor, Path):
                     j_data = read_data(lookfor)
-                    log(f"{prefix}3351.return via cache")
                     return self._cache_and_return(j_data)
 
                 elif isinstance(lookfor, dict):
                     res = lookfor.copy()
-                    log(f"{prefix}3355.return via cache")
                     return self._cache_and_return(res)
 
                 elif isinstance(lookfor, (str, Path)):
@@ -1622,7 +1623,6 @@ class JDataProvDescriptor:  # Config file provider
 
                     if lookfor.startswith("{") or lookfor.startswith("["):
                         res = json.loads(lookfor)
-                        log(f"{prefix}3365.return via cache")
                         return self._cache_and_return(res)
 
                     else:
@@ -1642,7 +1642,6 @@ class JDataProvDescriptor:  # Config file provider
                         else:
                             raise NotImplementedError(f"lookfor: {lookfor}")
 
-                        log(f"{prefix}3384.return via cache")
                         return self._cache_and_return(res)
 
                 else:
