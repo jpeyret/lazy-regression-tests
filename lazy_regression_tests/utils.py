@@ -26,8 +26,7 @@ from lazy_regression_tests._baseutils import (
 
 
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("lazy")
 
 undefined = NotImplemented
 

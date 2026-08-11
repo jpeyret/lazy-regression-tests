@@ -2,6 +2,8 @@
 
 import sys
 
+LOGGER_NAME = "lazy"
+
 verbose = "-v" in sys.argv
 
 undefined = NotImplemented

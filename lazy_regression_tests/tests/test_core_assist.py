@@ -404,7 +404,6 @@ careamouseghidef
 
             testee = clsoi()
 
-            #🎫004.lazy.054.underscore_lz
             got = testee._lz.txt.f(self.text1)
 
             self.assertFalse("abc" in got)
@@ -416,14 +415,12 @@ careamouseghidef
             # and a direct descendant of Top, no alterations to cls_filters, should work just like it.
             testee2 = di_gen["DirectTop"]()
 
-            #🎫004.lazy.054.underscore_lz
             got = testee2._lz.txt.f(self.text1)
             self.assertEqual(exp, got)
 
             clsoi = di_gen["Level3"]
             testee = clsoi()
 
-            #🎫004.lazy.054.underscore_lz
             got = testee._lz.txt.f(self.text1)
 
             exp = self.get_filter_exp(
@@ -756,10 +753,8 @@ class Test_Validator(BaseValidatorTst):
                 "check that you can build a class dynamically once more"
                 cls_validators = dict(txt=[dict(name=valname, active=False)])
 
-            #🎫004.lazy.054.underscore_lz
             self.assertTrue(DynTest._lz.txt.v)
 
-            #🎫004.lazy.054.underscore_lz
             self.assertFalse(DynTest._lz.txt.validators[valname].active)
 
             testee = DynTest()
@@ -824,7 +819,6 @@ class Test_Validator(BaseValidatorTst):
             missing_validator.status_code = 500
             foob = TData(status_code=200)
 
-            #🎫004.lazy.054.underscore_lz
             checker = missing_validator._lz.yaml
 
             with disable_cpdb() as disabled:

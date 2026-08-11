@@ -192,13 +192,11 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
                         res = json.loads(res)
                     if not isinstance(res, dict):
                         raise ConfigurationException(
-                            # 🎫004.lazy.054.underscore_lz
                             f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
                         )
 
                     return res
             raise ConfigurationException(
-                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
@@ -298,7 +296,6 @@ class HTML_Provider(HTTP_Provider):
                     return soup
 
             raise ConfigurationException(
-                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 
@@ -353,7 +350,6 @@ class HTML_Provider(HTTP_Provider):
                     return json.dumps(d3, indent=2, sort_keys=True).strip()
 
             raise ConfigurationException(
-                # 🎫004.lazy.054.underscore_lz
                 f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker._lz.extensions)}"
             )
 

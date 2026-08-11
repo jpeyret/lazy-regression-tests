@@ -3,6 +3,7 @@ common lazy functionality
 """
 
 import inspect
+import logging
 import operator
 import os
 import re
@@ -46,6 +47,9 @@ from lazy_regression_tests._baseutils import (
     def_repr,
     fill_template,
 )
+from lazy_regression_tests.constants import LOGGER_NAME
+
+
 from lazy_regression_tests._baseutils import (
     oshow as show,
 )
@@ -85,6 +89,18 @@ di_ext_provider = {}
 undefined = NotImplemented
 warning = "\n🧨 "
 
+
+
+
+def get_lazy_logger() -> logging.Logger:
+    """Return shared logger; callers are expected to configure handlers/levels."""
+    return logging.getLogger(LOGGER_NAME)
+
+
+get_lazy_logger().addHandler(logging.NullHandler())
+
+
+
 #################################################################
 # Default validation functions
 #################################################################
@@ -99,7 +115,8 @@ def _checktypes(got, exp, validator: "Validator"):
         else:
             selector_msg = ""
         message = f"_checktypes: type mismatch? {selector_msg=}"
-        print(message)  # !!!TODO!!! use logger.warning
+        get_lazy_logger().warning(message)
+
 
 
 

@@ -61,7 +61,6 @@ def filter_lz_cls(li: List[type], ext: str) -> List[type]:
     """
     res = []
     for cls in li:
-        #🎫004.lazy.054.underscore_lz
         lz = getattr(cls, "_lz", None)
 
         if lz and ext in lz.extensions:
@@ -85,7 +84,6 @@ def filter_val(li_cls: List[type], ext: str, name: str) -> List[Tuple[type, Any]
             seen.add(cls)
 
         defined_on_class = None
-        #🎫004.lazy.054.underscore_lz
         if hasattr(cls, "_lz"):
             ori_validators = cls._LazyMeta__lz_ori["cls_validators"].get(ext)
 
