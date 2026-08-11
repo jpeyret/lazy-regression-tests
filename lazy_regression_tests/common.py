@@ -81,15 +81,14 @@ except (ImportError,) as e: # noqa F841
 
 
 verbose = "-v" in sys.argv
+di_ext_provider = {}
+undefined = NotImplemented
+warning = "\n🧨 "
 
 #################################################################
 # Default validation functions
 #################################################################
 
-di_ext_provider = {}
-
-
-warning = "\n🧨 "
 
 
 def _checktypes(got, exp, validator: "Validator"):
@@ -102,7 +101,6 @@ def _checktypes(got, exp, validator: "Validator"):
         message = f"_checktypes: type mismatch? {selector_msg=}"
         print(message)  # !!!TODO!!! use logger.warning
 
-undefined = NotImplemented
 
 
 def cpdblazy(*args, **kwargs):
