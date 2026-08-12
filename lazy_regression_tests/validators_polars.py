@@ -1,33 +1,26 @@
-from typing import Any, Callable
 import unittest
-
-from pathlib import Path
 from dataclasses import dataclass
-from typing import Type
 from logging import getLogger
-
-import lazy_regression_tests.providers as providers
-from lazy_regression_tests.common import (
-    LazyTemp,
-    Checker,
-    Validator,
-    ValidatorMgr,
-)
-
-from lazy_regression_tests._baseutils import _fmt_as_tuple_str
-
+from pathlib import Path
+from typing import Any, Callable, Type
 
 import polars as pl
 
-
-from lazy_regression_tests.common import ValidatorTemp, BFilter
-
-from lazy_regression_tests.common_polars import (
-    find_columns_with_nulls,
-    fill_nulls,
-    check_for_duplicates,
+import lazy_regression_tests.providers as providers
+from lazy_regression_tests._baseutils import _fmt_as_tuple_str
+from lazy_regression_tests.common import (
+    BFilter,
+    Checker,
+    LazyTemp,
+    Validator,
+    ValidatorMgr,
+    ValidatorTemp,
 )
-
+from lazy_regression_tests.common_polars import (
+    check_for_duplicates,
+    fill_nulls,
+    find_columns_with_nulls,
+)
 
 
 def cpdb(*args, **kwargs):
@@ -96,11 +89,11 @@ def view_diffs(testee, source):
     df = get_diffs(source)
     if df is not None:
         with pl.Config(fmt_str_lengths=120, tbl_rows=20):
-            print(df.group_by("_lazydiff_compare").count())
+            print(df.group_by("_lazydiff_compare").count()) #debugging
 
-            print(df)
+            print(df) #debugging
             dv = DiffView(df)
-            print(f"\n\ndiff dv[{type(dv)}]:\n", dv)
+            print(f"\n\ndiff dv[{type(dv)}]:\n", dv) #debugging
 
             breakpoint()
             pass
@@ -219,7 +212,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
 
     def write(self, fnp: str | Path, data: pl.DataFrame, header: Any = None):
         if header:
-            print(f"{self}.write:{header=} not supported:ignoring")
+            print(f"{self}.write:{header=} not supported:ignoring")  # debugging
         data.write_parquet(fnp)
 
     def read(self, fnp: str | Path) -> pl.DataFrame:
@@ -330,9 +323,11 @@ def compare_df(
 ) -> pl.DataFrame:
     """
 
-        🧨🧨🧨 - nulls always return False when compared in df0 == df1.  caller needs to prefill with no-data values, other than null. otherwise those rows are LOST
+        WATCHOUT!!!: nulls always return False when compared in df0 == df1.
+        caller needs to prefill with no-data values, other than null. otherwise those rows are LOST
 
-        given two dataframes of identical shape, will use column (s?) `colkey` to determine differences which will be flagged in column `colstatus`
+        given two dataframes of identical shape, will use column (s?) `colkey`
+        to determine differences which will be flagged in column `colstatus`
 
     colkey:    directory,
     colstatus: status,
@@ -387,12 +382,12 @@ def compare_df(
         return df0
 
     def logerr(msg, *args, **kwargs):
-        msg = f"⚙️🧨⚙️🧨⚙️🧨 compare_df {msg}"
+        msg = f"!!! compare_df {msg}"
         logger.error(msg)
 
     oi = False
     if breakpoints("df_compare", {"always": 1}):  # pragma: no cover
-        print(f"\n\n🔬🔬🔬always:{1}")
+        print(f"\n\n🔬🔬🔬always:{1}") # debugging
         oi = True
         breakpoint()
         pass
@@ -526,7 +521,8 @@ def compare_df(
         res = None
 
         if dfdiff is not None:
-            # flag differences across any of the non-work columns.  careful:  nulls will always compare False
+            # flag differences across any of the non-work columns.
+            # careful:  nulls will always compare False
             dfdiff = dfdiff.with_columns(
                 pl.all_horizontal(pl.col("*").exclude(*excludes)).alias(options.csame)
             )
@@ -543,7 +539,8 @@ def compare_df(
                 "losing rows from dfdiff"
             )
 
-            # if they are the same, doesn't matter which dataframe you get them from...  maybe parameter that as pick from df0, pick from df1
+            # if they are the same, doesn't matter which dataframe you get them from...
+            # maybe parameter that as pick from df0, pick from df1
             dfsame = (
                 dfboth0.join(dfdiffsame, on=options.cindex, how="semi")
                 .drop(options.cindex)
