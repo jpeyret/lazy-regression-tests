@@ -1,10 +1,12 @@
 """ Django-specific validations"""
 
-from django.forms.utils import ErrorDict
 import unittest
 
-from lazy_regression_tests.validators import Validator, AutoExp
+from django.forms.utils import ErrorDict
+
 from lazy_regression_tests.basics import ValidationError
+from lazy_regression_tests.validators import AutoExp, Validator
+
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
