@@ -311,7 +311,7 @@ def ppp(o=None, header=None, skip=[], **kwargs):
             header = "[%s %s]" % (type(o), repr(o))
 
     msg = debugObject(o, header, li_skipfield=skip)
-    print(msg)
+    print(msg) # debugging
 
 
 def stripdict(di, *args):
@@ -558,7 +558,7 @@ class Subber(object):
                 except AttributeError:  # pragma: no cover
                     continue
 
-            except AttributeError, TypeError:
+            except (AttributeError, TypeError):
                 # no __getitem__, try getattr
                 try:
                     got = getattr(arg, key)
@@ -1047,7 +1047,7 @@ def set_breakpoints3(recurse=True, fnp_config=None):
         argv = sys.argv
 
         if "-b" not in argv:
-            print("no breakpoints")
+            print("no breakpoints") # debugging
             return None
 
         pos_flag = argv.index("-b")
@@ -1055,9 +1055,9 @@ def set_breakpoints3(recurse=True, fnp_config=None):
         fnp_config = argv.pop(pos_flag + 1)
         _ = argv.pop(pos_flag)
 
-        print("fnp_config:%s" % (fnp_config))
-        print("_:", _)
-        print("sys.argv:%s" % (sys.argv))
+        print("fnp_config:%s" % (fnp_config)) # debugging
+        print("_:", _) # debugging
+        print("sys.argv:%s" % (sys.argv)) # debugging
 
     breakpoints = Breakpoints.factory(fnp_config=fnp_config, active=True)
     if breakpoints.active:
@@ -1197,7 +1197,7 @@ def debug_nested_dict_types(di, path=""):
         if isinstance(v, dict):
             debug_nested_dict_types(v, f"{path}.{k}")
         else:
-            print(f"{path}.{k} : {type(v)}")
+            print(f"{path}.{k} : {type(v)}") # debugging
 
 
 def copytree(src, dst, symlinks=False, ignore=None):
@@ -1351,7 +1351,7 @@ def oshow(self, nesting="", file=None, private=False):
         plocal = not file
         file = file or StringIO()
 
-        print(nesting, f"{repr(self)}", file=file)
+        print(nesting, f"{repr(self)}", file=file) # debugging
 
         try:
             dict_ = self.dict()
@@ -1372,12 +1372,12 @@ def oshow(self, nesting="", file=None, private=False):
         indent = nesting + "  "
 
         out = StringIO()
-        pprint.pprint(dict_, out, width=1)
+        pprint.pprint(dict_, out, width=1) #debugging
         for line in out.getvalue().splitlines():
-            print(indent, f"  {line}", file=file)
+            print(indent, f"  {line}", file=file) # debugging
 
         if plocal:
-            print(file.getvalue())
+            print(file.getvalue()) # debugging
 
     # pragma: no cover
     except (Exception,) as _e:
@@ -1452,7 +1452,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 
 def eprint(*args, **kwargs):
     """print to sys.stderr"""
-    print(*args, file=sys.stderr, **kwargs)
+    print(*args, file=sys.stderr, **kwargs) # debugging
 
 
 def format_url(url: str) -> str:
