@@ -2,12 +2,11 @@
 basic building blocks that do not reference each other
 used to offload common.py
 """
-from typing import Optional, Callable, Any, List
-import os
 import json
+import os
 import sys
 from pathlib import Path
-
+from typing import Any, Callable, List, Optional
 
 #################################################################
 # Dependencies
@@ -15,9 +14,9 @@ from pathlib import Path
 import pydantic
 from pydantic import ConfigDict
 
-
-from lazy_regression_tests._baseutils import oshow as show, Subber, ppp, format_url
 import lazy_regression_tests.constants as constants
+from lazy_regression_tests._baseutils import Subber, format_url, ppp
+from lazy_regression_tests._baseutils import oshow as show
 
 
 def cpdb(*args, **kwargs):
