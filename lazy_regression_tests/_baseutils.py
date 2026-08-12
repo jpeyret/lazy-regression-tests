@@ -1,9 +1,10 @@
-""" base utilities package, shared among libraries
+"""base utilities package, shared among libraries
 
-    do not expect much coverage of it in any library because
-    most libraries won't use much of its functionality.
+do not expect much coverage of it in any library because
+most libraries won't use much of its functionality.
 
 """
+
 import builtins
 import copy
 import json
@@ -77,6 +78,7 @@ def _fmt_as_tuple_str(input_: Sequence[str] | str | None, sep: str = " ") -> tup
     tu = tuple(v2 for v in input_ if (v2 := v.strip(r"\ ")))
     return tu
 
+
 def parse_dict_to_simplenamespaces(data: dict[str, Any]):
     """transform dict(a=1,b=dict(c=3) into o(a=1,b=o(c=3))"""
     if type(data) is list:
@@ -90,11 +92,8 @@ def parse_dict_to_simplenamespaces(data: dict[str, Any]):
         return data
 
 
-
-
 def read_data(content: str | Path | dict | Any, passthru_on_unhandled=False) -> dict | Any:
     try:
-
         if isinstance(content, str) and '"' in content:
             try:
                 j_data = json.loads(content)
@@ -126,7 +125,6 @@ def read_data(content: str | Path | dict | Any, passthru_on_unhandled=False) -> 
         if cpdb():
             breakpoint()
         raise
-
 
 
 #################################
@@ -163,8 +161,10 @@ def cpdb(*args, **kwargs) -> bool:
     "disabled by default, but can be replaced"
     return False
 
+
 # always returns False
 fake_cpdb = cpdb
+
 
 def rpdb(*args, **kwargs):
     "disabled"
@@ -236,8 +236,6 @@ def real_cpdb(**kwds):  # pragma: no cover
 real_cpdb.count = int(os.getenv("cpdb_count", 3))
 
 
-
-
 def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callable:
     """swap the dummy cpdb for an active one"""
 
@@ -256,7 +254,6 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
     flags = set(["--cpdbmany", "--cpdbonce", single_use_flag])
     args = set(sys.argv)
 
-
     single_use_flag = "once" if single_use_flag in sys.argv else False
 
     found = single_use_flag or (args & flags)
@@ -269,11 +266,7 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
                 pass
 
     if boolvalue is None:
-        boolvalue = (
-            bool(found)
-            or getattr(cpdb_in, "enabled", False)
-            or getattr(cpdb_in, "count", 0)
-        )
+        boolvalue = bool(found) or getattr(cpdb_in, "enabled", False) or getattr(cpdb_in, "count", 0)
 
     if boolvalue:
         # it was set before or its being set for the first time.
@@ -313,7 +306,6 @@ def ppp(o=None, header=None, skip=[], **kwargs):
 
     if header is None:
         if o.__class__.__name__ in dir(builtins):
-
             header = f"{o.__class__.__name__}..."
         else:
             header = "[%s %s]" % (type(o), repr(o))
@@ -343,20 +335,13 @@ def debugObject(
 
     if isinstance(obj, dict):
         di = obj
-        return debugDict(
-            di, header, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed
-        )
+        return debugDict(di, header, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed)
     elif isinstance(obj, list):
         return (
             header
             + "\n"
             + "\n".join(
-                [
-                    debugObject(
-                        o, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed
-                    )
-                    for o in obj[0:5]
-                ]
+                [debugObject(o, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed) for o in obj[0:5]]
             )
         )
 
@@ -364,7 +349,6 @@ def debugObject(
         return "\n%s:%s" % (header, obj)
 
     else:
-
         if not header and isinstance(obj, object):
             header = "%s@%s" % (obj.__class__.__name__, obj.__module__)
 
@@ -373,7 +357,6 @@ def debugObject(
         cls_ = getattr(obj, "__class__", None)
 
         for attrname in dir(obj):
-
             # properties can make a huge mess of things...
             attr = getattr(cls_, attrname, None)
             if attr and isinstance(attr, property):
@@ -564,11 +547,10 @@ class Subber(object):
         """generic way to look for a key in the arg list"""
 
         for arg in self.li_arg:
-
             try:
                 got = arg[key]
                 return got
-            except (KeyError):
+            except KeyError:
                 try:
                     # try getattr
                     got = getattr(arg, key)
@@ -576,7 +558,7 @@ class Subber(object):
                 except AttributeError:  # pragma: no cover
                     continue
 
-            except (AttributeError, TypeError):
+            except AttributeError, TypeError:
                 # no __getitem__, try getattr
                 try:
                     got = getattr(arg, key)
@@ -597,7 +579,6 @@ class Subber(object):
             return default
 
     def __getitem__(self, keyname):
-
         """
         implement dictionary, attribute, func/method call lookup - a la Django Templates, but across
         a number of passed in arguments.
@@ -670,7 +651,6 @@ class RescueDictValue(object):
 
 def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
     try:
-
         # top-level
         if lookup is None:
             return dict_
@@ -694,9 +674,7 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
 
         return res
 
-    except (
-        Exception,
-    ):  # pragma: no cover
+    except (Exception,):  # pragma: no cover
         if cpdb():
             breakpoint()
         raise
@@ -704,7 +682,6 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
 
 def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
     try:
-
         lookups = lookup.split(".")
 
         li_approach = lookups[:-1]
@@ -726,9 +703,7 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
             # will do a KeyError
             return di.pop(final)
 
-    except (
-        Exception,
-    ):  # pragma: no cover
+    except (Exception,):  # pragma: no cover
         if cpdb():
             breakpoint()
         raise
@@ -786,7 +761,6 @@ class Dummy(object):
 def getpath(src: Any, path: str) -> Any:
     """get nested path x.y.z against dictorary or object"""
     try:
-
         current = src
         accessors = path.split(".")
         for accessor in accessors:
@@ -859,9 +833,7 @@ class DictFormatter:
             di_formatter = di_formatter or self.di_default_formatter
 
             if not isinstance(di_formatter, dict):
-                raise TypeError(
-                    f"{self.__class__.__name__}.process needs a formatting dictionary"
-                )
+                raise TypeError(f"{self.__class__.__name__}.process needs a formatting dictionary")
 
             f_default = f_default or self.default_processor
 
@@ -870,13 +842,11 @@ class DictFormatter:
             di_keys = None
 
             for key, func_fmt in li_tu_key_func:
-
                 func_fmt = func_fmt or f_default
 
                 if isinstance(key, type_regex_hack):
                     di_keys = di_keys or list(di.keys())
                     for di_key in di_keys:
-
                         if not isinstance(di_key, str):
                             continue
 
@@ -896,7 +866,6 @@ class DictFormatter:
 
                             elif isinstance(func_fmt, dict):
                                 if keep is not None:
-
                                     childkeep = keep[di_key] = {}
                                 else:
                                     childkeep = None
@@ -908,9 +877,7 @@ class DictFormatter:
                                     keep=childkeep,
                                 )
                             else:
-                                raise NotImplementedError(
-                                    f"{self}.process:regex:{key=}:{func_fmt=}"
-                                )
+                                raise NotImplementedError(f"{self}.process:regex:{key=}:{func_fmt=}")
                     continue
 
                 v = di.get(key, undefined)
@@ -918,12 +885,10 @@ class DictFormatter:
                     continue
 
                 elif isinstance(v, dict):
-
                     # if rpdb(): # pragma: no cover
 
                     func_fmt = di_formatter[key]
                     if isinstance(func_fmt, dict):
-
                         if keep is not None:
                             childkeep = keep[key] = {}
                         else:
@@ -983,15 +948,10 @@ class InvalidConfigurationException(ValueError):
 
 ⚙️⚙️⚙️⚙️⚙️⚙️⚙️
 """
-        super(InvalidConfigurationException, self).__init__(
-            new_message, *args, **kwargs
-        )
-
-
+        super(InvalidConfigurationException, self).__init__(new_message, *args, **kwargs)
 
 
 class Breakpoints(object):
-
     enabled = False
 
     @classmethod
@@ -1035,18 +995,10 @@ class Breakpoints(object):
             for condition_ in conditions:
                 # https://stackoverflow.com/questions/10832373/python-dictionary-match-key-values-in-two-dictionaries
                 # for possible alternatives
-                caller_status = dict(
-                    [
-                        (k, v)
-                        for k, v in caller_variables.items()
-                        if k in condition_.keys()
-                    ]
-                )
+                caller_status = dict([(k, v) for k, v in caller_variables.items() if k in condition_.keys()])
 
                 if condition_ == caller_status:
-                    logger.info(
-                        "breakpoint activated @%s for %s" % (lookup, condition_)
-                    )
+                    logger.info("breakpoint activated @%s for %s" % (lookup, condition_))
                     res = self.enabled = True
                     return res
 
@@ -1086,14 +1038,12 @@ except NameError:
 
 
 def set_breakpoints3(recurse=True, fnp_config=None):
-
     """swap the dummy breakpoints for an active one"""
 
     # dont expect any coverage: explicitly disabled under pytest
     # pragma: no cover
 
     if fnp_config is None:
-
         argv = sys.argv
 
         if "-b" not in argv:
@@ -1181,7 +1131,6 @@ class CacheDict(MutableMapping):
 
     def _check_age(self, key, res, purge=False):
         try:
-
             is_ok = (time() - res.time_in) <= self.timetolive
 
             if not is_ok and purge:
@@ -1197,7 +1146,6 @@ class CacheDict(MutableMapping):
 
     def __getitem__(self, key):
         try:
-
             res = self.mapping[key]
             if not self._check_age(key, res, True):
                 raise KeyError
@@ -1256,7 +1204,6 @@ def copytree(src, dst, symlinks=False, ignore=None):
     """shamelessly copied from https://stackoverflow.com/a/22331852"""
 
     try:
-
         # support pathlib.Path
         src = str(src)
         dst = str(dst)
@@ -1279,7 +1226,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
                     st = os.lstat(s)
                     mode = stat.S_IMODE(st.st_mode)
                     os.lchmod(d, mode)
-                except (Exception):
+                except Exception:
                     pass  # lchmod not available
             elif os.path.isdir(s):
                 copytree(s, d, symlinks, ignore)
@@ -1348,7 +1295,6 @@ class YAMLAncestorLoader:
     def load(self, ignore_in=None):
         "load data and merge as necessary"
         try:
-
             ignore = ignore_in or self.ignore
 
             with self.pa_yaml.open() as fi:
@@ -1439,6 +1385,7 @@ def oshow(self, nesting="", file=None, private=False):
             breakpoint()
         raise
 
+
 def dropbad_dump(obj, fdump, seen: set | None = None):
     try:
         id_ = id(obj)
@@ -1488,7 +1435,6 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                 return res
 
         elif hasattr(obj, "__dict__"):
-
             for k, v in vars(obj).items():
                 try:
                     fdump(v)
@@ -1530,10 +1476,14 @@ class JDataProvDescriptor:  # Config file provider
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-
     def __init__(
-        self, src: Any, as_simplenamespace=False,
-        attrname_dict_backup: str|None = None, cache=True, subdomain: str = ""):
+        self,
+        src: Any,
+        as_simplenamespace=False,
+        attrname_dict_backup: str | None = None,
+        cache=True,
+        subdomain: str = "",
+    ):
         self.src = src
         self.as_simplenamespace = as_simplenamespace
         self.attrname_dict_backup = attrname_dict_backup
