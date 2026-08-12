@@ -1,8 +1,9 @@
 from typing import Any
-import lazy_regression_tests.providers as providers
-from lazy_regression_tests.common import LazyTemp, ConfigurationException
-from lazy_regression_tests.common import Checker
+
 import sqlparse
+
+import lazy_regression_tests.providers as providers
+from lazy_regression_tests.common import Checker, ConfigurationException, LazyTemp
 
 
 def cpdb(*args, **kwargs):
