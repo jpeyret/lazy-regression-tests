@@ -1,31 +1,28 @@
 """
 support testing
 """
-import bs4
-
-import jinja2
-import responses
-import requests
 import json
 import os
-import unittest
-import unittest.mock as mock
 import sys
 import tempfile
+import unittest
+import unittest.mock as mock
 
 # from lazy_tstmixin import TstMixin
-
 from typing import Callable
 
-from lazy_regression_tests.constants import (
-    OPT_DIRECTIVE_BASELINE,
-    LAZY_KEEP_TEST_PREFIX,
-)
-
-from lazy_regression_tests.common import Checker
-from lazy_regression_tests.core_assist2 import _LazyMeta, Filter
+import bs4
+import jinja2
+import requests
+import responses
 
 from lazy_regression_tests._baseutils import eprint
+from lazy_regression_tests.common import Checker
+from lazy_regression_tests.constants import (
+    LAZY_KEEP_TEST_PREFIX,
+    OPT_DIRECTIVE_BASELINE,
+)
+from lazy_regression_tests.core_assist2 import Filter, _LazyMeta
 
 bs = bs4.BeautifulSoup
 
@@ -67,7 +64,7 @@ def get_mock_env(seed={}):
 
             dirtemp = tempfile.mkdtemp(prefix="lazy_regression_tests_")
 
-            lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s"
+            lzrt_default_t_basename = "%(filename)s %(classname)s %(_testMethodName)s %(lazy_basename_extras)s %(suffix)s %(extension)s" # noqa
 
             lzrt_template_dirname = os.path.join(dirtemp, "out")
             lzrt_template_dirname_got = os.path.join(dirtemp, "got")
