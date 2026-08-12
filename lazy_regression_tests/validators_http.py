@@ -1,39 +1,35 @@
 """validate HTTP stuff"""
 
-from typing import Any, Callable
 import copy
-import os
 import json
-from typing import Iterable
+import os
 import unittest
 from logging import getLogger
+from typing import Any, Callable, Iterable
+
+import bs4
 
 #################################################################
 # Dependencies
 #################################################################
 import pydantic
 import requests
-import bs4
 
-
-from lazy_regression_tests.utils import first
-from lazy_regression_tests.common import Checker
-from lazy_regression_tests.validators import ValidatorMgr, Validator
-from lazy_regression_tests.common import (
-    check_equal,
-    select_by_provider,
-    check_exp_in_data,
-)
 import lazy_regression_tests.providers as providers
-
 from lazy_regression_tests.common import (
-    ValidatorTemp,
-    LazyTemp,
-    Filter,
     BFilter,
-    RawFilter,
+    Checker,
     ConfigurationException,
+    Filter,
+    LazyTemp,
+    RawFilter,
+    ValidatorTemp,
+    check_equal,
+    check_exp_in_data,
+    select_by_provider,
 )
+from lazy_regression_tests.utils import first
+from lazy_regression_tests.validators import Validator, ValidatorMgr
 
 bs = bs4.BeautifulSoup
 undefined = NotImplemented
@@ -191,13 +187,15 @@ class HttpJson_Provider(HTTP_Provider, providers.JsonExtProvider):
                     if isinstance(res, (str, bytes)) and name in ("json", "getvalue"):
                         res = json.loads(res)
                     if not isinstance(res, dict):
-                        raise ConfigurationException(
-                            f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
+                        raise ConfigurationException(f"""
+data type {type(res)}, returned by data.{name}() not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}"""
                         )
 
                     return res
-            raise ConfigurationException(
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
+            raise ConfigurationException(f"""
+data type {type(data)} not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}"""
             )
 
         except (json.decoder.JSONDecodeError):
@@ -296,7 +294,8 @@ class HTML_Provider(HTTP_Provider):
                     return soup
 
             raise ConfigurationException(
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
+                f"""data type {type(data)} not supported by {self}.
+                known extensions for testcase: {','.join(checker._lz.extensions)}"""
             )
 
         except (Exception,) as e: # noqa F841
@@ -350,7 +349,9 @@ class HTML_Provider(HTTP_Provider):
                     return json.dumps(d3, indent=2, sort_keys=True).strip()
 
             raise ConfigurationException(
-                f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker._lz.extensions)}"
+                f"""
+data type {type(data)} not supported by {cls.__name__} which supports strings.
+known extensions for testcase: {','.join(checker._lz.extensions)}"""
             )
 
         # pragma: no cover pylint: disable=unused-variable
