@@ -1,42 +1,42 @@
 """
 supports class-level aggregation of Lazy Filters and Validators
 """
-from typing import List, Any, Dict
 from collections import defaultdict
 from dataclasses import dataclass
-
+from typing import Any, Dict, List
 
 #################################################################
 # Dependencies
 #################################################################
 from more_itertools import partition
 
-from lazy_regression_tests.basics import get_alias_from_ancestors,ALazyRoot
-from lazy_regression_tests._baseutils import set_cpdb, set_rpdb, set_breakpoints3, ppp
+from lazy_regression_tests._baseutils import ppp, set_breakpoints3, set_cpdb, set_rpdb
+from lazy_regression_tests.basics import ALazyRoot, get_alias_from_ancestors
+from lazy_regression_tests.common import (
+    TU_NOCATCH,
+    Checker,
+    ConfigurationException,
+    ExtAlias,
+    get_lazy_logger,
+    timeout,
+)
+from lazy_regression_tests.constants import (
+    TIMEOUT_MAXTIME_TO_ALLOW,
+)
 
+# import constants
+from lazy_regression_tests.filters import BFilter, FilterMgr
 from lazy_regression_tests.providers import (
     di_ext_provider,
 )
 from lazy_regression_tests.validators import ValidatorMgr, build_validators_for_class
-from lazy_regression_tests.constants import (
-    TIMEOUT_MAXTIME_TO_ALLOW,
-)
-from lazy_regression_tests.common import (
-    ExtAlias,
-    ConfigurationException,
-    TU_NOCATCH,
-    timeout,
-    Checker,
-)
-
-# import constants
-
-from lazy_regression_tests.filters import FilterMgr, BFilter
 
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
+
+logger = get_lazy_logger()
 
 rpdb = breakpoints = cpdb
 
@@ -168,14 +168,14 @@ class LazyRoot(ALazyRoot):
 
             out = StringIO()
 
-            print("\n", "🔎" * 30, file=out)
-            print(f"{self.__class__.__name__}.extensions:{self.extensions}", file=out)
-            print("\n", "🔎" * 30, "\n", file=out)
+            print("\n", "🔎" * 30, file=out) # debugging
+            print(f"{self.__class__.__name__}.extensions:{self.extensions}", file=out) # debugging
+            print("\n", "🔎" * 30, "\n", file=out) # debugging
 
             for ext in self.extensions:
                 checker: Checker = getattr(self, ext)
                 checker.show(file=out, nesting="  ")
-            print(out.getvalue())
+            print(out.getvalue()) # debugging
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as _e:
@@ -197,11 +197,11 @@ def build_filters_for_class(
         ]
 
         if verbose:
-            print(f"{cls.__name__}")
+            logger.debug(f"{cls.__name__}")
         # gather all the past and current filters in a list, by extension
         for ix, acls in enumerate(ancestors):
             if verbose:
-                print(f"{ix:02} ancestor={acls.__name__}")
+                logger.debug(f"{ix:02} ancestor={acls.__name__}")
             for ext, values in acls.cls_filters.items():
 
                 if isinstance(values, FilterMgr):
@@ -211,7 +211,7 @@ def build_filters_for_class(
                     values = [values]
 
                 if verbose:
-                    print(f"   {ext:6.6} {values=}")
+                    logger.debug(f"   {ext:6.6} {values=}")
 
                 li = di_filter[ext]
                 li.extend(values)
@@ -355,7 +355,7 @@ class _LazyMeta(type):
             return newclass
         # pragma: no cover pylint: disable=unused-variable
         except (TypeError,) as _e:
-            print(f"\n\n{_e=}")
+            logger.debug(f"\n\n{_e=}")
             ppp(dict(clsname=clsname, found=found, basesold=basesold, bases=bases))
             if cpdb():
                 breakpoint()
@@ -377,7 +377,7 @@ class _LazyMeta(type):
 
             if breakpoints('LazyMeta', {'classname': cls.__name__}):  # pragma: no cover
                 cls_validators = attrs.get("cls_validators")
-                print(f'\n\n🔬🔬🔬classname:{cls.__name__} {cls_validators=}')
+                logger.debug(f'\n\n🔬🔬🔬classname:{cls.__name__} {cls_validators=}')
                 breakpoint()
                 pass
 
