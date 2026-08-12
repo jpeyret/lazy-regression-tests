@@ -18,6 +18,7 @@ from lazy_regression_tests.constants import undefined
 from lazy_regression_tests.core_assist2 import _LazyMeta
 from lazy_regression_tests.utils import set_breakpoints3, set_cpdb, set_rpdb
 
+verbose = "-v" in sys.argv
 logger = get_lazy_logger()
 
 console = Console()
@@ -41,6 +42,7 @@ PALETTE = """#add8e6
 #ffffff
 #7777ff
 #9dc6e0""".splitlines()
+
 
 def debug_ancestors(header, ancestors):
     newline = "\n"
@@ -95,9 +97,7 @@ def filter_val(li_cls: List[type], ext: str, name: str) -> List[Tuple[type, Any]
                             break
 
             elif isinstance(ori_validators, ValidatorMgr):
-                defined_on_class = [
-                    ov for ov in ori_validators.validators if ov.name == name
-                ]
+                defined_on_class = [ov for ov in ori_validators.validators if ov.name == name]
                 if defined_on_class:
                     defined_on_class = defined_on_class[-1]
             else:
@@ -130,10 +130,6 @@ def filter_val(li_cls: List[type], ext: str, name: str) -> List[Tuple[type, Any]
 
     return res
 
-
-verbose = "-v" in sys.argv
-
-
 class Palette(dict):
     def __init__(self, colors=List[str], seed: Optional[Dict[Any, str]] = None) -> None:
         seed = seed or {}
@@ -149,16 +145,13 @@ class Palette(dict):
 
 
 class Cargo(pydantic.BaseModel):
-
     testee_cls: type
 
     palette: Palette
     print: Callable
-
     indent1: str = " " * 4
     indent2: str = " " * 8
-
-    validator_attribute_names: List[str] = "active selector exp v".split()
+    validator_attribute_names: list[str] = "active selector exp v".split()
 
 
 class PrinterClassValidatorContributions:
@@ -220,19 +213,15 @@ class PrinterClassValidatorContributions:
                     saval = attr_value
 
                 else:
-                    logger.debug(
-                        f"validator attribute:{attr_name}={attr_value}{type(attr_value)=}"
-                    )
+                    logger.debug(f"validator attribute:{attr_name}={attr_value}{type(attr_value)=}")
                     # we shouldn't be here, I think...
 
                     saval = attr_value
 
-                cargo.print(
-                    classname, f"{attr_name:10.10}", f"{style_start}{saval}{style_end}"
-                )
+                cargo.print(classname, f"{attr_name:10.10}", f"{style_start}{saval}{style_end}")
                 classname = cargo.indent2 + " " * 20
         # pragma: no cover
-        except (Exception,) as e: # noqa F841
+        except (Exception,) as e:  # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -245,9 +234,7 @@ class PrinterClassValidatorContributions:
         """print information on the actual TestCase instance"""
         cargo = self.cargo
         cargo.print("-" * 80)
-        cargo.print(
-            f"\n[{cargo.palette['style-valname']}]{cargo.indent1}{self.name}[/]"
-        )
+        cargo.print(f"\n[{cargo.palette['style-valname']}]{cargo.indent1}{self.name}[/]")
 
         to_print = []
         for aname in cargo.validator_attribute_names:
@@ -259,7 +246,6 @@ class PrinterClassValidatorContributions:
         self._print(val, ancestor, to_print=to_print)
         cargo.print(cargo.indent2, "." * 20, sep="")
 
-
     def _print_ancestor(self, val: Validator, ancestor, got_from: Dict):
         try:
             to_print = []
@@ -270,9 +256,7 @@ class PrinterClassValidatorContributions:
                     res = (attrname, attr_value)
                     to_print.append(res)
 
-            if breakpoints(
-                "print_validator", {"validator_name": self.name}
-            ):  # pragma: no cover
+            if breakpoints("print_validator", {"validator_name": self.name}):  # pragma: no cover
                 logger.debug(f"\n\n🔬🔬🔬validator_name:{self.name} {ancestor=}")
                 logger.debug("to_print:")
                 for tu in to_print:
@@ -284,14 +268,13 @@ class PrinterClassValidatorContributions:
             self._print(val, ancestor, to_print=to_print)
 
         # pragma: no cover
-        except (Exception,) as e: # noqa F841
+        except (Exception,) as e:  # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     def print(self, val: Validator, ancestor: type, di_print: dict):
         try:
-
             meth_print = self._print_ancestor
             is_testcase = ancestor == self.cargo.testee_cls
             if is_testcase:
@@ -300,7 +283,7 @@ class PrinterClassValidatorContributions:
             meth_print(val, ancestor, di_print)
 
         # pragma: no cover
-        except (Exception,) as e: # noqa F841
+        except (Exception,) as e:  # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -314,19 +297,11 @@ def print_validator(
     cargo: Cargo,
 ):
     try:
-
         printer = PrinterClassValidatorContributions(cargo=cargo, name=name)
 
         attrnames = cargo.validator_attribute_names
         checker_vals = {wname: getattr(val, wname) for wname in attrnames}
 
-        if verbose:
-            #ppp(
-                #"\n\nprint_validator",
-            #)
-            debug_ancestors("\n  ancestors:", [v[0] for v in ancestors])
-
-        # 🎗 probably location error
         got_from: Dict[str, Tuple[type, Any]] = {}
         li_calc = reversed(ancestors)
         for anc, aval in li_calc:
@@ -357,7 +332,7 @@ def print_validator(
             printer.print(val, ancestor[0], got_from)
 
     # pragma: no cover
-    except (Exception,) as e: # noqa F841
+    except (Exception,) as e:  # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -366,7 +341,6 @@ def print_validator(
 def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
     """show ancestry / origin of configuration"""
     try:
-
         colors = PALETTE_MODULE.copy()
         di_color = {cls.__module__: "#ffffff", "style-valname": "#ffffff"}
 
@@ -376,7 +350,6 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
 
         s = "\n\n"
         for v in palette:
-
             s += f"[{v}]{v}[/]\n"
         sys.stdout.write(s + "\n\n.")
         logger.debug(s)
@@ -389,7 +362,6 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
 
         logger.debug("validators:")
         for name, val in sorted(cur.validators.items()):
-
             filtered_ancestors_mro = filter_val(ext_ancestors, ext, name)
 
             print_validator(cls, name, val, filtered_ancestors_mro, cargo=cargo)
@@ -407,25 +379,21 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
         for acls in mro_validators:
             logger.debug(f"  {acls.__name__}")
 
-
         if rpdb():  # pragma: no cover
             breakpoint()
             pass
 
     # pragma: no cover
-    except (Exception,) as e: # noqa F841
+    except (Exception,) as e:  # noqa F841
         if cpdb():
             breakpoint()
         raise
 
 
-"""analyze ancestry/configuration"""
-
 
 
 def cpdb(*args, **kwargs):
     "disabled"
-
 
 rpdb = breakpoints = cpdb
 
@@ -447,13 +415,12 @@ def run(**kwargs):
     - past click validation the real work is done in Main
     """
     try:
-
         mgr = Main(**kwargs)
         res = mgr.process()
         return res
 
     # pragma: no cover
-    except (Exception,) as e: # noqa F841
+    except (Exception,) as e:  # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -476,10 +443,6 @@ class Main:
     def process(self):
         "process"
         try:
-
-
-
-
             module = import_module(self.testscript)
 
             clsoi = {}
@@ -488,11 +451,8 @@ class Main:
                 if type(cls) is _LazyMeta:
                     clsoi[cls.__name__] = cls
 
-
             if self.classname:
-                clsoi2 = {
-                    name: cls for name, cls in clsoi.items() if name == self.classname
-                }
+                clsoi2 = {name: cls for name, cls in clsoi.items() if name == self.classname}
 
             else:
                 clsoi2 = clsoi
@@ -508,7 +468,7 @@ class Main:
                     trace_ancestry(cls, ext=ext)
 
         # pragma: no cover
-        except (Exception,) as e: # noqa F841
+        except (Exception,) as e:  # noqa F841
             if cpdb():
                 breakpoint()
             raise

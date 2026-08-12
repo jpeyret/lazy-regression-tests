@@ -14,6 +14,7 @@ import re
 import shutil
 import stat
 import sys
+import tomllib
 import types
 from _pickle import PicklingError
 from collections import namedtuple
@@ -25,6 +26,7 @@ from io import StringIO  # 223ed
 from pathlib import Path
 from string import Template
 from time import time
+from types import SimpleNamespace
 
 #######################################################
 # Typing
@@ -37,13 +39,13 @@ from urllib.parse import quote, urlparse, urlunparse
 #################################################################
 from yaml import safe_load as yload
 
-logger = logging.getLogger("lazy")
+logger = logging.getLogger("lazy")  #!!!TODO!!! figure common.get_lazy_logger
 type_regex_hack = re.compile("").__class__
 undefined = NotImplemented
 verbose = "-v" in sys.argv
 cache = {}
 
-log = logger.info
+log = logger.debug
 
 
 def def_repr(self):
@@ -75,17 +77,30 @@ def _fmt_as_tuple_str(input_: Sequence[str] | str | None, sep: str = " ") -> tup
     tu = tuple(v2 for v in input_ if (v2 := v.strip(r"\ ")))
     return tu
 
+def parse_dict_to_simplenamespaces(data: dict[str, Any]):
+    """transform dict(a=1,b=dict(c=3) into o(a=1,b=o(c=3))"""
+    if type(data) is list:
+        return list(map(parse_dict_to_simplenamespaces, data))
+    elif type(data) is dict:
+        sns = SimpleNamespace()
+        for key, value in data.items():
+            setattr(sns, key, parse_dict_to_simplenamespaces(value))
+        return sns
+    else:
+        return data
+
+
+
 
 def read_data(content: str | Path | dict | Any, passthru_on_unhandled=False) -> dict | Any:
     try:
-        ispath = isinstance(content, Path)
 
         if isinstance(content, str) and '"' in content:
             try:
                 j_data = json.loads(content)
                 return j_data
-            # pragma: no cover pylint: disable=unused-variable
-            except (Exception,) as e:
+            # pragma: no cover
+            except (Exception,) as _e:
                 pass
 
         pa = Path(content)
@@ -106,8 +121,8 @@ def read_data(content: str | Path | dict | Any, passthru_on_unhandled=False) -> 
             raise NotImplementedError(f"{content=}")
         return content
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -130,7 +145,6 @@ def _pseudo_decor(fn, attrname):
     def ret_fun(*args, **kwargs):
         # do stuff here, for eg.
 
-        # print ("decorator arg is %s" % str(attrname))
         res = fn(*args, **kwargs)
         value = getattr(res, attrname)
         if isinstance(value, bytes):
@@ -196,7 +210,6 @@ def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
         for module in list(sys.modules.values()):
             try:
                 # this checks if it's likely to be cpdb, not something w same name
-                # _ = module.rpdb.enabled
                 module.rpdb = real_rpdb
             except AttributeError:  # pragma: no cover
                 pass
@@ -221,8 +234,6 @@ def real_cpdb(**kwds):  # pragma: no cover
 
 
 real_cpdb.count = int(os.getenv("cpdb_count", 3))
-# breakpoint()
-# pass
 
 
 
@@ -245,7 +256,6 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
     flags = set(["--cpdbmany", "--cpdbonce", single_use_flag])
     args = set(sys.argv)
 
-    # print("sys.argv#20", id(sys.argv), sys.argv, id(sys.argv))
 
     single_use_flag = "once" if single_use_flag in sys.argv else False
 
@@ -272,8 +282,6 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
             # set cpdbs on modules that have a stub for it
             for module in list(sys.modules.values()):
                 try:
-                    # breakpoint()
-                    # print(module)
                     # this checks if it's likely to be cpdb, not something w same name
                     existing = getattr(module, "cpdb", None)
                     if existing:
@@ -281,10 +289,8 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
                             # if verbose:
                             pass
                         else:
-                            # # breakpoint()
                             # if 0 and verbose:
                             # else:
-                            #     pass
                             pass
 
                         module.cpdb = real_cpdb
@@ -306,10 +312,8 @@ def ppp(o=None, header=None, skip=[], **kwargs):
         o = kwargs
 
     if header is None:
-        # if isinstance(o, (dict,list,str,set)):
         if o.__class__.__name__ in dir(builtins):
 
-            # header = "[%s %s...]" % (type(o), repr(o)[0:10])
             header = f"{o.__class__.__name__}..."
         else:
             header = "[%s %s]" % (type(o), repr(o))
@@ -506,7 +510,6 @@ class Subber(object):
 
     def __init__(self, *args: Any, verbose=False):
         self.li_arg = list(args)
-        # raise NotImplementedError, "li_arg:%s" % (self.li_arg)
         self.di_res = {}
         self.verbose = verbose
 
@@ -619,7 +622,7 @@ class Subber(object):
                     di.update(**di2)
 
             return di
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -693,7 +696,7 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
 
     except (
         Exception,
-    ):  # pragma: no cover pylint: disable=unused-variable, broad-except
+    ):  # pragma: no cover
         if cpdb():
             breakpoint()
         raise
@@ -725,7 +728,7 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
 
     except (
         Exception,
-    ):  # pragma: no cover pylint: disable=unused-variable, broad-except
+    ):  # pragma: no cover
         if cpdb():
             breakpoint()
         raise
@@ -790,7 +793,7 @@ def getpath(src: Any, path: str) -> Any:
             if isinstance(current, dict):
                 try:
                     current = current[accessor]
-                # pragma: no cover pylint: disable=unused-variable
+                # pragma: no cover
                 except (KeyError,) as _e:
                     raise AttributeError(accessor)
             else:
@@ -798,11 +801,11 @@ def getpath(src: Any, path: str) -> Any:
 
         return current
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (AttributeError,) as _e:
         raise
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -857,7 +860,7 @@ class DictFormatter:
 
             if not isinstance(di_formatter, dict):
                 raise TypeError(
-                    f"{self.__class__.__name__}.process needs to be called with formatting dictionary or needs to have been initialized with one"
+                    f"{self.__class__.__name__}.process needs a formatting dictionary"
                 )
 
             f_default = f_default or self.default_processor
@@ -917,14 +920,12 @@ class DictFormatter:
                 elif isinstance(v, dict):
 
                     # if rpdb(): # pragma: no cover
-                    #     breakpoint()
 
                     func_fmt = di_formatter[key]
                     if isinstance(func_fmt, dict):
 
                         if keep is not None:
                             childkeep = keep[key] = {}
-                            # breakpoint()
                         else:
                             childkeep = None
 
@@ -961,7 +962,7 @@ class DictFormatter:
 
             return di
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -1025,7 +1026,6 @@ class Breakpoints(object):
 
         try:
             breakpoints = self.config.get("breakpoints", {})
-            # breakpoint()
 
             conditions = breakpoints.get(lookup, [])
 
@@ -1189,7 +1189,7 @@ class CacheDict(MutableMapping):
 
             return is_ok
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -1203,7 +1203,7 @@ class CacheDict(MutableMapping):
                 raise KeyError
 
             return res.value
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (KeyError,) as _e:
             raise
         except (Exception,) as _e:
@@ -1214,7 +1214,7 @@ class CacheDict(MutableMapping):
     def __delitem__(self, key):
         try:
             del self.mapping[key]
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (KeyError,) as _e:
             pass
 
@@ -1286,7 +1286,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
             else:
                 shutil.copy2(s, d)
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -1365,7 +1365,7 @@ class YAMLAncestorLoader:
 
             return data
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -1409,7 +1409,7 @@ def oshow(self, nesting="", file=None, private=False):
 
         try:
             dict_ = self.dict()
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (AttributeError,) as _e:
             dict_ = self.__dict__.copy()
 
@@ -1433,7 +1433,7 @@ def oshow(self, nesting="", file=None, private=False):
         if plocal:
             print(file.getvalue())
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -1454,7 +1454,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 
         fdump(obj)
         return obj
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (TypeError, ValueError, PicklingError) as _e:
         res = {}
         if isinstance(obj, dict):
@@ -1462,25 +1462,24 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                 try:
                     fdump(v)
                     res[k] = v
-                # pragma: no cover pylint: disable=unused-variable
+                # pragma: no cover
                 except (TypeError, ValueError, PicklingError) as _e:
                     try:
                         safe = dropbad_dump(v, fdump=fdump, seen=seen)
                         res[k] = safe
-                    # pragma: no cover pylint: disable=unused-variable
+                    # pragma: no cover
                     except (Exception,) as _e:
                         res[k] = str(v)
 
         elif hasattr(obj, "__iter__"):
             try:
                 res = []
-                # breakpoint() #🛑
                 pass
                 for v in obj:
                     try:
                         fdump(v)
                         res.append(v)
-                    # pragma: no cover pylint: disable=unused-variable
+                    # pragma: no cover
                     except (TypeError, ValueError) as _e:
                         res.append(dropbad_dump(v, fdump=fdump, seen=seen))
                 return res
@@ -1494,12 +1493,11 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
                 try:
                     fdump(v)
                     res[k] = v
-                # pragma: no cover pylint: disable=unused-variable
+                # pragma: no cover
                 except (TypeError, ValueError) as _e:
                     safe = dropbad_dump(v, fdump=fdump, seen=seen)
                     res[k] = safe
         else:
-            # breakpoint() #🛑
             pass
             return {}
 
@@ -1519,7 +1517,7 @@ def format_url(url: str) -> str:
         res = urlunparse(parsed2)
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -1533,7 +1531,9 @@ class JDataProvDescriptor:  # Config file provider
         return f"{self.__class__.__name__}"
 
 
-    def __init__(self, src: Any, as_simplenamespace=False, attrname_dict_backup: str | None = None, cache=True, subdomain: str = ""):
+    def __init__(
+        self, src: Any, as_simplenamespace=False,
+        attrname_dict_backup: str|None = None, cache=True, subdomain: str = ""):
         self.src = src
         self.as_simplenamespace = as_simplenamespace
         self.attrname_dict_backup = attrname_dict_backup
@@ -1552,27 +1552,23 @@ class JDataProvDescriptor:  # Config file provider
                 setattr(self.tmpinstance, self.attrname_dict_backup, data)
 
             return res
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
 
     def _cache_and_return(self, data):
         try:
-            prefix = f"{self}.cache_and_return:"
             if self.subdomain:
                 data = data[self.subdomain]
-
             if self.as_simplenamespace:
                 data = self._parse_dict_to_simplenamespaces(data)
             if self.cache:
                 setattr(self.tmpinstance, self.cachename, data)
-
             return data
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -1582,10 +1578,6 @@ class JDataProvDescriptor:  # Config file provider
         try:
             try:
                 lookfor = self.src
-
-                # breakpoint()
-                prefix = f"{self}.__get__:"
-
                 if (v := getattr(instance, self.cachename, undefined)) is not undefined:
                     return v
 
@@ -1634,19 +1626,19 @@ class JDataProvDescriptor:  # Config file provider
                 else:
                     raise NotImplementedError(f"lookfor: {lookfor}")
 
-            except (FileNotFoundError, NotImplementedError) as e:
+            except (FileNotFoundError, NotImplementedError) as _e:
                 if cpdb():
                     breakpoint()
                     pass
                 raise
 
-            # pragma: no cover pylint: disable=unused-variable
-            except (Exception,) as e:
+            # pragma: no cover
+            except (Exception,) as _e:
                 if cpdb():
                     breakpoint()
                 raise
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
