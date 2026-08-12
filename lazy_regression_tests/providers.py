@@ -1,32 +1,30 @@
 """store Extention Providers """
-from typing import Any, Union
-from io import StringIO
-import pprint
 import json
+import pprint
 import re
 from _pickle import PicklingError
+from io import StringIO
+from typing import Any, Union
 
 #################################################################
 # Dependencies
 #################################################################
 from yaml import dump as ydump
 
-
+from lazy_regression_tests._baseutils import dropbad_dump
 from lazy_regression_tests.common import (
-    ConfigurationException,
-    LazyTemp,
-    PAbstractExtProvider,
-    di_ext_provider,
     DEFAULT_PROVIDER,
-    DictFilter,
-    DictFilterWrapper,
     BFilter,
     Checker,
+    ConfigurationException,
+    DictFilter,
+    DictFilterWrapper,
+    LazyTemp,
+    PAbstractExtProvider,
     ValidationError,
+    di_ext_provider,
     undefined,
 )
-
-from lazy_regression_tests._baseutils import dropbad_dump
 
 
 def cpdb(*args, **kwargs):
@@ -55,14 +53,14 @@ class DictExtProvider(PAbstractExtProvider):
                     if isinstance(res, str) and name == "json":
                         res = json.loads(res)
                     if not isinstance(res, dict):
-                        raise ConfigurationException(
-                            f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-                        )
+                        raise ConfigurationException(f"""
+data type {type(res)}, returned by data.{name}() not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
                     return res
-            raise ConfigurationException(
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-            )
+            raise ConfigurationException(f"""
+data type {type(data)} not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
         except (json.decoder.JSONDecodeError):
             raise
@@ -86,9 +84,9 @@ class DictExtProvider(PAbstractExtProvider):
                 if callable(f):
                     data = f()
                 else:
-                    raise ConfigurationException(
-                        f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-                    )
+                    raise ConfigurationException(f"""
+data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
             out = StringIO()
             pprint.pprint(data, out, width=1)
@@ -176,9 +174,9 @@ class JsonExtProvider(DictExtProvider):
                         v = json.loads(v)
                     return v
 
-            raise ConfigurationException(
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-            )
+            raise ConfigurationException(f"""
+data type {type(data)} not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
             # raise NotImplementedError()
         # pragma: no cover pylint: disable=unused-variable
@@ -234,9 +232,9 @@ class JsonExtProvider(DictExtProvider):
                         res = json.dumps(res, indent=2, sort_keys=True)
                     return res.strip()
 
-                raise ConfigurationException(
-                    f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-                )
+                raise ConfigurationException(f"""
+data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e: # noqa F841
