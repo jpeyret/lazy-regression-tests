@@ -1,16 +1,16 @@
 "support for https://json-schema.org/ validation"
 
-from typing import Any
 import unittest
-from lazy_regression_tests.common import Validator, ValidationError
-from lazy_regression_tests.basics import ConfigurationException, Auto
-
 from collections.abc import Mapping
+from typing import Any
 
 #################################################################
 # Dependencies
 #################################################################
 import jsonschema
+
+from lazy_regression_tests.basics import Auto, ConfigurationException
+from lazy_regression_tests.common import ValidationError, Validator
 
 
 def cpdb(*args, **kwargs):

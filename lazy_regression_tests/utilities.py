@@ -246,7 +246,7 @@ class PrinterClassValidatorContributions:
         self._print(val, ancestor, to_print=to_print)
         cargo.print(cargo.indent2, "." * 20, sep="")
 
-    def _print_ancestor(self, val: Validator, ancestor, got_from: Dict):
+    def _print_ancestor(self, val: Validator, ancestor, got_from: dict):
         try:
             to_print = []
 
@@ -257,11 +257,11 @@ class PrinterClassValidatorContributions:
                     to_print.append(res)
 
             if breakpoints("print_validator", {"validator_name": self.name}):  # pragma: no cover
-                logger.debug(f"\n\n🔬🔬🔬validator_name:{self.name} {ancestor=}")
-                logger.debug("to_print:")
+                print(f"\n\nvalidator_name:{self.name} {ancestor=}") # debugging
+                print("to_print:") # debugging
                 for tu in to_print:
-                    logger.debug("  ", tu)
-                logger.debug("")
+                    print("  ", tu) # debugging
+                print("") # debugging
                 breakpoint()
                 pass
 
@@ -273,7 +273,7 @@ class PrinterClassValidatorContributions:
                 breakpoint()
             raise
 
-    def print(self, val: Validator, ancestor: type, di_print: dict):
+    def print(self, val: Validator, ancestor: type, di_print: dict): # debugging
         try:
             meth_print = self._print_ancestor
             is_testcase = ancestor == self.cargo.testee_cls
@@ -319,7 +319,7 @@ def print_validator(
                         got_from[attrname] = (anc, attrvalue)
 
         if breakpoints("print_validator", {"validator_name": name}):  # pragma: no cover
-            logger.debug(f"\n\n🔬🔬🔬validator_name:{name}")
+            print(f"\n\nvalidator_name:{name}") # debugging
             breakpoint()
             pass
 
