@@ -1,28 +1,24 @@
 import re
-import types
 import sys
+import types
 from importlib import import_module
-from typing import Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import click
-
-
-from lazy_regression_tests.utils import set_cpdb, set_rpdb, set_breakpoints3
-
-from lazy_regression_tests.core_assist2 import _LazyMeta
-from lazy_regression_tests.utils import ppp
-from lazy_regression_tests.common import (
-    ValidatorMgr,
-    Validator,
-    FunctionCheck,
-)
-
-from lazy_regression_tests.constants import undefined
-
-from typing import List, Tuple, Any, Dict, Optional
-
+import pydantic
 from rich.console import Console
 
-import pydantic
+from lazy_regression_tests.common import (
+    FunctionCheck,
+    Validator,
+    ValidatorMgr,
+    get_lazy_logger,
+)
+from lazy_regression_tests.constants import undefined
+from lazy_regression_tests.core_assist2 import _LazyMeta
+from lazy_regression_tests.utils import set_breakpoints3, set_cpdb, set_rpdb
+
+logger = get_lazy_logger()
 
 console = Console()
 
@@ -235,7 +231,7 @@ class PrinterClassValidatorContributions:
                     classname, f"{attr_name:10.10}", f"{style_start}{saval}{style_end}"
                 )
                 classname = cargo.indent2 + " " * 20
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -287,7 +283,7 @@ class PrinterClassValidatorContributions:
 
             self._print(val, ancestor, to_print=to_print)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -303,7 +299,7 @@ class PrinterClassValidatorContributions:
 
             meth_print(val, ancestor, di_print)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -360,7 +356,7 @@ def print_validator(
         for ancestor in ancestors:
             printer.print(val, ancestor[0], got_from)
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -416,7 +412,7 @@ def trace_ancestry(cls: type, ext: str, name: str = None, show=False, subj="v"):
             breakpoint()
             pass
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -456,7 +452,7 @@ def run(**kwargs):
         res = mgr.process()
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -466,11 +462,11 @@ def run(**kwargs):
 class Main:
     """main manager docstring"""
 
-    def __repr__(self):  # pylint: disable=missing-function-docstring
+    def __repr__(self):  #
         """repr"""
         return "%s" % (self.__class__.__name__)
 
-    def __init__(self, **kwargs):  # pylint: disable=missing-function-docstring
+    def __init__(self, **kwargs):  #
         """init - note that the incoming `kwargs` are determined by `run`s arguments
         Main's designed to be called programmatically, but `kwargs` then need to match the expectations
         of `run`s signature.
@@ -511,7 +507,7 @@ class Main:
                 for ext in extensions:
                     trace_ancestry(cls, ext=ext)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
