@@ -1,43 +1,36 @@
 """ provide validation building blocks """
 
-from typing import List, Dict
 from collections import defaultdict
+from typing import Dict, List
 
 #################################################################
 # Dependencies
 #################################################################
 from more_itertools import partition
 
-
+# disable stuff that makes this module's audit noisy
+# pylint: disable=no-self-argument,super-init-not-called,no-member,bad-mcs-method-argument
+# pylint: disable=bad-mcs-classmethod-argument,no-name-in-module,line-too-long
 # ruff: disable[F401]
 from lazy_regression_tests.basics import (
-    ExtAlias,
-    get_alias_from_ancestors,
-    ValidationError,
     ConfigurationException,
     DisableAll,
+    ExtAlias,
+    ValidationError,
+    get_alias_from_ancestors,
 )
-
-
-
-from lazy_regression_tests.providers import di_ext_provider, DEFAULT_PROVIDER
 from lazy_regression_tests.common import (
+    AutoExp,
+    Selectors,
     Validator,
     ValidatorMgr,
-    flatten_to_validators_dicts,
-    AutoExp,
     check_equal,
     check_exp_in_data,
     check_in,
     check_not_in,
-    Selectors,
+    flatten_to_validators_dicts,
 )
-
-
-# disable stuff that makes this module's audit noisy
-# pylint: disable=no-self-argument,super-init-not-called,no-member,bad-mcs-method-argument
-# pylint: disable=bad-mcs-classmethod-argument,no-name-in-module,line-too-long
-from pydantic import BaseModel, Field, validator as pyd_validator
+from lazy_regression_tests.providers import DEFAULT_PROVIDER, di_ext_provider
 
 # ruff: enable[F401]
 
@@ -76,7 +69,7 @@ def build_validators_for_class(
             config = None
 
             if verbose:
-                print(f"{ix:02} ancestor={acls.__name__}")
+                print(f"{ix:02} ancestor={acls.__name__}") # debugging
             for ext, values in acls.cls_validators.items():
 
                 alias = None
@@ -128,7 +121,7 @@ def build_validators_for_class(
                     di_config[ext] = config
 
                 if verbose:
-                    print(f"   {ext:6.6} {values=}")
+                    print(f"   {ext:6.6} {values=}") # debugging
 
                 for v in li_values:
                     # keep track of specialized ValidatorMgr subclasses
@@ -137,14 +130,14 @@ def build_validators_for_class(
         for ext, validators in di_tmp.items():
             alias = None
             if verbose:
-                print(f"{ext=} : {validators}")
+                print(f"{ext=} : {validators}") # debugging
 
             di: Dict[str, Validator] = {}
 
             dodebug = ext in ("parquet","dataframe") and cls.__name__ == "BaseCTE"
 
             if breakpoints('buildvalidator', {'always': dodebug}):  # pragma: no cover
-                print(f'\n\n🔬🔬🔬always:{1}')
+                print(f'\n\nalways:{1}') # debugging
                 breakpoint()
                 pass
 
@@ -178,7 +171,7 @@ def build_validators_for_class(
                 # so later validators in the list - like inactive ones - replace the earlier ones)
 
                 if verbose:
-                    print(v)
+                    print(v) # debugging
                 if v is DisableAll:
                     di.clear()
                 else:
@@ -198,7 +191,7 @@ def build_validators_for_class(
             validators = list(di.values())
 
             if breakpoints('buildvalidator', {'always': dodebug}):  # pragma: no cover
-                print(f'\n\n🔬🔬🔬always:{1}')
+                print(f'\n\nalways:{1}') # debugging
                 breakpoint()
                 pass
 

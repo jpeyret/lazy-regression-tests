@@ -1,67 +1,52 @@
 """ basic test """
 # -*- coding: utf-8 -*-
 import os
-import sys
 import re
+import sys
 import unittest
-from typing import Dict
-from pathlib import Path
 from operator import itemgetter
+from pathlib import Path
+from typing import Dict
+
+import lazy_regression_tests.common as common
+
+# from lazy_tstmixin import TstMixin
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
+import pydantic
 
 #################################################################
 # Dependencies
 #################################################################
-
-
 import pytest
-import pydantic
-
+from lazy_regression_tests.common import (
+    Auto,
+    ConfigurationException,
+    ExtAlias,
+    ValidationError,
+)
+from lazy_regression_tests.core_assist2 import (
+    Checker,
+    Filter,
+    FilterMgr,
+    LazyMixin,
+    _LazyMeta,
+)
+from lazy_regression_tests.filters import DictFilter
+from lazy_regression_tests.tests.helper_tst import (
+    TData,
+    TstMixin,
+    TstMixinSeeder,
+    check_keep,
+    get_fake_response_from_html,
+)
 
 # disable noisy linting...
 # the classes like Top, Level2, Level3... look unused, they are not
 # pylint: disable=unused-variable,unused-import,c-extension-no-member,superfluous-parens
 # pylint: disable=possibly-unused-variable,no-member
+from lazy_regression_tests.utils import disable_cpdb, force_verbose, set_breakpoints3, set_cpdb, set_rpdb
 
-
-from lazy_regression_tests.utils import (
-    set_cpdb,
-    set_rpdb,
-    set_breakpoints3,
-    disable_cpdb,
-    force_verbose
-)
-
-
-
-from lazy_regression_tests.core_assist2 import (
-    _LazyMeta,
-    Filter,
-    FilterMgr,
-    LazyMixin,
-    Checker,
-)
-from lazy_regression_tests.filters import DictFilter
-
-# from lazy_tstmixin import TstMixin
-import lazy_regression_tests.core_assist2 as core_assist2
-import lazy_regression_tests.validators as validators
-
-import lazy_regression_tests.common as common
-
-
-from lazy_regression_tests.common import (
-    ConfigurationException,
-    ValidationError,
-    ExtAlias,
-    Auto,
-)
-from lazy_regression_tests.tests.helper_tst import (
-    TData,
-    TstMixinSeeder,
-    get_fake_response_from_html,
-    TstMixin,
-    check_keep,
-)
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -190,7 +175,7 @@ class Test_Dict(Base):
         try:
 
             if sys.argv[0].endswith("pytest"):
-                print("skip test with pytest")
+                print("skip test with pytest") # debugging
                 return
 
             di_cls = self.gen_test_classes()
@@ -203,7 +188,7 @@ class Test_Dict(Base):
             lz = testee._lz
             checker = getattr(lz, self.ext, None)
             if not checker:
-                print(f"{self} {testee=}.lz has no {self.ext}")
+                print(f"{self} {testee=}.lz has no {self.ext}") # debugging
                 return
 
             self.seed(data, checker=checker, testee=testee)
@@ -700,7 +685,7 @@ class Test_Validator(BaseValidatorTst):
                 self.fail(f"abc presence test shoulda failed on {data}")
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"✅{self}.expected error: {e}") # debugging
 
             data = "abcd"
             v = testee._lz.txt.v
@@ -730,7 +715,7 @@ class Test_Validator(BaseValidatorTst):
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"✅{self}.expected error: {e}") # debugging
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e: # noqa F841
@@ -777,7 +762,7 @@ class Test_Validator(BaseValidatorTst):
                     raiser("abc presence validator has no validation function")
             except (AssertionError) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"✅{self}.expected error: {e}") # debugging
 
             validator = testee._lz.txt.validators["abc_in_data"]
 
@@ -790,7 +775,7 @@ class Test_Validator(BaseValidatorTst):
                     testee._lz.txt.v("xxx")
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"✅{self}.expected error: {e}") # debugging
 
             testee._lz.txt.v("xabcd")
 
@@ -997,7 +982,7 @@ class Test_Validator(BaseValidatorTst):
             # pragma: no cover pylint: disable=unused-variable
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅ expected failure {e} for {data=}")
+                    print(f"✅ expected failure {e} for {data=}") # debugging
 
         # pragma: no cover pylint: disable=unused-variable
         except (Exception,) as e: # noqa F841

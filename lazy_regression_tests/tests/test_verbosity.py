@@ -5,18 +5,17 @@ Do not test generic lazy behavior here, only the verbose-dependent debug code
 # -*- coding: utf-8 -*-
 import sys
 import unittest
-import os
+
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
 
 #################################################################
 # Dependencies
 #################################################################
 import pytest
-
-from lazy_regression_tests.utils import set_cpdb, set_rpdb, set_breakpoints3
-
-import lazy_regression_tests.core_assist2 as core_assist2
-import lazy_regression_tests.validators as validators
 from lazy_regression_tests.tests.helper_tst import TData
+from lazy_regression_tests.utils import set_breakpoints3, set_cpdb, set_rpdb
+
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -28,8 +27,6 @@ if __name__ == "__main__":
     cpdb = set_cpdb()
     rpdb = set_rpdb()
     breakpoints = set_breakpoints3() or breakpoints
-
-print(f"\n\n\n{os.getcwd()=}\n\n\n")
 
 
 # force verbosity flag

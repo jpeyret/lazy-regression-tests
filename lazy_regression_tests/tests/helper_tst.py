@@ -15,7 +15,6 @@ import bs4
 import jinja2
 import requests
 import responses
-
 from lazy_regression_tests._baseutils import eprint
 from lazy_regression_tests.common import Checker
 from lazy_regression_tests.constants import (
@@ -331,5 +330,5 @@ def check_keep(suffix: str) -> tuple[bool, str]:
     res = bool(os.getenv(envname))
     msg = f"add ${envname}"
     if verbose:
-        eprint("🔬", msg)
+        eprint(msg) # debugging
     return (res, msg)

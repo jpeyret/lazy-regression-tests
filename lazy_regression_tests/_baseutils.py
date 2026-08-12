@@ -722,7 +722,7 @@ class Dummy(object):
             return value
 
     def debug(self):
-        ppp(self.__dict__)
+        ppp(self.__dict__)  # debugging
 
     def to_json(self):
         return self.__dict__
