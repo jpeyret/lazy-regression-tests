@@ -1,12 +1,11 @@
 """ Test HTTP"""
 # -*- coding: utf-8 -*-
+import datetime
+import os
 import sys
 import unittest
 import unittest.mock as mock
-import os
-import datetime
 from pathlib import Path
-
 from typing import Any
 
 #################################################################
@@ -15,39 +14,32 @@ from typing import Any
 import pytest
 from bs4 import element
 
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.filters as filters
+import lazy_regression_tests.validators as validators
+from lazy_regression_tests.common import Checker, ValidationError
+from lazy_regression_tests.constants import OPT_DIRECTIVE_BASELINE
+
 #################################################################
 # re-use v2
 #################################################################
-
-
-
 from lazy_regression_tests.core_assist2 import _LazyMeta
-
-from lazy_regression_tests.tests.helper_tst import get_mock_env
-from lazy_regression_tests.constants import OPT_DIRECTIVE_BASELINE
-
-from lazy_regression_tests.common import Checker
-
-import lazy_regression_tests.core_assist2 as core_assist2
-import lazy_regression_tests.validators as validators
-import lazy_regression_tests.filters as filters
 from lazy_regression_tests.tests.helper_tst import (
     get_fake_response,
     get_fake_response_from_html,
+    get_mock_env,
 )
-from lazy_regression_tests.validators_http import (
-    validator_html,
-    Validator,
-    validator_json,
-)
-from lazy_regression_tests.common import ValidationError
-
-from lazy_regression_tests.utils  import (
+from lazy_regression_tests.utils import (
+    Subber,
+    first,
+    set_breakpoints3,
     set_cpdb,
     set_rpdb,
-    set_breakpoints3,
-    first,
-    Subber,
+)
+from lazy_regression_tests.validators_http import (
+    Validator,
+    validator_html,
+    validator_json,
 )
 
 
