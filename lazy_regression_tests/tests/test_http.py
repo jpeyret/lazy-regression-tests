@@ -116,11 +116,11 @@ class Base(unittest.TestCase):
                 extlz: core_assist2.Checker = getattr(testee._lz, ext)
                 return extlz.assert_same(got=data)
 
-            # pragma: no cover pylint: disable=unused-variable
+            # pragma: no cover 
             except (AssertionError,) as e: # noqa F841
                 pass
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -190,7 +190,7 @@ class Test_Validation(Base):
                     testee.assertEqual(testee.title, value.text)
 
                     return value
-                # pragma: no cover pylint: disable=unused-variable
+                # pragma: no cover 
                 except (Exception,) as e: # noqa F841
                     if cpdb():
                         breakpoint()
@@ -203,7 +203,7 @@ class Test_Validation(Base):
 
             v(self.response)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -226,7 +226,7 @@ class Test_Validation(Base):
 
             v(self.response)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -255,7 +255,7 @@ class Test_Assert_Json(Base):
             self.testee = self.cls_tst()
             self.testee._testMethodName = self.__class__.__name__.lower()
             self.checker: Checker = self.testee._lz.http_json
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -270,7 +270,7 @@ class Test_Assert_Json(Base):
             with pytest.raises(ValidationError):
                 self.checker.v(response)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()

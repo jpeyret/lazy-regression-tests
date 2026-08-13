@@ -59,7 +59,7 @@ class ValidatorTempPolars(ValidatorTemp):
                 assert isinstance(self.rawdata, pl.DataFrame)
                 assert isinstance(self.data_in, pl.DataFrame)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -113,7 +113,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
                 f"only polars.DataFrame are supported.  {type(data)=}"
             )
             return data
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -131,7 +131,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
                 f"only polars.DataFrame are supported.  {type(data)=}"
             )
             return data
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -145,7 +145,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
             )
             self._filtered = self.data_in
             # return self
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -200,11 +200,11 @@ class Polars_Provider(providers.PAbstractExtProvider):
 
             testee.assertEqual(True, is_equal, msg)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (AssertionError,) as e: # noqa F841
             raise
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -252,11 +252,11 @@ def check_unique(
             testee.assertFalse(f"{len(df_dupekeys)} duplicate rows", df_dupes)
 
         return True
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (AssertionError,) as e: # noqa F841
         e.args += (df_dupekeys,)
         raise
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -304,7 +304,7 @@ class compare_df_options:
 
             return res
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -478,7 +478,7 @@ def compare_df(
             # flag differences, and keep track of their indexes
             dfdiff = (dfboth0 == dfboth1).with_row_index(name=options.cindex)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (ValueError,) as e: # noqa F841
             chk = POLARS_ERR_DIM_MISMATCH
             if e.args == chk:
@@ -565,8 +565,8 @@ def compare_df(
 
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
+    # pragma: no cover 
     except (CompareException,) as e: # noqa F841
         # breakpoint() #🛑
         pass
@@ -623,7 +623,7 @@ class LazyCompareOptions(compare_df_options):
 
                 type(self)._lookup = res
             return type(self)._lookup
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -639,7 +639,7 @@ class LazyCompareOptions(compare_df_options):
             counts = compare_df_options.get_counts(df, colstatus)
             return counts.is_equal, str(counts)
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -660,7 +660,7 @@ def get_diffs(source: ValidatorMgr | ValidatorTemp | Checker) -> pl.DataFrame | 
         if diff is not None and isinstance(diff, pl.DataFrame):
             return diff
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()

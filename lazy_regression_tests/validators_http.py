@@ -151,7 +151,7 @@ class HTTP_Provider(providers.PAbstractExtProvider):
         "get status code"
         try:
             return data.status_code
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -200,7 +200,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
 
         except (json.decoder.JSONDecodeError):
             raise
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -239,10 +239,10 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
                 res = data
 
             return res
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (ConfigurationException,) as e: # noqa F841
             raise
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -268,7 +268,7 @@ class HTML_Provider(HTTP_Provider):
                     return [v.text.strip() for v in value]
 
             raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -354,7 +354,7 @@ data type {type(data)} not supported by {cls.__name__} which supports strings.
 known extensions for testcase: {','.join(checker._lz.extensions)}"""
             )
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -421,7 +421,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
         #         msg = f"{exp} =! {got}"
         #         raise ValidationError(msg=msg, validator=validator, got=got)
 
-        # # pragma: no cover pylint: disable=unused-variable
+        # # pragma: no cover 
         except (AssertionError,) as e: # noqa F841
             if os.getenv("cpdb"):
                 breakpoint()
@@ -453,7 +453,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
 
             return filter2
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()

@@ -89,7 +89,7 @@ def get_mock_env(seed={}):
             res.update(**seed)
             return res
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -154,7 +154,7 @@ def get_fake_response_from_html(
 
         return response
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -189,7 +189,7 @@ def get_fake_response(
         assert response
         return response
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -225,7 +225,7 @@ class TstMixinSeeder:
             except (AssertionError,) as e: # noqa F841
                 pass
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -315,7 +315,7 @@ class TstMixin(unittest.TestCase):
 
         try:
             self.assertEqual(di_exp, di_got)
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (AssertionError,) as e: # noqa F841
             msg = f"\nFilter:{ext=}{label=}\n{e.args[0]}"
             e.args = (msg, filter)

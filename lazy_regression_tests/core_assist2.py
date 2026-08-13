@@ -47,8 +47,8 @@ rpdb = breakpoints = cpdb
 undefined = NotImplemented
 
 # disable stuff that makes this module's audit noisy
-# pylint: disable=no-self-argument,super-init-not-called,no-member,bad-mcs-method-argument
-# pylint: disable=bad-mcs-classmethod-argument,no-name-in-module,line-too-long
+# 
+# 
 
 
 
@@ -97,7 +97,7 @@ class _HelperRoot:
             setattr(self._lz, attrname, checker)
             return checker
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (AttributeError,) as _e:
             raise
         except (Exception,) as _e:
@@ -142,7 +142,7 @@ class LazyRoot(ALazyRoot):
                     val.testee = testee
                 dupe.testee = testee
             return dupe
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -177,7 +177,7 @@ class LazyRoot(ALazyRoot):
                 checker.show(file=out, nesting="  ")
             print(out.getvalue()) # debugging
 
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -273,10 +273,10 @@ def build_filters_for_class(
 
         return di_filtermgr
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (TU_NOCATCH) as _e:
         raise
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -343,7 +343,7 @@ class _LazyMeta(type):
 
             # this particulal super call format was necessary to get it
             # working at runtime
-            # pylint: disable=bad-super-call
+            # 
             def initialize_instance(self, *args, **kwargs):
                 """injecting an `__init__` that will happen before the TestCase.__init__"""
                 super(newclass, self).__init__(*args, **kwargs)  # type: ignore
@@ -353,7 +353,7 @@ class _LazyMeta(type):
             # we want to inject this so that it always comes before TestCase.__init__
             setattr(newclass, "__init__", initialize_instance)
             return newclass
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (TypeError,) as _e:
             logger.debug(f"\n\n{_e=}")
             ppp(dict(clsname=clsname, found=found, basesold=basesold, bases=bases))
@@ -407,7 +407,7 @@ class _LazyMeta(type):
             cls._lz = lz
 
             super().__init__(name, bases, attrs)
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (ConfigurationException,) as _e:
             cls.lz = _e
         except (TU_NOCATCH) as _e:

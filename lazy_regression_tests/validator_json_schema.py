@@ -47,7 +47,7 @@ def validate_json_schema(data: Any, testee: unittest.TestCase, validator: Valida
     # pragma: no cover
     except (ValidationError,):
         raise
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()

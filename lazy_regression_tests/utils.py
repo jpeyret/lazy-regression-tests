@@ -2,7 +2,7 @@
 # ruff: disable[F401]
 import logging
 import pdb
-from traceback import print_exc as xp  # pylint: disable=unused-import
+from traceback import print_exc as xp  # 
 
 from lazy_regression_tests._baseutils import (
     DictFormatter,

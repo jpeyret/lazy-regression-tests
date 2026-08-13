@@ -7,8 +7,8 @@ from typing import Any, NamedTuple
 import polars as pl
 import sqlalchemy
 
-# pylint: disable=unused-import
-# pylint: enable=unused-import
+# 
+# 
 from lazy_regression_tests._baseutils import Subber, fill_template
 
 POLARS_ERR_DIM_MISMATCH = ('DataFrame dimensions do not match',)
@@ -60,7 +60,7 @@ def fill_nulls(df : pl.DataFrame):
             dfo = dfo.with_columns(pl.col(colname).fill_null(filler))
         return dfo
 
-    #pragma: no cover pylint: disable=unused-variable
+    #pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -88,7 +88,7 @@ def get_colnames(sql : str) -> list[str]:
 
         return tmp5
 
-    #pragma: no cover pylint: disable=unused-variable
+    #pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -140,7 +140,7 @@ def prep_polars_query_params(
         tqry_for_polars = fill_template(tqry, subber)
         parameters_for_polars = subber.as_dict()
         return PolarsPrepared(tqry_for_polars,parameters_for_polars,colnames)
-    #pragma: no cover pylint: disable=unused-variable
+    #pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -166,7 +166,7 @@ def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
 
             return df
 
-    #pragma: no cover pylint: disable=unused-variable
+    #pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -199,7 +199,7 @@ def split_on_exist_notexist(
         df_notexists = df.join(dfcheck, on=on, left_on=left_on,right_on=right_on, how="anti")
 
         return SplitExists(df_exists, df_notexists)
-    #pragma: no cover pylint: disable=unused-variable
+    #pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -238,7 +238,7 @@ def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = Fa
 
         return dfwithdupes
 
-    #pragma: no cover pylint: disable=unused-variable
+    #pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()

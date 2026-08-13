@@ -9,8 +9,8 @@ from typing import Dict, List
 from more_itertools import partition
 
 # disable stuff that makes this module's audit noisy
-# pylint: disable=no-self-argument,super-init-not-called,no-member,bad-mcs-method-argument
-# pylint: disable=bad-mcs-classmethod-argument,no-name-in-module,line-too-long
+# 
+# 
 # ruff: disable[F401]
 from lazy_regression_tests.basics import (
     ConfigurationException,
@@ -205,7 +205,7 @@ def build_validators_for_class(
 
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as _e:
         if cpdb():
             breakpoint()

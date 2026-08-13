@@ -36,7 +36,7 @@ class SQL_Provider(providers.PAbstractExtProvider):
 
             data = sqlparse.format(data, reindent=True, keyword_case="upper")
             return data
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -50,7 +50,7 @@ class SQL_Provider(providers.PAbstractExtProvider):
                 return data
 
             raise ConfigurationException(f"{self}.unsupported data type {type(data)=}")
-        # pragma: no cover pylint: disable=unused-variable
+        # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()

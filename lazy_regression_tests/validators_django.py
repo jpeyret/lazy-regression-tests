@@ -48,7 +48,7 @@ def check_form_errors(data: ErrorDict, testee: unittest.TestCase, validator: Val
 
         return 1
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover 
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
