@@ -464,8 +464,6 @@ def compare_df(
                 raise CompareException(f" shape mismatch {df0.shape=}<>{df1.shape}:")
 
         try:
-            # df7 = df6.with_columns(pl.col(cosided.visright).fill_null(0))
-            # dfboth000 = dfboth0.with_columns(pl.col(cs.numeric)).fill_null(0)
 
             if options.fill_nulls:
                 # ok, thing is

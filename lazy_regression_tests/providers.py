@@ -177,7 +177,6 @@ class JsonExtProvider(DictExtProvider):
 data type {type(data)} not supported by {self}.
 known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
-            # raise NotImplementedError()
         # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():

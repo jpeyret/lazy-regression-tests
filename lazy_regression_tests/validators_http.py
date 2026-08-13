@@ -54,9 +54,8 @@ class CSSFilter(RawFilter):
         """prep the filter wrapper"""
 
         name = values.get("name")
-
         if breakpoints("build_filter", {"name": name}):  # pragma: no cover
-            print(f"\n\n!!!name:{name}")
+            print(f"\n\n!!!name:{name}")  # debugging
             breakpoint()
 
         if not isinstance(selector, str):
@@ -151,7 +150,7 @@ class HTTP_Provider(providers.PAbstractExtProvider):
         "get status code"
         try:
             return data.status_code
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -200,7 +199,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
 
         except (json.decoder.JSONDecodeError):
             raise
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -239,10 +238,10 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
                 res = data
 
             return res
-        # pragma: no cover 
+        # pragma: no cover
         except (ConfigurationException,) as e: # noqa F841
             raise
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -268,7 +267,7 @@ class HTML_Provider(HTTP_Provider):
                     return [v.text.strip() for v in value]
 
             raise NotImplementedError()
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -354,7 +353,7 @@ data type {type(data)} not supported by {cls.__name__} which supports strings.
 known extensions for testcase: {','.join(checker._lz.extensions)}"""
             )
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -403,25 +402,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
                 testee.assertEqual(exp, got, f"{got=} {exp=}")
                 return True
 
-        #     if isinstance(exp, str) and isinstance(got, bs4.element.ResultSet):
-        #         got2 = got[0].text.strip()
-        #         res = exp.strip() == got2
-        #         if not res:
-        #             msg = f"{repr(validator)}\nexp\n{exp}\n!=\ngot\n{str(got2):60.60}\n"
-        #             raise ValidationError(msg, validator, got2)
-
-        #         return res
-
-        #     elif not (type(exp) is type(got)):
-        #         if isinstance(exp, (list, tuple, set)) and isinstance(got, (int, str)):
-        #             return got in exp
-
-        #     else:
-
-        #         msg = f"{exp} =! {got}"
-        #         raise ValidationError(msg=msg, validator=validator, got=got)
-
-        # # pragma: no cover 
+        # pragma: no cover
         except (AssertionError,) as e: # noqa F841
             if os.getenv("cpdb"):
                 breakpoint()
@@ -453,7 +434,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}"""
 
             return filter2
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()

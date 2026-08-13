@@ -342,7 +342,6 @@ careamouseghidef
 
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
-                # self.fail(f"shoulda failed. bad function signature {bad_func}")
             # pragma: no cover 
             except (ValueError, pydantic.ValidationError) as e: # noqa F841
                 pass
@@ -674,7 +673,6 @@ class Test_Validator(BaseValidatorTst):
 
 
             testee = clsoi()
-            # testee._lz.txt.v.testee = testee
 
             try:
                 data = "addxc"
@@ -795,7 +793,6 @@ class Test_Validator(BaseValidatorTst):
             class TstBase(unittest.TestCase, metaclass=_LazyMeta):
                 """we know we want to test a status code"""
 
-                # status_code = 200
                 cls_validators = dict(yaml=[valstatus])
 
             missing_validator = TstBase()
@@ -805,7 +802,6 @@ class Test_Validator(BaseValidatorTst):
             checker = missing_validator._lz.yaml
 
             with disable_cpdb() as disabled:
-                # with disable_cpdb() as disabled:
                 with pytest.raises(
                     (ValidationError, pydantic.ValidationError)
                 ):
@@ -818,7 +814,6 @@ class Test_Validator(BaseValidatorTst):
 
             # reactivate the validator, set to check Validator.exp == data
             checker.validators["status_code"].active = True
-            # checker.validators["status_code"].v = validators.check_equal
 
             with disable_cpdb() as disabled:
                 with pytest.raises((AssertionError, ConfigurationException)):
@@ -916,7 +911,6 @@ class Test_Validator(BaseValidatorTst):
             valname = "status_code"
 
             class TstOKEqual(metaclass=_LazyMeta):
-                # class TstOK(TstBase, unittest.TestCase):
                 cls_validators = dict(
                     html=[
                         dict(
@@ -1105,9 +1099,6 @@ class Test_ValidatorMgr_Stacking(Base):
             with pytest.raises(ConfigurationException) as tmp:
                 v(data)
 
-            # di_error = parse_pydantic_validation_error(tmp)
-            # msg = di_error.get("v", {}).get("msg")
-            # self.assertIn("v is missing", msg)
 
             # deactivate json validation
             testee._lz.json.validators[self.name_valjson].active = False
@@ -1115,7 +1106,6 @@ class Test_ValidatorMgr_Stacking(Base):
             # now we are missing status_code on data
             delattr(testee, "status_code")
 
-            # with pytest.raises(validators.ConfigurationException) as tmp:
             v(data)
 
             self.assertEqual(tmp._excinfo[0], validators.ConfigurationException)
@@ -1128,7 +1118,6 @@ class Test_ValidatorMgr_Stacking(Base):
             with pytest.raises(tu_exp_exc) as tmp:
                 v(data)
 
-            # self.assertEqual(tmp._excinfo[0], validators.ValidationError)
             self.assertIn(self.name_status, str(tmp._excinfo[1]))
 
             # should pass
@@ -1147,10 +1136,8 @@ class Test_ValidatorMgr_Stacking(Base):
         try:
             mgr = self.validation_manager_http.extend(
                 validators.Validator(name=self.name_contenttype, exp=self.content_html),
-                # ext=self.ext_html,
             )
 
-            # self.assertEqual(self.ext_html, mgr.ext)
 
             di_v = {v.name: v for v in mgr.validators}
 
@@ -1340,7 +1327,6 @@ class Test_Aliasing(Base):
             with pytest.raises(common.ValidationError):
                 checker.v(data)
 
-            # raise NotImplementedError()
         # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
@@ -1369,7 +1355,6 @@ class Test_Aliasing(Base):
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
-            # raise NotImplementedError()
         # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
@@ -1384,7 +1369,6 @@ class Test_Aliasing(Base):
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
-            # raise NotImplementedError()
         # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
@@ -1402,7 +1386,6 @@ class Test_Aliasing(Base):
             with pytest.raises(common.ValidationError):
                 checker.v(data)
 
-            # raise NotImplementedError()
         # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
@@ -1416,7 +1399,6 @@ class Test_Aliasing(Base):
             checker = testee._lz.json
             checker.v(data)
 
-            # raise NotImplementedError()
         # pragma: no cover 
         except (Exception,) as e: # noqa F841
             if cpdb():
@@ -1434,7 +1416,6 @@ verbose = False
 
 if __name__ == "__main__":
 
-    # if __name__ == "__main__":
     cpdb = set_cpdb()
     rpdb = set_rpdb()
 
