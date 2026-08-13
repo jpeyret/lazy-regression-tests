@@ -294,10 +294,8 @@ class YamlProvider(DictExtProvider):
         try:
             try:
 
-                # from yaml import dump as ydump
                 import yaml
 
-                # breakpoint()
 
                 # https://stackoverflow.com/a/66853182
 
@@ -335,7 +333,6 @@ class YamlProvider(DictExtProvider):
                         print("🧨")
 
             # if cpdb():
-            #     breakpoint()
             raise TypeError(e)
 
         # pragma: no cover 

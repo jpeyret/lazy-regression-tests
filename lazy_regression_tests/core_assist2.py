@@ -24,7 +24,6 @@ from lazy_regression_tests.constants import (
     TIMEOUT_MAXTIME_TO_ALLOW,
 )
 
-# import constants
 from lazy_regression_tests.filters import BFilter, FilterMgr
 from lazy_regression_tests.providers import (
     di_ext_provider,
@@ -47,8 +46,8 @@ rpdb = breakpoints = cpdb
 undefined = NotImplemented
 
 # disable stuff that makes this module's audit noisy
-# 
-# 
+#
+#
 
 
 
@@ -97,7 +96,7 @@ class _HelperRoot:
             setattr(self._lz, attrname, checker)
             return checker
 
-        # pragma: no cover 
+        # pragma: no cover
         except (AttributeError,) as _e:
             raise
         except (Exception,) as _e:
@@ -142,7 +141,7 @@ class LazyRoot(ALazyRoot):
                     val.testee = testee
                 dupe.testee = testee
             return dupe
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -177,7 +176,7 @@ class LazyRoot(ALazyRoot):
                 checker.show(file=out, nesting="  ")
             print(out.getvalue()) # debugging
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as _e:
             if cpdb():
                 breakpoint()
@@ -224,9 +223,6 @@ def build_filters_for_class(
 
             # ExtProvider by name or alias
             if isinstance(filters, (list, tuple)):
-                # if name == "settings":
-                #     breakpoint() #🛑
-                #     pass
                 filters, aliases = [
                     list(v) for v in partition(ExtAlias.is_instance, filters)
                 ]
@@ -273,10 +269,10 @@ def build_filters_for_class(
 
         return di_filtermgr
 
-    # pragma: no cover 
+    # pragma: no cover
     except (TU_NOCATCH) as _e:
         raise
-    # pragma: no cover 
+    # pragma: no cover
     except (Exception,) as _e:
         if cpdb():
             breakpoint()
@@ -343,7 +339,7 @@ class _LazyMeta(type):
 
             # this particulal super call format was necessary to get it
             # working at runtime
-            # 
+            #
             def initialize_instance(self, *args, **kwargs):
                 """injecting an `__init__` that will happen before the TestCase.__init__"""
                 super(newclass, self).__init__(*args, **kwargs)  # type: ignore
@@ -353,7 +349,7 @@ class _LazyMeta(type):
             # we want to inject this so that it always comes before TestCase.__init__
             setattr(newclass, "__init__", initialize_instance)
             return newclass
-        # pragma: no cover 
+        # pragma: no cover
         except (TypeError,) as _e:
             logger.debug(f"\n\n{_e=}")
             ppp(dict(clsname=clsname, found=found, basesold=basesold, bases=bases))
@@ -371,19 +367,11 @@ class _LazyMeta(type):
         try:
             li_bases2current = list(reversed(cls.mro()))
 
-            # if name == "Base2":
-            #     breakpoint() #🛑
-            #     pass
-
             if breakpoints('LazyMeta', {'classname': cls.__name__}):  # pragma: no cover
                 cls_validators = attrs.get("cls_validators")
-                logger.debug(f'\n\n🔬🔬🔬classname:{cls.__name__} {cls_validators=}')
+                print(f'\n\n🔬🔬🔬classname:{cls.__name__} {cls_validators=}') # debugging
                 breakpoint()
                 pass
-
-
-
-
 
             cls.__lz_ori = dict(
                 cls_validators=cls.__dict__.get("cls_validators", {}),
@@ -407,7 +395,7 @@ class _LazyMeta(type):
             cls._lz = lz
 
             super().__init__(name, bases, attrs)
-        # pragma: no cover 
+        # pragma: no cover
         except (ConfigurationException,) as _e:
             cls.lz = _e
         except (TU_NOCATCH) as _e:

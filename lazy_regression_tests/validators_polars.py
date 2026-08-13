@@ -466,7 +466,6 @@ def compare_df(
 
         try:
             # df7 = df6.with_columns(pl.col(cosided.visright).fill_null(0))
-            # import polars.selectors as cs
             # dfboth000 = dfboth0.with_columns(pl.col(cs.numeric)).fill_null(0)
 
             if options.fill_nulls:
@@ -568,7 +567,6 @@ def compare_df(
     # pragma: no cover 
     # pragma: no cover 
     except (CompareException,) as e: # noqa F841
-        # breakpoint() #🛑
         pass
         raise
     except (Exception,) as e: # noqa F841

@@ -435,7 +435,6 @@ class PAbstractExtProvider(Protocol):
     ) -> bool:
         """check if exp can be considered equal"""
         try:
-            # breakpoint() #🛑
             # pass
             if isinstance(got, (list, set)) and isinstance(exp, (list, set)):
                 got = set(got)
@@ -466,7 +465,6 @@ class PAbstractExtProvider(Protocol):
     ) -> bool:
         """check if exp can be considered equal"""
         try:
-            # breakpoint() #🛑
             # pass
             if (
                 list_to_set
@@ -954,7 +952,6 @@ class TextFilterWrapper(PTextFilterWrapper):
         if isinstance(res, tuple):
             return res
 
-        # breakpoint()
 
         return bool(res)
 
@@ -2414,7 +2411,6 @@ def check_equal(
             #  - this is the old-style assertEqual applied to a variable, not the entire data p
             provider_check_equal = validator.mgr.provider.check_equal
             if provider_check_equal:
-                # breakpoint() #🛑
                 pass
                 #  - modify to pass in Checker, in order to access ValidatorMgr.config...
                 res = provider_check_equal(
@@ -2665,7 +2661,6 @@ class ActualValidator(Validator):
                 elif selector is select_by_provider:
                     data = select_by_provider(**kwargs)
                 elif callable(selector):
-                    # breakpoint() #🛑
                     if type(selector) in (operator.itemgetter, operator.attrgetter):
                         data = selector(data_in)
                     else:

@@ -36,7 +36,6 @@ def validate_json_schema(data: Any, testee: unittest.TestCase, validator: Valida
         if not isinstance(data, list):
             data = [data]
 
-        # breakpoint() #🛑
         pass
 
         for got in data:

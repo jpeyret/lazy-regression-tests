@@ -10,7 +10,6 @@ from typing import Dict
 
 import lazy_regression_tests.common as common
 
-# from lazy_tstmixin import TstMixin
 import lazy_regression_tests.core_assist2 as core_assist2
 import lazy_regression_tests.validators as validators
 import pydantic

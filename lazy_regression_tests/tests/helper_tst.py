@@ -8,7 +8,6 @@ import tempfile
 import unittest
 import unittest.mock as mock
 
-# from lazy_tstmixin import TstMixin
 from typing import Callable
 
 import bs4
