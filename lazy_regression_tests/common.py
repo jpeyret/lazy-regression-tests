@@ -65,6 +65,8 @@ from lazy_regression_tests.basics import (
 )
 from lazy_regression_tests.constants import LOGGER_NAME
 
+
+
 try:
     from rich import inspect as rin
 # pragma: no cover
@@ -87,6 +89,11 @@ di_ext_provider = {}
 undefined = NotImplemented
 warning = "\n🧨 "
 
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+
+rpdb = breakpoints = cpdb
 
 
 
@@ -103,8 +110,6 @@ get_lazy_logger().addHandler(logging.NullHandler())
 # Default validation functions
 #################################################################
 
-
-
 def _checktypes(got, exp, validator: "Validator"):
     """warn if there was type mismatch"""
     if not isinstance(got, type(exp)):
@@ -114,8 +119,6 @@ def _checktypes(got, exp, validator: "Validator"):
             selector_msg = ""
         message = f"_checktypes: type mismatch? {selector_msg=}"
         get_lazy_logger().warning(message)
-
-
 
 
 def cpdblazy(*args, **kwargs):
@@ -241,11 +244,6 @@ class _Control(object):
         return self.directive == constants.OPT_DIRECTIVE_NODIFF
 
 
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
 
 
 class LazyTemp:
@@ -266,7 +264,7 @@ class LazyTemp:
         if breakpoints(
             "providerclassname", {"providerclassname": type(provider).__name__}
         ):  # pragma: no cover
-            print(f"\n\n🔬🔬🔬providerclassname:{type(provider).__name__}")
+            print(f"\n\n!!!providerclassname:{type(provider).__name__}")
             breakpoint()
             pass
 
@@ -643,7 +641,7 @@ Known keys : {list(data.keys())}"""
         # pragma: no cover
         except (ConfigurationException,) as e: # noqa F841
             if cpdb() and e.allow_cpdb():
-                breakpoint()  # 🛑
+                breakpoint()
                 pass
 
             raise
@@ -1401,14 +1399,13 @@ class Checker:
                 exp_got="got", suffix=suffix, testee=testee, control=control
             )
 
-            # tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
             tmp.fnp_exp = fnp_exp = checker.get_fnp_save(
                 exp_got="exp", suffix=suffix, testee=testee, control=control
             )
 
 
             if breakpoints("_lazycheck", {"always": 1}):  # pragma: no cover
-                print("\n\n🔬🔬🔬Checker.lazycheck")
+                print("\n\n!!!Checker.lazycheck") # debugging
                 breakpoint()
                 pass
 
@@ -1837,7 +1834,7 @@ class Validator(pydantic.BaseModel):
             if (
                 breakpoints("pause_for_debug", {"name": name}) and lookup not in seen
             ):  # pragma: no cover
-                print(f"\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}")
+                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}")
                 seen.add(lookup)
                 breakpoint()
                 pass
@@ -1863,7 +1860,7 @@ class Validator(pydantic.BaseModel):
                 breakpoints("pause_for_debug_post", {"name": name})
                 and lookup not in seen
             ):  # pragma: no cover
-                print(f"\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}")
+                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}")
                 seen.add(lookup)
                 breakpoint()
                 pass
@@ -2400,7 +2397,7 @@ def check_equal(
         exp = exp or validator.exp
 
         if breakpoints("lazy", {"validator": validator.name}):  # pragma: no cover
-            print(f"\n\n🔬🔬🔬validator:{validator.name}")
+            print(f"\n\n!!!validator:{validator.name}")
             breakpoint()
             pass
 

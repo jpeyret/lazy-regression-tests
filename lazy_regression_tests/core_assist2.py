@@ -36,21 +36,8 @@ def cpdb(*args, **kwargs):
 
 
 logger = get_lazy_logger()
-
 rpdb = breakpoints = cpdb
-
-#################################################################
-# Dependencies
-#################################################################
-
 undefined = NotImplemented
-
-# disable stuff that makes this module's audit noisy
-#
-#
-
-
-
 
 if __name__ == "__main__":
     cpdb = set_cpdb()
@@ -369,7 +356,7 @@ class _LazyMeta(type):
 
             if breakpoints('LazyMeta', {'classname': cls.__name__}):  # pragma: no cover
                 cls_validators = attrs.get("cls_validators")
-                print(f'\n\n🔬🔬🔬classname:{cls.__name__} {cls_validators=}') # debugging
+                print(f'\n\n!!!classname:{cls.__name__} {cls_validators=}') # debugging
                 breakpoint()
                 pass
 

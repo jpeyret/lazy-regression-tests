@@ -27,7 +27,6 @@ def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
 
-LOG_PREFIX = "🐻‍❄️polars"
 
 POLARS_ERR_DIM_MISMATCH = ("DataFrame dimensions do not match",)
 
@@ -387,7 +386,7 @@ def compare_df(
 
     oi = False
     if breakpoints("df_compare", {"always": 1}):  # pragma: no cover
-        print(f"\n\n🔬🔬🔬always:{1}") # debugging
+        print(f"\n\n!!!always:{1}") # debugging
         oi = True
         breakpoint()
         pass
