@@ -7,7 +7,6 @@ import sys
 import tempfile
 import unittest
 import unittest.mock as mock
-
 from typing import Callable
 
 import bs4
@@ -88,7 +87,7 @@ def get_mock_env(seed={}):
             res.update(**seed)
             return res
 
-    # pragma: no cover 
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -113,8 +112,6 @@ def get_fake_response_from_html(
 
             @responses.activate
             def faker(data):
-                # responses.add(responses.GET, 'http://twitter.com/api/1/foobar',
-                #               json={'error': 'not found'}, status=404)
 
                 responses.add(
                     responses.GET,
@@ -153,7 +150,7 @@ def get_fake_response_from_html(
 
         return response
 
-    # pragma: no cover 
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -188,7 +185,7 @@ def get_fake_response(
         assert response
         return response
 
-    # pragma: no cover 
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -224,7 +221,7 @@ class TstMixinSeeder:
             except (AssertionError,) as e: # noqa F841
                 pass
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -314,7 +311,7 @@ class TstMixin(unittest.TestCase):
 
         try:
             self.assertEqual(di_exp, di_got)
-        # pragma: no cover 
+        # pragma: no cover
         except (AssertionError,) as e: # noqa F841
             msg = f"\nFilter:{ext=}{label=}\n{e.args[0]}"
             e.args = (msg, filter)

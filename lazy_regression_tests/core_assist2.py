@@ -23,7 +23,6 @@ from lazy_regression_tests.common import (
 from lazy_regression_tests.constants import (
     TIMEOUT_MAXTIME_TO_ALLOW,
 )
-
 from lazy_regression_tests.filters import BFilter, FilterMgr
 from lazy_regression_tests.providers import (
     di_ext_provider,
@@ -75,8 +74,9 @@ class _HelperRoot:
             validator = self.validators.get(attrname)
 
             if not filter_ and not validator:
+                tmp1 = '/'.join(self.filters.keys())
                 raise AttributeError(
-                    f"unknown {attrname} known filters={'/'.join(self.filters.keys())} validators={'/'.join(self.validators.keys())}"
+                    f"unknown {attrname} known filters={tmp1} validators={'/'.join(self.validators.keys())}"
                 )
 
             checker = Checker(_lz=self._lz, f=filter_, v=validator, ext=attrname)
@@ -246,7 +246,7 @@ def build_filters_for_class(
             # of declaration
             if name == "settings" and alias_ is None:
                 msg = f"\n\nbuild_filters_for_class {cls=} {name=}, {ext=}"
-                ppp(dict(ext=ext, name=name, alias=alias_), msg)
+                logger.debug(msg)
 
             filtermgr = di_filtermgr[name] = FilterMgr(
                 ext=name, filters=list(di.values()), alias=alias_
@@ -338,10 +338,11 @@ class _LazyMeta(type):
             return newclass
         # pragma: no cover
         except (TypeError,) as _e:
-            logger.debug(f"\n\n{_e=}")
-            ppp(dict(clsname=clsname, found=found, basesold=basesold, bases=bases))
+            logger.exception(_e)
             if cpdb():
+                ppp(dict(clsname=clsname, found=found, basesold=basesold, bases=bases))  # debugging
                 breakpoint()
+
             raise
 
         except (Exception,) as _e:

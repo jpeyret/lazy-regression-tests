@@ -8,15 +8,15 @@ import unittest.mock as mock
 from pathlib import Path
 from typing import Any
 
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.filters as filters
+import lazy_regression_tests.validators as validators
+
 #################################################################
 # Dependencies
 #################################################################
 import pytest
 from bs4 import element
-
-import lazy_regression_tests.core_assist2 as core_assist2
-import lazy_regression_tests.filters as filters
-import lazy_regression_tests.validators as validators
 from lazy_regression_tests.common import Checker, ValidationError
 from lazy_regression_tests.constants import OPT_DIRECTIVE_BASELINE
 
@@ -116,11 +116,11 @@ class Base(unittest.TestCase):
                 extlz: core_assist2.Checker = getattr(testee._lz, ext)
                 return extlz.assert_same(got=data)
 
-            # pragma: no cover 
+            # pragma: no cover
             except (AssertionError,) as e: # noqa F841
                 pass
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -190,7 +190,7 @@ class Test_Validation(Base):
                     testee.assertEqual(testee.title, value.text)
 
                     return value
-                # pragma: no cover 
+                # pragma: no cover
                 except (Exception,) as e: # noqa F841
                     if cpdb():
                         breakpoint()
@@ -203,7 +203,7 @@ class Test_Validation(Base):
 
             v(self.response)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -226,7 +226,7 @@ class Test_Validation(Base):
 
             v(self.response)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -255,7 +255,7 @@ class Test_Assert_Json(Base):
             self.testee = self.cls_tst()
             self.testee._testMethodName = self.__class__.__name__.lower()
             self.checker: Checker = self.testee._lz.http_json
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -270,7 +270,7 @@ class Test_Assert_Json(Base):
             with pytest.raises(ValidationError):
                 self.checker.v(response)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -297,16 +297,11 @@ class Test_Assert_Json(Base):
             self.assertIsInstance(tmp2.rawdata, dict)
 
         except (Exception,) as e: # noqa F841
-
-            if verbose:
-                checker.show()
-                print(e)
             if cpdb():
                 breakpoint()
             raise
 
 
-# @unittest.skipUnless(do_test_assertsame, "set $do_test_assertsame")
 class Test_Assert_Same(Base):
     def setUp(self, now=None):
         "setUp"
@@ -346,7 +341,7 @@ class Test_Assert_Same(Base):
             )
 
         except (Exception,) as e: # noqa F841
-            print(tmp.soup.prettify())
+            print(tmp.soup.prettify())  # debugging
             if cpdb():
                 breakpoint()
             raise

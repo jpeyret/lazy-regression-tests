@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Dict
 
 import lazy_regression_tests.common as common
-
 import lazy_regression_tests.core_assist2 as core_assist2
 import lazy_regression_tests.validators as validators
 import pydantic
@@ -684,7 +683,7 @@ class Test_Validator(BaseValidatorTst):
                 self.fail(f"abc presence test shoulda failed on {data}")
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}") # debugging
+                    print(f"ok{self}.expected error: {e}") # debugging
 
             data = "abcd"
             v = testee._lz.txt.v
@@ -714,7 +713,7 @@ class Test_Validator(BaseValidatorTst):
             # pragma: no cover 
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}") # debugging
+                    print(f"ok{self}.expected error: {e}") # debugging
 
         # pragma: no cover 
         except (Exception,) as e: # noqa F841
@@ -761,7 +760,7 @@ class Test_Validator(BaseValidatorTst):
                     raiser("abc presence validator has no validation function")
             except (AssertionError) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}") # debugging
+                    print(f"ok{self}.expected error: {e}") # debugging
 
             validator = testee._lz.txt.validators["abc_in_data"]
 
@@ -774,7 +773,7 @@ class Test_Validator(BaseValidatorTst):
                     testee._lz.txt.v("xxx")
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}") # debugging
+                    print(f"ok{self}.expected error: {e}") # debugging
 
             testee._lz.txt.v("xabcd")
 
@@ -981,7 +980,7 @@ class Test_Validator(BaseValidatorTst):
             # pragma: no cover 
             except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅ expected failure {e} for {data=}") # debugging
+                    print(f"ok expected failure {e} for {data=}") # debugging
 
         # pragma: no cover 
         except (Exception,) as e: # noqa F841

@@ -30,7 +30,6 @@ from lazy_regression_tests.common import (
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
-
 rpdb = breakpoints = cpdb
 
 
@@ -64,7 +63,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
         except (json.decoder.JSONDecodeError):
             raise
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -91,7 +90,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}""")
             out = StringIO()
             pprint.pprint(data, out, width=1)
             return out.getvalue().strip()
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -118,7 +117,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
             return filter2
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -149,7 +148,7 @@ class JsonExtProvider(DictExtProvider):
                         f"did not get a json response {content_type=} with {status_code=}{url_msg}"
                     )
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -179,7 +178,7 @@ data type {type(data)} not supported by {self}.
 known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
             # raise NotImplementedError()
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -236,7 +235,7 @@ known extensions for testcase: {','.join(checker._lz.extensions)}""")
 data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.
 known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -304,38 +303,33 @@ class YamlProvider(DictExtProvider):
                         return True
 
                 res = yaml.dump(data, default_flow_style=False)
-
                 res = yaml_strip(res)
-
                 return res
 
-            # pragma: no cover 
+            # pragma: no cover
             except (TypeError, ValueError, PicklingError) as e: # noqa F841
                 data2 = dropbad_dump(data, ydump)
                 res2 = ydump(data2, default_flow_style=False).strip()
                 res2 = yaml_strip(res2)
-
                 return res2
-        # pragma: no cover 
+        # pragma: no cover
         except (TypeError,) as e: # noqa F841
             raise
 
-        # pragma: no cover 
+        # pragma: no cover
         except (PicklingError,) as e: # noqa F841
-            if 1:
-                for k, v in vars(data).items():
-                    print(k, end="")
-                    try:
-                        _ = yaml.dump(v)
-                        print("✅")
-                    # pragma: no cover 
-                    except (Exception,) as e2: # noqa F841
-                        print("🧨")
+            for k, v in vars(data).items():
+                print(k, end="")
+                try:
+                    _ = yaml.dump(v)
+                    print("✅")
+                # pragma: no cover
+                except (Exception,) as e2: # noqa F841
+                    print("🧨")
 
-            # if cpdb():
             raise TypeError(e)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
