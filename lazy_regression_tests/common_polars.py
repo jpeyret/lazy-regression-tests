@@ -7,15 +7,18 @@ from typing import Any, NamedTuple
 import polars as pl
 import sqlalchemy
 
-#
-#
 from lazy_regression_tests._baseutils import Subber, fill_template
 
 POLARS_ERR_DIM_MISMATCH = ('DataFrame dimensions do not match',)
-LOG_PREFIX ="🐻‍❄️polars"
+
+def cpdb(*args, **kwargs):
+    "disabled"
+
+rpdb = breakpoints = cpdb
 
 
 class co:
+    # a local "constants" namespace
     from_ = "from"
     select = "select"
     distinct = "distinct"
@@ -73,7 +76,6 @@ def get_colnames(sql : str) -> list[str]:
     """
     try:
 
-
         tmp = sql.replace("\n"," ")
         patre = re.compile("\sfrom\s",re.IGNORECASE)
 
@@ -93,13 +95,6 @@ def get_colnames(sql : str) -> list[str]:
         if cpdb():
             breakpoint()
         raise
-
-
-
-def cpdb(*args, **kwargs):
-    "disabled"
-
-rpdb = breakpoints = cpdb
 
 
 class PLReadSubber(Subber):
@@ -147,11 +142,8 @@ def prep_polars_query_params(
         raise
 
 
-
 def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
     try:
-
-
             # use :varname rather than %(varname)s coming in,
             # but also return a parameters dict as well as the select-clause aliases/colnames
             lo_tqry, parameters, colnames = prep_polars_query_params(tqry,*args, colnames=colnames)
@@ -162,8 +154,6 @@ def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
 
             renames = {old:new for old,new in zip(dftmp.schema.keys(),colnames)}
             df = dftmp.rename(renames)
-
-
             return df
 
     #pragma: no cover
@@ -175,7 +165,6 @@ def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
 class SplitExists(NamedTuple):
     exists : pl.DataFrame
     not_exists : pl.DataFrame
-
 
 
 def reorder_as_other(df : pl.DataFrame, other : pl.DataFrame) -> pl.DataFrame:
@@ -191,8 +180,6 @@ def split_on_exist_notexist(
     df:1,2,3,4 dfcheck:1,3
         => (df:1,3 , df:2,4)
 
-
-
     """
     try:
         df_exists = df.join(dfcheck, on=on, left_on=left_on,right_on=right_on, how="semi")
@@ -204,7 +191,6 @@ def split_on_exist_notexist(
         if cpdb():
             breakpoint()
         raise
-
 
 
 def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = False,keep_counts = False):
@@ -222,10 +208,7 @@ def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = Fa
             dfwithdupes = df.join(dfdupekeys,on=on)
             pass
 
-
         dfwithdupes = dfwithdupes.sort(on)
-
-
 
         if stop:
             with pl.Config(fmt_str_lengths=60,tbl_rows=20, tbl_cols = 20):

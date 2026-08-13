@@ -65,8 +65,6 @@ from lazy_regression_tests.basics import (
 )
 from lazy_regression_tests.constants import LOGGER_NAME
 
-
-
 try:
     from rich import inspect as rin
 # pragma: no cover
@@ -92,19 +90,13 @@ warning = "\n🧨 "
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
-
 rpdb = breakpoints = cpdb
-
-
 
 def get_lazy_logger() -> logging.Logger:
     """Return shared logger; callers are expected to configure handlers/levels."""
     return logging.getLogger(LOGGER_NAME)
 
-
 get_lazy_logger().addHandler(logging.NullHandler())
-
-
 
 #################################################################
 # Default validation functions
@@ -244,10 +236,11 @@ class _Control(object):
         return self.directive == constants.OPT_DIRECTIVE_NODIFF
 
 
-
-
 class LazyTemp:
-    """ """
+    """
+    This is a reporting datatype that both `assert_same` and `validate` both create on demand,
+    as well returning a True or False to be used by the unitest assertion.
+    """
 
     def __repr__(self):
         return "LazyTemp[id=%s]" % (id(self))
@@ -259,12 +252,11 @@ class LazyTemp:
         self.message = ""
         self.filtered = Dummy()
         self.testee = testee
-        #   - we we have visibility on config here???
 
         if breakpoints(
             "providerclassname", {"providerclassname": type(provider).__name__}
         ):  # pragma: no cover
-            print(f"\n\n!!!providerclassname:{type(provider).__name__}")
+            print(f"\n\n!!!providerclassname:{type(provider).__name__}") # debugging
             breakpoint()
             pass
 
@@ -1349,7 +1341,7 @@ class Checker:
 
             # https://docs.python.org/3.3/whatsnew/3.3.html#pep-409-suppressing-exception-context
             # howto- https://stackoverflow.com/a/17092033 - suppress causal exception
-            raise new_exc from None  # 🧨🧨🧨differences found🧨🧨🧨
+            raise new_exc from None
         # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
@@ -1792,15 +1784,6 @@ class Validator(pydantic.BaseModel):
                 # options.validate_with_testee = options.validate_with_validator = True
                 return FunctionCheck(f=value)
             if callable(value):
-                # sign = inspect.signature(value)
-                # validator = sign.parameters.get("validator")
-                # if validator:
-                #     options.validate_with_validator = True
-
-                # testee = sign.parameters.get("testee")
-                # if testee:
-                #     options.validate_with_testee = True
-
                 return FunctionCheck(f=value)
             elif isinstance(value, ValidatorCheck):
                 return value
@@ -1826,15 +1809,13 @@ class Validator(pydantic.BaseModel):
     def pause_for_debug(cls, data: Any) -> Any:
         try:
             name = data.get("name")
-
             selector = data.get("selector")
-
             lookup = (cls, name, selector, "ante")
 
             if (
                 breakpoints("pause_for_debug", {"name": name}) and lookup not in seen
             ):  # pragma: no cover
-                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}")
+                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}") # debugging
                 seen.add(lookup)
                 breakpoint()
                 pass
@@ -1860,7 +1841,7 @@ class Validator(pydantic.BaseModel):
                 breakpoints("pause_for_debug_post", {"name": name})
                 and lookup not in seen
             ):  # pragma: no cover
-                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}")
+                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}") # debugging
                 seen.add(lookup)
                 breakpoint()
                 pass
@@ -1868,7 +1849,7 @@ class Validator(pydantic.BaseModel):
             return data
         # pragma: no cover
         except (Exception,) as e: # noqa F841
-            if 1 or cpdb():
+            if cpdb():
                 breakpoint()
             raise
 
@@ -2397,7 +2378,7 @@ def check_equal(
         exp = exp or validator.exp
 
         if breakpoints("lazy", {"validator": validator.name}):  # pragma: no cover
-            print(f"\n\n!!!validator:{validator.name}")
+            print(f"\n\n!!!validator:{validator.name}")  # debugging
             breakpoint()
             pass
 
