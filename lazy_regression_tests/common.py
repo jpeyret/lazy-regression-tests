@@ -85,7 +85,7 @@ except (ImportError,) as e: # noqa F841
 verbose = "-v" in sys.argv
 di_ext_provider = {}
 undefined = NotImplemented
-warning = "\n🧨 "
+warning = "\n!!!"
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -1514,9 +1514,8 @@ class Checker:
             )
 
             try:
-                breakpoint()  # 🛑
+                breakpoint()
                 pass
-                # testee.assertEqual(exp, got, message)
                 # polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
                 self.provider.assert_equal(self, testee, exp, got, message)
             except (AssertionError,) as e: # noqa F841
@@ -1534,7 +1533,6 @@ class Checker:
         ):
             """fallback if timeout package is not available"""
             try:
-                # testee.assertEqual(exp, got, message)
                 #  - modify to pass in Checker, in order to access ValidatorMgr.config...
                 self.provider.assert_equal(self, testee, exp, got, message, **kwargs)
             except (AssertionError,) as e: # noqa F841
@@ -1550,8 +1548,7 @@ class Checker:
 
         message = f"""
 
-
-❌❌❌Regressions found:
+!!!Regressions found:
 
 Expected contents are in file:
   {tmp.fnp_exp}
@@ -1561,7 +1558,8 @@ Received contents are in file:
 
 Original exception:
  {ori}
-❌❌❌
+
+!!!
 """
         exc = ori.__class__(message)
         return exc
@@ -1779,9 +1777,7 @@ class Validator(pydantic.BaseModel):
     def build_validator(cls, value, info: pydantic.ValidationInfo):
         """prep the validator wrapper"""
         try:
-            # options = values["options"]
             if value in S_VALIDATIONS:
-                # options.validate_with_testee = options.validate_with_validator = True
                 return FunctionCheck(f=value)
             if callable(value):
                 return FunctionCheck(f=value)
@@ -2214,7 +2210,6 @@ class SameAssertor:
             )
 
             # calculating the directory path
-            # t_dirname = self._lazy_get_t_dirname(exp_got, subber)
             t_dirname = self._lazy_get_t_dirname(exp_got, subber, control, testee)
 
             if t_dirname is None:
@@ -2266,7 +2261,6 @@ class SameAssertor:
         after formatting, but before filtering ?
         """
 
-        # suffix=suffix, testee=testee, control=control, got=got
 
         try:
             if not control.env.get("save_raw_received_data"):

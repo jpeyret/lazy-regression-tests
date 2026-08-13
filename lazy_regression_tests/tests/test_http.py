@@ -98,7 +98,6 @@ class Base(unittest.TestCase):
             cls_filters = dict(
                 html=[
                     dict(name="timestamp", f=".timestamp"),
-                    # dict()
                 ],
                 http_json=dict(name="timestamp"),
             )

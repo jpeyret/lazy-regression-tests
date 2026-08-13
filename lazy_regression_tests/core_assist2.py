@@ -330,7 +330,6 @@ class _LazyMeta(type):
             def initialize_instance(self, *args, **kwargs):
                 """injecting an `__init__` that will happen before the TestCase.__init__"""
                 super(newclass, self).__init__(*args, **kwargs)  # type: ignore
-                # self.filters = {k: v.copy(deep=True) for k, v in self.cls_filters.items()}
                 self._lz = self.__class__._lz.clone(testee=self)
 
             # we want to inject this so that it always comes before TestCase.__init__

@@ -884,7 +884,6 @@ class DictFormatter:
                     continue
 
                 elif isinstance(v, dict):
-                    # if rpdb(): # pragma: no cover
 
                     func_fmt = di_formatter[key]
                     if isinstance(func_fmt, dict):
