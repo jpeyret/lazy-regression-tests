@@ -204,6 +204,7 @@ test = [
     { name = "jinja2" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "responses" },
 ]
 web = [
     { name = "beautifulsoup4" },
@@ -212,6 +213,10 @@ web = [
 
 [package.dev-dependencies]
 test = [
+    { name = "beautifulsoup4" },
+    { name = "jinja2" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
     { name = "responses" },
 ]
 
@@ -230,6 +235,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=5.0.0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests", marker = "extra == 'web'", specifier = ">=2.34.2" },
+    { name = "responses", marker = "extra == 'test'", specifier = ">=0.26.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.0" },
     { name = "soupsieve", specifier = ">=2.9.1" },
     { name = "timeout-decorator", specifier = ">=0.5.0" },
@@ -238,7 +244,13 @@ requires-dist = [
 provides-extras = ["web", "test", "data", "dev"]
 
 [package.metadata.requires-dev]
-test = [{ name = "responses", specifier = ">=0.26.2" }]
+test = [
+    { name = "beautifulsoup4", specifier = ">=4.15.0" },
+    { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-cov", specifier = ">=5.0.0" },
+    { name = "responses", specifier = ">=0.26.2" },
+]
 
 [[package]]
 name = "markupsafe"
