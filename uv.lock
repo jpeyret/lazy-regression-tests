@@ -147,7 +147,11 @@ dependencies = [
 data = [
     { name = "polars" },
 ]
+dev = [
+    { name = "lazy-regression-tests" },
+]
 test = [
+    { name = "beautifulsoup4" },
     { name = "jinja2" },
     { name = "pytest" },
 ]
@@ -165,7 +169,9 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 data = [{ name = "polars", specifier = ">=1.43.2" }]
+dev = [{ name = "lazy-regression-tests", virtual = "." }]
 test = [
+    { name = "beautifulsoup4", specifier = ">=4.15.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "pytest", specifier = ">=9.1.1" },
 ]
