@@ -19,7 +19,9 @@ from lazy_regression_tests.constants import (
     LAZY_KEEP_TEST_PREFIX,
     OPT_DIRECTIVE_BASELINE,
 )
-from lazy_regression_tests.core_assist2 import Filter, _LazyMeta
+from lazy_regression_tests.common import Filter
+
+from lazy_regression_tests.core_assist2 import _LazyMeta
 
 bs = bs4.BeautifulSoup
 

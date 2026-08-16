@@ -19,13 +19,13 @@ import pydantic
 import pytest
 from lazy_regression_tests.common import (
     Auto,
+    Filter,
     ConfigurationException,
     ExtAlias,
     ValidationError,
 )
 from lazy_regression_tests.core_assist2 import (
     Checker,
-    Filter,
     FilterMgr,
     LazyMixin,
     _LazyMeta,
@@ -41,8 +41,8 @@ from lazy_regression_tests.tests.helper_tst import (
 
 # disable noisy linting...
 # the classes like Top, Level2, Level3... look unused, they are not
-# 
-# 
+#
+#
 from lazy_regression_tests.utils import disable_cpdb, force_verbose, set_breakpoints3, set_cpdb, set_rpdb
 
 
@@ -121,7 +121,7 @@ class Base(TstMixin, TstMixinSeeder, unittest.TestCase):
             classes = self.get_classes_oi(locals())
             return {cls_.__name__: cls_ for cls_ in classes}
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -152,7 +152,7 @@ class Test_Dict(Base):
             res = {cls_.__name__: cls_ for cls_ in classes}
             return res
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -193,7 +193,7 @@ class Test_Dict(Base):
             data["skip21"] = "?"
             checker.assert_same(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -223,7 +223,7 @@ class Test_Dict(Base):
             s_exp = checker.provider.datain_to_str(di_exp, checker=checker)
             self.assertEqual(s_exp, s_got)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -261,7 +261,7 @@ class Test_Dict(Base):
                 for key in di.keys():
                     self.assertTrue(key.startswith("skip"))
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -293,7 +293,7 @@ class Test_Json(Test_Dict):
 
             return res
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -342,7 +342,7 @@ careamouseghidef
 
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
-            # pragma: no cover 
+            # pragma: no cover
             except (ValueError, pydantic.ValidationError) as e: # noqa F841
                 pass
 
@@ -360,13 +360,13 @@ careamouseghidef
 
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
-            # pragma: no cover 
+            # pragma: no cover
             except (pydantic.ValidationError,) as e: # noqa F841
                 pass
             except (ValueError,) as e: # noqa F841
                 self.assertTrue("expecting" in str(e))
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -411,7 +411,7 @@ careamouseghidef
 
             self.assertEqual(exp, got)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -435,7 +435,7 @@ careamouseghidef
 
             self.assertFalse("ghi" in got)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -487,7 +487,7 @@ class Test_LazyRoot(Base):
         try:
             # don't need to assume too much about the internals of core_assist
             # so lets keep this import limited to the test
-            # 
+            #
             from lazy_regression_tests.core_assist2 import LazyRoot
 
             classes = self.gen_test_classes()
@@ -504,7 +504,7 @@ class Test_LazyRoot(Base):
             inst_root = lz.clone()
             self.assertEqual(inst_root.txt.ext, lz.txt.ext)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -538,13 +538,13 @@ class Test_Actual(unittest.TestCase):
             try:
                 tester.test_bad()
                 self.fail("Tester.test_bad() should have failed on ")
-            # pragma: no cover 
+            # pragma: no cover
             except (AssertionError,) as e: # noqa F841
                 pass
 
             tester.test_good()
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -582,7 +582,7 @@ class BaseValidatorTst(Base):
             classes = self.get_classes_oi(locals())
             return {cls_.__name__: cls_ for cls_ in classes}
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -638,7 +638,7 @@ class Test_Validator(BaseValidatorTst):
             checker = testee._lz.dict
             checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -708,12 +708,12 @@ class Test_Validator(BaseValidatorTst):
                 with disable_cpdb():
                     checker.v(data2)
                 self.fail(f"abc presence test shoulda failed on {data2}")
-            # pragma: no cover 
+            # pragma: no cover
             except (AssertionError,) as e: # noqa F841
                 if verbose:
                     print(f"ok{self}.expected error: {e}") # debugging
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if testee:
                 testee._lz.show()
@@ -775,7 +775,7 @@ class Test_Validator(BaseValidatorTst):
 
             testee._lz.txt.v("xabcd")
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -856,7 +856,7 @@ class Test_Validator(BaseValidatorTst):
 
             checker.v(dict(status_code=404))
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -870,7 +870,7 @@ class Test_Validator(BaseValidatorTst):
             def equality_check(data, validator):
                 try:
                     return validator.exp == data
-                # pragma: no cover 
+                # pragma: no cover
                 except (Exception,) as e: # noqa F841
                     if cpdb():
                         breakpoint()
@@ -901,7 +901,7 @@ class Test_Validator(BaseValidatorTst):
                 with disable_cpdb():
                     checker.v(response)
                 raise AssertionError("shoulda failed on 404")
-            # pragma: no cover 
+            # pragma: no cover
             except (AssertionError,) as e: # noqa F841
                 pass
 
@@ -937,7 +937,7 @@ class Test_Validator(BaseValidatorTst):
             foo2 = get_fake_response_from_html(status=200)
             checker.v(foo2)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -971,12 +971,12 @@ class Test_Validator(BaseValidatorTst):
 
             try:
                 checker.v(data)
-            # pragma: no cover 
+            # pragma: no cover
             except (AssertionError,) as e: # noqa F841
                 if verbose:
                     print(f"ok expected failure {e} for {data=}") # debugging
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1028,7 +1028,7 @@ class Test_ValidatorMgr_Stacking(Base):
 
             self.di_vbase = {v.name: v for v in self.validation_manager_http.validators}
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1040,7 +1040,7 @@ class Test_ValidatorMgr_Stacking(Base):
             self.assertEqual(None, di[self.name_contenttype].exp)
             self.assertEqual(self.ok, di[self.name_status].exp)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1124,7 +1124,7 @@ class Test_ValidatorMgr_Stacking(Base):
             data.status_code = 404
             v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1166,7 +1166,7 @@ class Test_ValidatorMgr_Stacking(Base):
             )
             checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1193,7 +1193,7 @@ class Test_ValidatorMgr_Stacking(Base):
                     di_v[name].selector, f"selector missing on {di_v[name]}"
                 )
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1280,7 +1280,7 @@ class Test_Aliasing(Base):
             res = {cls_.__name__: cls_ for cls_ in classes}
             return res
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1311,7 +1311,7 @@ class Test_Aliasing(Base):
             data = data or self.input1.copy()
 
             return testee, data
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1327,7 +1327,7 @@ class Test_Aliasing(Base):
             with pytest.raises(common.ValidationError):
                 checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1341,7 +1341,7 @@ class Test_Aliasing(Base):
             checker = testee._lz.settings
             checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1355,7 +1355,7 @@ class Test_Aliasing(Base):
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1369,7 +1369,7 @@ class Test_Aliasing(Base):
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1386,7 +1386,7 @@ class Test_Aliasing(Base):
             with pytest.raises(common.ValidationError):
                 checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -1399,7 +1399,7 @@ class Test_Aliasing(Base):
             checker = testee._lz.json
             checker.v(data)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
