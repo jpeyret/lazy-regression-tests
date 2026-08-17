@@ -201,10 +201,8 @@ def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
     if "--rpdb" in sys.argv:
         real_rpdb.count = 3
 
-        try:
-            from django.core.cache import cache
-        except (Exception,) as _e:
-            cache.set("rpdb_enabled", 1, 300)
+        cache["rpdb_enabled"] = 1
+
 
     if recurse:
         for module in list(sys.modules.values()):
@@ -1400,26 +1398,3 @@ def format_url(url: str) -> str:
         if cpdb():
             breakpoint()
         raise
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
