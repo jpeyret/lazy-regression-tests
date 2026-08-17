@@ -4,7 +4,6 @@ import copy
 import json
 import os
 import unittest
-from logging import getLogger
 from typing import Any, Callable, Iterable
 
 import bs4
@@ -27,13 +26,14 @@ from lazy_regression_tests.common import (
     check_equal,
     check_exp_in_data,
     select_by_provider,
+    get_lazy_logger,
 )
 from lazy_regression_tests.utils import first
 from lazy_regression_tests.validators import Validator, ValidatorMgr
 
 bs = bs4.BeautifulSoup
 undefined = NotImplemented
-logger = getLogger("lazy")
+logger = get_lazy_logger()
 log = logger.debug
 
 

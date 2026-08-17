@@ -1,6 +1,5 @@
 import unittest
 from dataclasses import dataclass
-from logging import getLogger
 from pathlib import Path
 from typing import Any, Callable, Type
 
@@ -9,6 +8,7 @@ import polars as pl
 import lazy_regression_tests.providers as providers
 from lazy_regression_tests._baseutils import _fmt_as_tuple_str
 from lazy_regression_tests.common import (
+    get_lazy_logger,
     BFilter,
     Checker,
     LazyTemp,
@@ -35,7 +35,7 @@ rpdb = breakpoints = cpdb
 
 undefined = NotImplemented
 
-logger = getLogger("lazy")
+logger = get_lazy_logger
 
 
 class ValidatorTempPolars(ValidatorTemp):
@@ -58,7 +58,7 @@ class ValidatorTempPolars(ValidatorTemp):
                 assert isinstance(self.rawdata, pl.DataFrame)
                 assert isinstance(self.data_in, pl.DataFrame)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -112,7 +112,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
                 f"only polars.DataFrame are supported.  {type(data)=}"
             )
             return data
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -130,7 +130,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
                 f"only polars.DataFrame are supported.  {type(data)=}"
             )
             return data
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -144,7 +144,7 @@ class Polars_Provider(providers.PAbstractExtProvider):
             )
             self._filtered = self.data_in
             # return self
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -199,11 +199,11 @@ class Polars_Provider(providers.PAbstractExtProvider):
 
             testee.assertEqual(True, is_equal, msg)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (AssertionError,) as e: # noqa F841
             raise
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -251,11 +251,11 @@ def check_unique(
             testee.assertFalse(f"{len(df_dupekeys)} duplicate rows", df_dupes)
 
         return True
-    # pragma: no cover 
+    # pragma: no cover
     except (AssertionError,) as e: # noqa F841
         e.args += (df_dupekeys,)
         raise
-    # pragma: no cover 
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
@@ -303,7 +303,7 @@ class compare_df_options:
 
             return res
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -474,7 +474,7 @@ def compare_df(
             # flag differences, and keep track of their indexes
             dfdiff = (dfboth0 == dfboth1).with_row_index(name=options.cindex)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (ValueError,) as e: # noqa F841
             chk = POLARS_ERR_DIM_MISMATCH
             if e.args == chk:
@@ -561,8 +561,8 @@ def compare_df(
 
         return res
 
-    # pragma: no cover 
-    # pragma: no cover 
+    # pragma: no cover
+    # pragma: no cover
     except (CompareException,) as e: # noqa F841
         pass
         raise
@@ -618,7 +618,7 @@ class LazyCompareOptions(compare_df_options):
 
                 type(self)._lookup = res
             return type(self)._lookup
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -634,7 +634,7 @@ class LazyCompareOptions(compare_df_options):
             counts = compare_df_options.get_counts(df, colstatus)
             return counts.is_equal, str(counts)
 
-        # pragma: no cover 
+        # pragma: no cover
         except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
@@ -655,7 +655,7 @@ def get_diffs(source: ValidatorMgr | ValidatorTemp | Checker) -> pl.DataFrame | 
         if diff is not None and isinstance(diff, pl.DataFrame):
             return diff
 
-    # pragma: no cover 
+    # pragma: no cover
     except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()

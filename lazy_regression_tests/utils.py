@@ -1,8 +1,6 @@
 
 # ruff: disable[F401]
-import logging
-import pdb
-from traceback import print_exc as xp  # 
+from traceback import print_exc as xp  #
 
 from lazy_regression_tests._baseutils import (
     DictFormatter,
@@ -25,8 +23,6 @@ from lazy_regression_tests._baseutils import (
 from lazy_regression_tests._baseutils import (
     UnavailableLibrary as BaseUnavailableLibrary,
 )
-
-logger = logging.getLogger("lazy")
 
 undefined = NotImplemented
 
