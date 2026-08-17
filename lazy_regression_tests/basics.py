@@ -3,6 +3,7 @@ basic building blocks that do not reference each other
 used to offload common.py
 """
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -17,6 +18,14 @@ from pydantic import ConfigDict
 import lazy_regression_tests.constants as constants
 from lazy_regression_tests._baseutils import Subber, format_url, ppp
 from lazy_regression_tests._baseutils import oshow as show
+from lazy_regression_tests.constants import LOGGER_NAME
+
+
+def get_lazy_logger() -> logging.Logger:
+    """Return shared logger; callers are expected to configure handlers/levels."""
+    return logging.getLogger(LOGGER_NAME)
+
+get_lazy_logger().addHandler(logging.NullHandler())
 
 
 def cpdb(*args, **kwargs):
@@ -172,7 +181,7 @@ class AutoExp:
             msg = f"{repr(validator)} : {e}:  Known fields on `testee` {repr(testee)} : {list(vars(testee).keys())}"
 
             if verbose:
-                ppp(validator, f"\n\nAutoExp {e=} {testee}")
+                ppp(validator, f"\n\nAutoExp {e=} {testee}") # debugging
 
             raise ConfigurationException(msg)
 
@@ -341,7 +350,8 @@ def lazyinfo(
 
         dn_out = os.getenv("lzrt_info_dir")
         if not dn_out:
-            print(
+            logger = get_lazy_logger()
+            logger.error(
                 "env variable $lzrt_info_dir is not set.  No diagnostics can be written."
             )
             return

@@ -2,15 +2,14 @@
 common lazy functionality
 """
 
-import inspect
-import logging
 import functools
+import inspect
 import operator
 import os
 import re
+import signal
 import sys
 import unittest
-import signal
 from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Mapping
@@ -64,8 +63,8 @@ from lazy_regression_tests.basics import (
     MediatedEnvironDict,
     ValidationError,
     get_alias_check_equality,
+    get_lazy_logger,
 )
-from lazy_regression_tests.constants import LOGGER_NAME
 
 try:
     from rich import inspect as rin
@@ -114,11 +113,6 @@ def cpdb(*args, **kwargs):
 
 rpdb = breakpoints = cpdb
 
-def get_lazy_logger() -> logging.Logger:
-    """Return shared logger; callers are expected to configure handlers/levels."""
-    return logging.getLogger(LOGGER_NAME)
-
-get_lazy_logger().addHandler(logging.NullHandler())
 
 #################################################################
 # Default validation functions

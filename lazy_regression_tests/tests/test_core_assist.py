@@ -19,9 +19,9 @@ import pydantic
 import pytest
 from lazy_regression_tests.common import (
     Auto,
-    Filter,
     ConfigurationException,
     ExtAlias,
+    Filter,
     ValidationError,
 )
 from lazy_regression_tests.core_assist2 import (
