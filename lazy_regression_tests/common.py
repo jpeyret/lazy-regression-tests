@@ -4,11 +4,13 @@ common lazy functionality
 
 import inspect
 import logging
+import functools
 import operator
 import os
 import re
 import sys
 import unittest
+import signal
 from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Mapping
@@ -72,14 +74,34 @@ except (ImportError,) as e: # noqa F841
     rin = NotImplemented
 
 
-try:
-    from timeout_decorator import TimeoutError as CustomTimeoutError
-    from timeout_decorator import timeout
-except (ImportError,) as e: # noqa F841
-    timeout = None
+def timeout(seconds: float):
+    """force a timeout on long-running diffs """
 
-    class CustomTimeoutError(Exception):
-        """shouldnt see this"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if not hasattr(signal, "SIGALRM"):
+                raise RuntimeError("timeout_std requires SIGALRM support")
+
+            def _handle_timeout(signum, frame):
+                raise TimeoutError(f"{func.__name__} timed out after {seconds} seconds")
+
+            previous_handler = signal.getsignal(signal.SIGALRM)
+            previous_timer = signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.setitimer(signal.ITIMER_REAL, seconds)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, previous_handler)
+                remaining, interval = previous_timer
+                if remaining > 0 or interval > 0:
+                    signal.setitimer(signal.ITIMER_REAL, remaining, interval)
+
+        return wrapper
+
+    return decorator
 
 
 verbose = "-v" in sys.argv
@@ -1477,9 +1499,8 @@ class Checker:
 
             try:
                 # supports a timeout mechanism, if the module is available
-
                 self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp, **kwargs)
-            except (CustomTimeoutError,) as e:  # pragma: no cover # noqa F841
+            except (TimeoutError,) as _e:  # pragma: no cover # noqa F841
                 tmp.message = message = (
                     "exp and got are not equal but comparison timed out after %s seconds"
                     % (constants.TIMEOUT_MAXTIME_TO_ALLOW)
@@ -1502,45 +1523,23 @@ class Checker:
                 breakpoint()
             raise
 
-    if (
-        False and timeout
-    ):  #!!!TODO!!!  polars_diffing -
-        #remove the False, which is only in place to facilitate debugging by not going off main Thread
 
-        @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
-        def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
-            """ comparisons will automatically times out after %s seconds""" % (
-                constants.TIMEOUT_MAXTIME_TO_ALLOW
-            )
+    @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
+    def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
+        """ comparisons will automatically times out after %s seconds""" % (
+            constants.TIMEOUT_MAXTIME_TO_ALLOW
+        )
 
-            try:
+        try:
+            self.provider.assert_equal(self, testee, exp, got, message)
+        except (AssertionError,) as e: # noqa F841
+            raise self.format_assertion_message(e, tmp, testee)
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
+            if cpdb():
                 breakpoint()
-                pass
-                # polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(self, testee, exp, got, message)
-            except (AssertionError,) as e: # noqa F841
-                raise self.format_assertion_message(e, tmp, testee)
-            # pragma: no cover
-            except (Exception,) as e: # noqa F841
-                if cpdb():
-                    breakpoint()
-                raise
+            raise
 
-    else:
-        #
-        def assertEqualTimed(
-            self, testee, exp, got, tmp: LazyTemp, message=None, **kwargs
-        ):
-            """fallback if timeout package is not available"""
-            try:
-                #  - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(self, testee, exp, got, message, **kwargs)
-            except (AssertionError,) as e: # noqa F841
-                raise self.format_assertion_message(e, tmp, testee)
-            except (Exception,) as e: # noqa F841
-                if cpdb():
-                    breakpoint()
-                raise
 
     def format_assertion_message(self, ori, tmp: LazyTemp, testee):
         """message thrown on assert_same failures"""

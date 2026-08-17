@@ -9,7 +9,6 @@ description = "Regression testing utilities for comparing repeated outputs acros
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "timeout-decorator>=0.5.0",
     "PyYAML>=6.0.3",
     "pydantic>=2.13.4",
     "more-itertools>=11.1.0",
