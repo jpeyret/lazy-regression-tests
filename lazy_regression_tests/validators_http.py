@@ -158,7 +158,6 @@ class HTTP_Provider(providers.PAbstractExtProvider):
 
     def content_type(self, data: requests.models.Response):
         """get content-type"""
-        # Django format
         headers = getattr(data, "_headers", None)
         if headers is not None:
             res = headers["content-type"][1]

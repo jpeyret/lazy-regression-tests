@@ -1121,72 +1121,6 @@ You need to install it before using {self.name}
 TimedValue = namedtuple("TimedValue", "time_in value")
 
 
-class CacheDict(MutableMapping):
-    def __init__(self, timetolive, **kwargs):
-        self.timetolive = timetolive
-        self.mapping = {}
-        self.update(kwargs)
-
-    def _check_age(self, key, res, purge=False):
-        try:
-            is_ok = (time() - res.time_in) <= self.timetolive
-
-            if not is_ok and purge:
-                self.mapping.pop(key, None)
-
-            return is_ok
-
-        # pragma: no cover
-        except (Exception,) as _e:
-            if cpdb():
-                breakpoint()
-            raise
-
-    def __getitem__(self, key):
-        try:
-            res = self.mapping[key]
-            if not self._check_age(key, res, True):
-                raise KeyError
-
-            return res.value
-        # pragma: no cover
-        except (KeyError,) as _e:
-            raise
-        except (Exception,) as _e:
-            if cpdb():
-                breakpoint()
-            raise
-
-    def __delitem__(self, key):
-        try:
-            del self.mapping[key]
-        # pragma: no cover
-        except (KeyError,) as _e:
-            pass
-
-    def __setitem__(self, key, value):
-        tvalue = TimedValue(time(), value)
-        self.mapping[key] = tvalue
-
-    def __iter__(self):
-
-        for key in iter(self.mapping):
-            if self._check_age(key, self.mapping[key]):
-                yield key
-            else:
-                continue
-
-    def __len__(self):
-        cntr = 0
-        for v in self.mapping.values():
-            if self._check_age(None, v):
-                cntr += 1
-        return cntr
-
-    def __repr__(self):
-        return f"{type(self).__name__}({self.mapping})"
-
-
 def debug_nested_dict_types(di, path=""):
     """mostly used to figure out annoying YAML/JSON dump problems"""
 
@@ -1468,125 +1402,24 @@ def format_url(url: str) -> str:
         raise
 
 
-class JDataProvDescriptor:  # Config file provider
-    """loads config files"""
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}"
 
-    def __init__(
-        self,
-        src: Any,
-        as_simplenamespace=False,
-        attrname_dict_backup: str | None = None,
-        cache=True,
-        subdomain: str = "",
-    ):
-        self.src = src
-        self.as_simplenamespace = as_simplenamespace
-        self.attrname_dict_backup = attrname_dict_backup
-        self.cache = cache
-        self.subdomain = subdomain
 
-    def __set_name__(self, owner, name):
-        self.name = name
-        self.cachename = f"_{name}"
 
-    def _parse_dict_to_simplenamespaces(self, data) -> SimpleNamespace:
-        try:
-            res = parse_dict_to_simplenamespaces(data)
 
-            if self.attrname_dict_backup:
-                setattr(self.tmpinstance, self.attrname_dict_backup, data)
 
-            return res
-        # pragma: no cover
-        except (Exception,) as _e:
-            if cpdb():
-                breakpoint()
-            raise
 
-    def _cache_and_return(self, data):
-        try:
-            if self.subdomain:
-                data = data[self.subdomain]
-            if self.as_simplenamespace:
-                data = self._parse_dict_to_simplenamespaces(data)
-            if self.cache:
-                setattr(self.tmpinstance, self.cachename, data)
-            return data
-        # pragma: no cover
-        except (Exception,) as _e:
-            if cpdb():
-                breakpoint()
-            raise
 
-    def __get__(self, instance, owner) -> dict[str, Any]:
-        "load json, somehow"
-        try:
-            try:
-                lookfor = self.src
-                if (v := getattr(instance, self.cachename, undefined)) is not undefined:
-                    return v
 
-                self.tmpinstance = instance
 
-                if isinstance(lookfor, str) and lookfor.startswith("<") and lookfor.endswith(">"):
-                    lookfor = getattr(instance, lookfor[1:-1])
 
-                if isinstance(lookfor, Path):
-                    j_data = read_data(lookfor)
-                    return self._cache_and_return(j_data)
 
-                elif isinstance(lookfor, dict):
-                    res = lookfor.copy()
-                    return self._cache_and_return(res)
 
-                elif isinstance(lookfor, (str, Path)):
-                    if str(lookfor).startswith("$"):  # environment variable
-                        lookfor = os.getenv(str(lookfor)[1:])
-                        if lookfor is None:
-                            raise InvalidConfigurationException(f"Environment variable {lookfor} is not set")
 
-                    if lookfor.startswith("{") or lookfor.startswith("["):
-                        res = json.loads(lookfor)
-                        return self._cache_and_return(res)
 
-                    else:
-                        pa = Path(lookfor)
 
-                        suffix = pa.suffix
-                        if suffix == ".json":
-                            with pa.open() as fi:
-                                res = json.load(fi)
-                        elif suffix == ".toml":
-                            with pa.open("rb") as fi:
-                                res = tomllib.load(fi)
-                        elif suffix == ".yaml":
-                            with pa.open() as fi:
-                                res = yload(fi)
 
-                        else:
-                            raise NotImplementedError(f"lookfor: {lookfor}")
 
-                        return self._cache_and_return(res)
 
-                else:
-                    raise NotImplementedError(f"lookfor: {lookfor}")
 
-            except (FileNotFoundError, NotImplementedError) as _e:
-                if cpdb():
-                    breakpoint()
-                    pass
-                raise
 
-            # pragma: no cover
-            except (Exception,) as _e:
-                if cpdb():
-                    breakpoint()
-                raise
-        # pragma: no cover
-        except (Exception,) as _e:
-            if cpdb():
-                breakpoint()
-            raise
