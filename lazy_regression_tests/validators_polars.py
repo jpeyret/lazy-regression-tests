@@ -8,13 +8,13 @@ import polars as pl
 import lazy_regression_tests.providers as providers
 from lazy_regression_tests._baseutils import _fmt_as_tuple_str
 from lazy_regression_tests.common import (
-    get_lazy_logger,
     BFilter,
     Checker,
     LazyTemp,
     Validator,
     ValidatorMgr,
     ValidatorTemp,
+    get_lazy_logger,
 )
 from lazy_regression_tests.common_polars import (
     check_for_duplicates,

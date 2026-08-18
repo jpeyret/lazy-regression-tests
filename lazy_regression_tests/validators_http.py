@@ -25,8 +25,8 @@ from lazy_regression_tests.common import (
     ValidatorTemp,
     check_equal,
     check_exp_in_data,
-    select_by_provider,
     get_lazy_logger,
+    select_by_provider,
 )
 from lazy_regression_tests.utils import first
 from lazy_regression_tests.validators import Validator, ValidatorMgr
