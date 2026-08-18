@@ -23,9 +23,10 @@ from lazy_regression_tests.common import (
     PAbstractExtProvider,
     ValidationError,
     di_ext_provider,
-    undefined,
+    get_lazy_logger,
 )
 
+undefined = NotImplemented
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
@@ -318,13 +319,12 @@ class YamlProvider(DictExtProvider):
         # pragma: no cover
         except (PicklingError,) as e: # noqa F841
             for k, v in vars(data).items():
-                print(k, end="")
+                print(k, end="") # debugging
                 try:
                     _ = yaml.dump(v)
-                    print("✅")
                 # pragma: no cover
                 except (Exception,) as e2: # noqa F841
-                    print("🧨")
+                    get_lazy_logger().error(f"{cls.__name__}.datain_to_str:PicklingError= {e2}")
 
             raise TypeError(e)
 
