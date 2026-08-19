@@ -936,11 +936,11 @@ class InvalidConfigurationException(ValueError):
     def __init__(self, msg, *args, **kwargs):
 
         new_message = f"""
-⚙️⚙️⚙️⚙️⚙️⚙️⚙️
+!!!!!!!!!!!!!!
 
 {msg}
 
-⚙️⚙️⚙️⚙️⚙️⚙️⚙️
+!!!!!!!!!!!!!!
 """
         super(InvalidConfigurationException, self).__init__(new_message, *args, **kwargs)
 

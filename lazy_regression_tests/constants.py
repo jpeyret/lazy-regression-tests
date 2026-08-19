@@ -16,11 +16,15 @@ OPT_DIRECTIVE_NOASSERT = "noassert"
 TIMEOUT_MAXTIME_TO_ALLOW = 5
 
 
-HDR = f"\n{'🧨⚙️' * 20}\n"
-FTR = f"\n{'🧨⚙️' * 20}\n"
+HDR = f"\n{'!!' * 20}\n"
+FTR = f"\n{'!!' * 20}\n"
 
 ENVIRONMENT_VARNAME_ROOT = "lzrt_"
 
 LAZY_HEADER_SEPARATOR = "<![CDATA[header"
 
 LAZY_KEEP_TEST_PREFIX = "lazy_keep_test_"
+
+ENV_VAR_SHOWINFO_ALWAYS = f"{ENVIRONMENT_VARNAME_ROOT}_showinfo"
+ENV_VAR_DIR_INFO = f"{ENVIRONMENT_VARNAME_ROOT}_info_dir"
+ENV_VAR_DIRECTIVE = f"{ENVIRONMENT_VARNAME_ROOT}_directive"

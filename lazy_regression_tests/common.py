@@ -66,12 +66,6 @@ from lazy_regression_tests.basics import (
     get_lazy_logger,
 )
 
-try:
-    from rich import inspect as rin
-# pragma: no cover
-except (ImportError,) as e: # noqa F841
-    rin = NotImplemented
-
 
 def timeout(seconds: float):
     """force a timeout on long-running diffs """

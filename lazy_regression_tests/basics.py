@@ -16,7 +16,7 @@ import pydantic
 from pydantic import ConfigDict
 
 import lazy_regression_tests.constants as constants
-from lazy_regression_tests._baseutils import Subber, format_url, ppp
+from lazy_regression_tests._baseutils import Subber, format_url, ppp, eprint
 from lazy_regression_tests._baseutils import oshow as show
 from lazy_regression_tests.constants import LOGGER_NAME
 
@@ -26,6 +26,8 @@ def get_lazy_logger() -> logging.Logger:
     return logging.getLogger(LOGGER_NAME)
 
 get_lazy_logger().addHandler(logging.NullHandler())
+
+logger = get_lazy_logger()
 
 
 def cpdb(*args, **kwargs):
@@ -324,6 +326,7 @@ class OutInfo:
 
         self.__dict__[__name] = __value
 
+debuglog = logger.error
 
 def lazyinfo(
     *args,
@@ -339,6 +342,11 @@ def lazyinfo(
     save it to json so that you can use to interact with the exception context later
     """
     try:
+        prefix = f"{testee}.lazyinfo:"
+
+        msg = f"{prefix}({locals()})"
+        eprint(msg)
+        debuglog(f"{msg}")
 
         res = ""
         type_ = tb = None
@@ -348,11 +356,11 @@ def lazyinfo(
             # we actually dont do all that much with lazyinfo when nothing happened
             return f"{testee}.  no exception "
 
-        dn_out = os.getenv("lzrt_info_dir")
+        dn_out = os.getenv(constants.ENV_VAR_DIR_INFO)
         if not dn_out:
-            logger = get_lazy_logger()
+
             logger.error(
-                "env variable $lzrt_info_dir is not set.  No diagnostics can be written."
+                f"env variable ${constants.ENV_VAR_DIR_INFO}.  No diagnostics can be written."
             )
             return
 
@@ -363,14 +371,14 @@ def lazyinfo(
             outinfo.testclass = testee.__class__.__name__
             outinfo.testmethod = testee._testMethodName
 
-            pass
-
         if exception:
             outinfo.exception = exception
 
         kwargs = dict(**kwargs)
 
         subber = Subber(*([outinfo, kwargs, testee] + list(args)))
+
+        debuglog(f"{prefix}381")
 
         if gather_test_info:
             outinfo0 = outinfo
@@ -384,6 +392,9 @@ def lazyinfo(
             if not outinfo:
                 outinfo = outinfo0
 
+        debuglog(f"{prefix}395")
+
+
         if error:
             error_part = "error."
         else:
@@ -395,6 +406,9 @@ def lazyinfo(
             fn_o = f"{fn_o}.{_testMethodName}"
 
         fn_o += ".json"
+
+        debuglog(f"{prefix}410")
+
 
         fnp_exp = getattr(exception, "fnp_exp", undefined)
         fnp_got = getattr(exception, "fnp_got", undefined)
@@ -413,9 +427,13 @@ def lazyinfo(
             outinfo.filename = tb.tb_frame.f_code.co_filename
             outinfo.linenum = tb.tb_lineno
 
+        debuglog(f"{prefix}430")
+
+
         fnpo = Path(dn_out) / fn_o
 
         if exception:
+            debuglog(f"{prefix}436")
             res += f"\n  info@ {fnpo}"
 
             url = getattr(outinfo, "url", None)
@@ -435,12 +453,15 @@ def lazyinfo(
             if filename and linenum:
                 res += f"\n  edit@ {filename}:{linenum}"
 
+
+        debuglog(f"{prefix}456")
+
         out = outinfo.dumps()
 
         if res:
             res = f"\n{res}\n"
 
-        showinfo = os.getenv("showinfo") or write_on_success
+        showinfo = os.getenv(constants.ENV_VAR_SHOWINFO_ALWAYS) or write_on_success
 
         if error or showinfo:
 
