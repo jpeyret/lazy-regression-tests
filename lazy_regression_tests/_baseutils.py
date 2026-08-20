@@ -249,9 +249,7 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
 
     flags = set(["--cpdbmany", "--cpdbonce", single_use_flag])
     args = set(sys.argv)
-
     single_use_flag = "once" if single_use_flag in sys.argv else False
-
     found = single_use_flag or (args & flags)
 
     if remove:
@@ -274,14 +272,8 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
                     # this checks if it's likely to be cpdb, not something w same name
                     existing = getattr(module, "cpdb", None)
                     if existing:
-                        if existing.__doc__ == "disabled":
-                            # if verbose:
-                            pass
-                        else:
-                            # if 0 and verbose:
-                            # else:
-                            pass
-
+                        if not ("disabled" in existing.__doc__ or "do-nothing" in existing.__doc__):
+                            continue
                         module.cpdb = real_cpdb
                 except AttributeError:  # pragma: no cover
                     pass

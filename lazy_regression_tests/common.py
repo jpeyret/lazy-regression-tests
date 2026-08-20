@@ -435,7 +435,6 @@ class PAbstractExtProvider(Protocol):
     ) -> bool:
         """check if exp can be considered equal"""
         try:
-            # pass
             if isinstance(got, (list, set)) and isinstance(exp, (list, set)):
                 got = set(got)
                 exp = set(exp)
@@ -465,7 +464,6 @@ class PAbstractExtProvider(Protocol):
     ) -> bool:
         """check if exp can be considered equal"""
         try:
-            # pass
             if (
                 list_to_set
                 and isinstance(got, (list, set))

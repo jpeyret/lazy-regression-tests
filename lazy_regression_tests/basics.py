@@ -16,10 +16,11 @@ import pydantic
 from pydantic import ConfigDict
 
 import lazy_regression_tests.constants as constants
-from lazy_regression_tests._baseutils import Subber, format_url, ppp, eprint
+from lazy_regression_tests._baseutils import Subber, format_url, ppp
 from lazy_regression_tests._baseutils import oshow as show
 from lazy_regression_tests.constants import LOGGER_NAME
 from lazy_regression_tests.utils import InvalidConfigurationException
+
 
 def get_lazy_logger() -> logging.Logger:
     """Return shared logger; callers are expected to configure handlers/levels."""
@@ -101,7 +102,7 @@ class MediatedEnvironDict(dict):
 
                 pad = Path(dirname)
                 if not pad.is_dir():
-                    raise InvalidConfigurationException(f"env var ${rootname}{name} points to {pad} which is not an existing directory")
+                    raise InvalidConfigurationException(f"env var ${rootname}{name} points to {pad} which is not an existing directory") # noqa E501
 
             self.acquired = True
         except (Exception,) as _e:
@@ -356,10 +357,6 @@ def lazyinfo(
     save it to json so that you can use to interact with the exception context later
     """
     try:
-        prefix = f"{testee}.lazyinfo:"
-
-        msg = f"{prefix}({locals()})"
-        eprint(msg)
 
         res = ""
         type_ = tb = None
