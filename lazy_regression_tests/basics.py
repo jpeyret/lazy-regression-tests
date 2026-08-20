@@ -19,7 +19,7 @@ import lazy_regression_tests.constants as constants
 from lazy_regression_tests._baseutils import Subber, format_url, ppp, eprint
 from lazy_regression_tests._baseutils import oshow as show
 from lazy_regression_tests.constants import LOGGER_NAME
-
+from lazy_regression_tests.utils import InvalidConfigurationException
 
 def get_lazy_logger() -> logging.Logger:
     """Return shared logger; callers are expected to configure handlers/levels."""
@@ -69,10 +69,10 @@ class ExecInfo:
 
 class MediatedEnvironDict(dict):
     """reads prefixed environment variables
-    `rootname` allows user to define the variable's prefix
+    `constants.ENVIRONMENT_VARNAME_ROOT` allows user to define the variable's prefix
     i.e. change from `lzrt_` to something else if there is a
     conflict
-    LZRT_OPT_DIRECTIVE could be MYLAZY_OPT_DIRECTIVE
+    `lzrt_directive` could be `mylazy_opt_directive`
     """
 
     def __init__(self, acquired=False, **kwds):
@@ -82,17 +82,32 @@ class MediatedEnvironDict(dict):
 
     def acquire(self, rootname: str):
         """read prefixed environment variables"""
+        try:
 
-        if self.acquired:
-            return
+            if self.acquired:
+                return
 
-        len_root = len(rootname)
-        for k, value in os.environ.items():
-            if k.startswith(rootname):
-                k2 = k[len_root:]
-                self[k2] = value
+            len_root = len(rootname)
+            for k, value in os.environ.items():
+                if k.startswith(rootname):
+                    k2 = k[len_root:]
+                    self[k2] = value
 
-        self.acquired = True
+            #sanity check template_dirname_exp/template_dirname_got
+            for name in "template_dirname_exp template_dirname_got".split():
+                dirname = self.get(name)
+                if not dirname:
+                    raise InvalidConfigurationException(f"env var ${rootname}{name} has not been set")
+
+                pad = Path(dirname)
+                if not pad.is_dir():
+                    raise InvalidConfigurationException(f"env var ${rootname}{name} points to {pad} which is not an existing directory")
+
+            self.acquired = True
+        except (Exception,) as _e:
+            if cpdb():
+                breakpoint()
+            raise
 
 
 class BFilter(pydantic.BaseModel):
@@ -326,7 +341,6 @@ class OutInfo:
 
         self.__dict__[__name] = __value
 
-debuglog = logger.error
 
 def lazyinfo(
     *args,
@@ -346,7 +360,6 @@ def lazyinfo(
 
         msg = f"{prefix}({locals()})"
         eprint(msg)
-        debuglog(f"{msg}")
 
         res = ""
         type_ = tb = None
@@ -378,7 +391,6 @@ def lazyinfo(
 
         subber = Subber(*([outinfo, kwargs, testee] + list(args)))
 
-        debuglog(f"{prefix}381")
 
         if gather_test_info:
             outinfo0 = outinfo
@@ -392,7 +404,6 @@ def lazyinfo(
             if not outinfo:
                 outinfo = outinfo0
 
-        debuglog(f"{prefix}395")
 
 
         if error:
@@ -407,7 +418,6 @@ def lazyinfo(
 
         fn_o += ".json"
 
-        debuglog(f"{prefix}410")
 
 
         fnp_exp = getattr(exception, "fnp_exp", undefined)
@@ -427,13 +437,11 @@ def lazyinfo(
             outinfo.filename = tb.tb_frame.f_code.co_filename
             outinfo.linenum = tb.tb_lineno
 
-        debuglog(f"{prefix}430")
 
 
         fnpo = Path(dn_out) / fn_o
 
         if exception:
-            debuglog(f"{prefix}436")
             res += f"\n  info@ {fnpo}"
 
             url = getattr(outinfo, "url", None)
@@ -454,7 +462,6 @@ def lazyinfo(
                 res += f"\n  edit@ {filename}:{linenum}"
 
 
-        debuglog(f"{prefix}456")
 
         out = outinfo.dumps()
 
