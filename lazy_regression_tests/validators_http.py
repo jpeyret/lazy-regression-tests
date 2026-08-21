@@ -15,21 +15,29 @@ import pydantic
 import requests
 
 import lazy_regression_tests.providers as providers
+
+# ruff: disable[F401]  - these guys are re-exported for ease-of-use
 from lazy_regression_tests.common import (
     BFilter,
     Checker,
     ConfigurationException,
+    ExtAlias,
     Filter,
     LazyTemp,
     RawFilter,
     ValidatorTemp,
     check_equal,
     check_exp_in_data,
+    check_in,
+    cpdblazy,
     get_lazy_logger,
     select_by_provider,
 )
 from lazy_regression_tests.utils import first
-from lazy_regression_tests.validators import Validator, ValidatorMgr
+from lazy_regression_tests.validators import ValidationError, Validator, ValidatorMgr
+
+# ruff: enable[F401]
+
 
 bs = bs4.BeautifulSoup
 undefined = NotImplemented
@@ -42,28 +50,6 @@ def cpdb(*args, **kwargs):
 
 rpdb = breakpoints = cpdb
 
-# ruff: disable[F401]  - these guys are re-exported for ease-of-use
-from lazy_regression_tests.validators import ValidationError, ValidatorMgr, Validator
-from lazy_regression_tests.common import (
-    check_equal,
-    select_by_provider,
-    check_exp_in_data,
-    check_in,
-    cpdblazy,
-)
-
-import lazy_regression_tests.providers as providers
-
-from lazy_regression_tests.common import (
-    ValidatorTemp,
-    LazyTemp,
-    Filter,
-    BFilter,
-    RawFilter,
-    ConfigurationException,
-    ExtAlias,
-)
-# ruff: enable[F401]
 
 class CSSFilter(RawFilter):
     """ancestor of `raw` (non-text) filters"""
