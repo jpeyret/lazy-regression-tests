@@ -1,3 +1,11 @@
+### 👆👆👆 jlp260821 - git branch -b'd from `branch.develop`.  👆👆👆
+
+isolazy has been copied in from `$bme_dir_issues/104.rust/001.p2.xedit/fp000.publishing/004.p2.iso_lazy@isolazy`
+
+
+
+
+
 Travis CI: [![Build Status](https://travis-ci.org/jpeyret/lazy-regression-tests.svg?branch=master)](https://travis-ci.org/jpeyret/lazy-regression-tests)  ![Coverage](https://codecov.io/gh/jpeyret/lazy-regression-tests/branch/master/graph/badge.svg)
 
 ## Automated regression tests
