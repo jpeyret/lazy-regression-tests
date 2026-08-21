@@ -40,9 +40,30 @@ log = logger.debug
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
-
 rpdb = breakpoints = cpdb
 
+# ruff: disable[F401]  - these guys are re-exported for ease-of-use
+from lazy_regression_tests.validators import ValidationError, ValidatorMgr, Validator
+from lazy_regression_tests.common import (
+    check_equal,
+    select_by_provider,
+    check_exp_in_data,
+    check_in,
+    cpdblazy,
+)
+
+import lazy_regression_tests.providers as providers
+
+from lazy_regression_tests.common import (
+    ValidatorTemp,
+    LazyTemp,
+    Filter,
+    BFilter,
+    RawFilter,
+    ConfigurationException,
+    ExtAlias,
+)
+# ruff: enable[F401]
 
 class CSSFilter(RawFilter):
     """ancestor of `raw` (non-text) filters"""
