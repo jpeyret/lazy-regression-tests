@@ -523,9 +523,9 @@ def compare_df(
                 pl.all_horizontal(pl.col("*").exclude(*excludes)).alias(options.csame)
             )
 
-            # OK, now who had differences and who was the same?
-            dfdiffsame = dfdiff.filter(pl.col(options.csame))
-            dfdiffdiff1 = dfdiff.filter(not pl.col(options.csame))
+            # OK, now who had differences and who was the same?  - and, no polars requires comparisons to bools.
+            dfdiffsame = dfdiff.filter(pl.col(options.csame) == True)   # noqa E712
+            dfdiffdiff1 = dfdiff.filter(pl.col(options.csame) == False) # noqa E712
             # grrrr... nulls...
             dfdiffdiff2 = dfdiff.filter(pl.col(options.csame).is_null())
 
