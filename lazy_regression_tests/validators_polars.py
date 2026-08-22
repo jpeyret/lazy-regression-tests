@@ -16,11 +16,18 @@ from lazy_regression_tests.common import (
     ValidatorTemp,
     get_lazy_logger,
 )
+
+# ruff: disable[F401]  - these guys are re-exported for ease-of-use
 from lazy_regression_tests.common_polars import (
     check_for_duplicates,
     fill_nulls,
     find_columns_with_nulls,
+    read_df,
 )
+
+# ruff: enable[F401]
+
+
 
 
 def cpdb(*args, **kwargs):
