@@ -85,6 +85,13 @@ def timeout(seconds: float):
             signal.setitimer(signal.ITIMER_REAL, seconds)
             try:
                 return func(*args, **kwargs)
+            except (TypeError,) as _e:
+                if cpdb():
+                    signal.setitimer(signal.ITIMER_REAL, 0)
+                    signal.signal(signal.SIGALRM, previous_handler)
+                    breakpoint()
+                    pass
+                raise
             finally:
                 signal.setitimer(signal.ITIMER_REAL, 0)
                 signal.signal(signal.SIGALRM, previous_handler)
@@ -1511,13 +1518,13 @@ class Checker:
 
 
     @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
-    def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
+    def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None,**kwargs):
         """ comparisons will automatically times out after %s seconds""" % (
             constants.TIMEOUT_MAXTIME_TO_ALLOW
         )
 
         try:
-            self.provider.assert_equal(self, testee, exp, got, message)
+            self.provider.assert_equal(self, testee, exp, got, message,**kwargs)
         except (AssertionError,) as e: # noqa F841
             raise self.format_assertion_message(e, tmp, testee)
         # pragma: no cover
