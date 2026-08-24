@@ -2,12 +2,12 @@
 basic building blocks that do not reference each other
 used to offload common.py
 """
-from typing import Optional, Callable, Any, List, Tuple, cast
-import os
 import json
+import logging
+import os
 import sys
 from pathlib import Path
-
+from typing import Any, Callable, List, Optional
 
 #################################################################
 # Dependencies
@@ -15,27 +15,29 @@ from pathlib import Path
 import pydantic
 from pydantic import ConfigDict
 
-
-from lazy_regression_tests._baseutils import oshow as show, Subber, ppp, format_url
 import lazy_regression_tests.constants as constants
+from lazy_regression_tests._baseutils import Subber, format_url, ppp
+from lazy_regression_tests._baseutils import oshow as show
+from lazy_regression_tests.constants import LOGGER_NAME
+from lazy_regression_tests.utils import InvalidConfigurationException
 
-from bemyerp.websec.log_settings import Log
 
-log = Log(__name__)
+def get_lazy_logger() -> logging.Logger:
+    """Return shared logger; callers are expected to configure handlers/levels."""
+    return logging.getLogger(LOGGER_NAME)
+
+get_lazy_logger().addHandler(logging.NullHandler())
+
+logger = get_lazy_logger()
 
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
-
 rpdb = breakpoints = cpdb
-
-
 verbose = constants.verbose
-
 undefined = constants.undefined
 
-# 🎫004.lazy.052.polars_diffing
 class ExtAlias(pydantic.BaseModel):
     """allows uncoupling name from extension provider
 
@@ -68,10 +70,10 @@ class ExecInfo:
 
 class MediatedEnvironDict(dict):
     """reads prefixed environment variables
-    `rootname` allows user to define the variable's prefix
+    `constants.ENVIRONMENT_VARNAME_ROOT` allows user to define the variable's prefix
     i.e. change from `lzrt_` to something else if there is a
     conflict
-    LZRT_OPT_DIRECTIVE could be MYLAZY_OPT_DIRECTIVE
+    `lzrt_directive` could be `mylazy_opt_directive`
     """
 
     def __init__(self, acquired=False, **kwds):
@@ -81,17 +83,32 @@ class MediatedEnvironDict(dict):
 
     def acquire(self, rootname: str):
         """read prefixed environment variables"""
+        try:
 
-        if self.acquired:
-            return
+            if self.acquired:
+                return
 
-        len_root = len(rootname)
-        for k, value in os.environ.items():
-            if k.startswith(rootname):
-                k2 = k[len_root:]
-                self[k2] = value
+            len_root = len(rootname)
+            for k, value in os.environ.items():
+                if k.startswith(rootname):
+                    k2 = k[len_root:]
+                    self[k2] = value
 
-        self.acquired = True
+            #sanity check template_dirname_exp/template_dirname_got
+            for name in "template_dirname_exp template_dirname_got".split():
+                dirname = self.get(name)
+                if not dirname:
+                    raise InvalidConfigurationException(f"env var ${rootname}{name} has not been set")
+
+                pad = Path(dirname)
+                if not pad.is_dir():
+                    raise InvalidConfigurationException(f"env var ${rootname}{name} points to {pad} which is not an existing directory") # noqa E501
+
+            self.acquired = True
+        except (Exception,) as _e:
+            if cpdb():
+                breakpoint()
+            raise
 
 
 class BFilter(pydantic.BaseModel):
@@ -173,16 +190,16 @@ class AutoExp:
     """allows exp lookup by testee.attrname"""
 
     @classmethod
-    def get_exp(cls, validator: "Validator", testee: Any):
+    def get_exp(cls, validator: "Validator", testee: Any):  # noqa F821 - !!!TODO!!! Validator needs to move from common.py to basics.py, here
         """allows exp lookup by testee.attrname"""
         try:
             return getattr(testee, validator.name)
-        # pragma: no cover pylint: disable=unused-variable
-        except (AttributeError,) as e:
+        # pragma: no cover
+        except (AttributeError,) as e: # noqa F841
             msg = f"{repr(validator)} : {e}:  Known fields on `testee` {repr(testee)} : {list(vars(testee).keys())}"
 
             if verbose:
-                ppp(validator, f"\n\nAutoExp {e=} {testee}")
+                ppp(validator, f"\n\nAutoExp {e=} {testee}") # debugging
 
             raise ConfigurationException(msg)
 
@@ -202,24 +219,20 @@ def get_alias_check_equality(li_in: List[Optional[ExtAlias]]) -> Optional[ExtAli
 
         return lia[0]
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
 
 
-def get_alias_from_ancestors(
-    cls: type, ancestors: List[type], ext: str
-) -> Optional[str]:
-    """get the ancestors' provider"""
+def get_alias_from_ancestors(cls: type, ancestors: List[type], ext: str) -> str|None:
+    """get the ancestors' alias"""
     try:
         for ancestor in ancestors:
-            name = ancestor.__name__
             if ancestor is cls:
                 continue
             try:
-
                 for attrname in ["cls_validators", "cls_filters"]:
                     source = getattr(ancestor, attrname, {})
                     if not source:
@@ -228,14 +241,12 @@ def get_alias_from_ancestors(
                         found = source.get(ext)
                         if found:
                             return found.alias
-            # pragma: no cover pylint: disable=unused-variable
-            except (AttributeError,) as e:
+            # pragma: no cover
+            except (AttributeError,) as e: # noqa F841
                 pass
-
         return None
-
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -247,7 +258,7 @@ class ValidationError(AssertionError):
     def __init__(
         self,
         msg=None,
-        validator: Optional["Validator"] = None,
+        validator = None,
         got=undefined,
         exp=undefined,
         testee=undefined,
@@ -280,7 +291,7 @@ class ValidationError(AssertionError):
                     if name == "exp":
                         if exp_seen:
                             continue
-                        if type(v) == type and issubclass(v, (AutoExp,)):
+                        if type(v) is type and issubclass(v, (AutoExp,)):
                             v = v.__name__
                     elif name == "v":
                         if getattr(v, "__class__", None) and v.__class__.__name__ in (
@@ -293,8 +304,8 @@ class ValidationError(AssertionError):
 
             return "\n".join(li)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -305,7 +316,7 @@ class ValidationError(AssertionError):
         "returns a dictionary of relevant data"
         try:
             validator = self.validator.dict()
-        except (AttributeError,) as e:
+        except (AttributeError,) as e: # noqa F841
             validator = self.validator
 
         return dict(msg=str(self), validator=validator)
@@ -355,10 +366,11 @@ def lazyinfo(
             # we actually dont do all that much with lazyinfo when nothing happened
             return f"{testee}.  no exception "
 
-        dn_out = os.getenv("lzrt_info_dir")
+        dn_out = os.getenv(constants.ENV_VAR_DIR_INFO)
         if not dn_out:
-            print(
-                f"env variable $lzrt_info_dir is not set.  No diagnostics can be written."
+
+            logger.error(
+                f"env variable ${constants.ENV_VAR_DIR_INFO}.  No diagnostics can be written."
             )
             return
 
@@ -369,14 +381,13 @@ def lazyinfo(
             outinfo.testclass = testee.__class__.__name__
             outinfo.testmethod = testee._testMethodName
 
-            pass
-
         if exception:
             outinfo.exception = exception
 
         kwargs = dict(**kwargs)
 
         subber = Subber(*([outinfo, kwargs, testee] + list(args)))
+
 
         if gather_test_info:
             outinfo0 = outinfo
@@ -390,6 +401,8 @@ def lazyinfo(
             if not outinfo:
                 outinfo = outinfo0
 
+
+
         if error:
             error_part = "error."
         else:
@@ -401,6 +414,8 @@ def lazyinfo(
             fn_o = f"{fn_o}.{_testMethodName}"
 
         fn_o += ".json"
+
+
 
         fnp_exp = getattr(exception, "fnp_exp", undefined)
         fnp_got = getattr(exception, "fnp_got", undefined)
@@ -418,6 +433,8 @@ def lazyinfo(
         if tb:
             outinfo.filename = tb.tb_frame.f_code.co_filename
             outinfo.linenum = tb.tb_lineno
+
+
 
         fnpo = Path(dn_out) / fn_o
 
@@ -441,16 +458,17 @@ def lazyinfo(
             if filename and linenum:
                 res += f"\n  edit@ {filename}:{linenum}"
 
+
+
         out = outinfo.dumps()
 
         if res:
             res = f"\n{res}\n"
 
-        showinfo = os.getenv("showinfo") or write_on_success
+        showinfo = os.getenv(constants.ENV_VAR_SHOWINFO_ALWAYS) or write_on_success
 
         if error or showinfo:
 
-            log(f"lazy:fnp_json={fnpo}", loglevel="warning")
 
             with fnpo.open("w") as fo:
                 fo.write(out)
@@ -469,8 +487,8 @@ def lazyinfo(
                     exception.args = (arg0,) + exception.args[1:]
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise

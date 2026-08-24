@@ -1,32 +1,31 @@
-"""filters"""
-from collections import defaultdict
+"""filters.  this basically aggregates imports from elsewhere"""
+
+# ruff: disable[F401]
 import re
-from typing import Protocol, runtime_checkable, Optional, Dict, Any, Union, List
 from abc import abstractmethod
+from collections import defaultdict
 from inspect import signature
+from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable
+
+from pydantic import BaseModel, Extra, Field, root_validator, validator
 
 from lazy_regression_tests._baseutils import DictFormatter, def_repr
-
-from pydantic import BaseModel, Field, validator, root_validator, Extra
-
 from lazy_regression_tests.common import (
-    ConfigurationException,
     TU_NOCATCH,
+    BFilter,
+    ConfigurationException,
+    DictFilter,
+    Filter,
+    FilterMgr,
     LazyTemp,
-    ValidatorTemp,
     PAbstractFilterWrapper,
     PTextFilterWrapper,
-    Filter,
-    BFilter,
-    DictFilter,
-    FilterMgr,
+    ValidatorTemp,
 )
 
 
 def cpdb(*args, **kwargs):
     "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
 
-
 rpdb = breakpoints = cpdb
-
 undefined = NotImplemented

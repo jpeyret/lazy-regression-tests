@@ -1,16 +1,16 @@
 "support for https://json-schema.org/ validation"
 
-from typing import Any
 import unittest
-from lazy_regression_tests.common import Validator, ValidationError
-from lazy_regression_tests.basics import ConfigurationException, Auto
-
 from collections.abc import Mapping
+from typing import Any
 
 #################################################################
 # Dependencies
 #################################################################
 import jsonschema
+
+from lazy_regression_tests.basics import Auto, ConfigurationException
+from lazy_regression_tests.common import ValidationError, Validator
 
 
 def cpdb(*args, **kwargs):
@@ -36,19 +36,18 @@ def validate_json_schema(data: Any, testee: unittest.TestCase, validator: Valida
         if not isinstance(data, list):
             data = [data]
 
-        # breakpoint() #🛑
         pass
 
         for got in data:
             try:
                 jsonschema.validate(instance=got, schema=exp)
-            except (jsonschema.exceptions.ValidationError,) as e:
+            except (jsonschema.exceptions.ValidationError,) as e: # noqa F841
                 raise ValidationError(msg=str(e), validator=validator, exp=exp, got=got)
     # pragma: no cover
     except (ValidationError,):
         raise
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover 
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise

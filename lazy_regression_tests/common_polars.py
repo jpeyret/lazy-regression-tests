@@ -1,28 +1,24 @@
 """ docstring"""
 
+import re
+from datetime import date, datetime
 from typing import Any, NamedTuple
 
-import sqlalchemy
 import polars as pl
-import re
+import sqlalchemy
 
-# pylint: disable=unused-import
-from bemyerp.lib.utils import set_cpdb, set_rpdb, set_breakpoints3, cprint
-# pylint: enable=unused-import
-from bemyerp.lib.utils import fill_template, Subber
-
-from datetime import datetime, date
-
-from bemyerp.websec.log_settings import Log
-log = Log(__name__)
-
-
+from lazy_regression_tests._baseutils import Subber, fill_template
 
 POLARS_ERR_DIM_MISMATCH = ('DataFrame dimensions do not match',)
-LOG_PREFIX ="🐻‍❄️polars"
+
+def cpdb(*args, **kwargs):
+    "disabled"
+
+rpdb = breakpoints = cpdb
 
 
 class co:
+    # a local "constants" namespace
     from_ = "from"
     select = "select"
     distinct = "distinct"
@@ -60,31 +56,18 @@ def fill_nulls(df : pl.DataFrame):
         dfo = df
 
         for colname, typename in todo:
-
             typename = typename.split("(")[0]
-
             filler = di_fill.get(typename)
             if filler is None:
-                type_ = df.schema[colname]
-
-                log(f"fill_nulls:could not fill @{colname=} with :{typename=}: known=:{','.join(di_fill.keys())}:",loglevel="warning")
                 continue
-
             dfo = dfo.with_columns(pl.col(colname).fill_null(filler))
-
-
-
         return dfo
 
-
-
-    #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    #pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
-
-
 
 
 def get_colnames(sql : str) -> list[str]:
@@ -93,7 +76,6 @@ def get_colnames(sql : str) -> list[str]:
     """
     try:
 
-        
         tmp = sql.replace("\n"," ")
         patre = re.compile("\sfrom\s",re.IGNORECASE)
 
@@ -108,21 +90,14 @@ def get_colnames(sql : str) -> list[str]:
 
         return tmp5
 
-    #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    #pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
 
 
-
-def cpdb(*args, **kwargs):
-    "disabled"
-
-rpdb = breakpoints = cpdb
-
-
-class PLReadSubber(Subber): # !!!TODO!!! move to polars_utils
+class PLReadSubber(Subber):
 
     prefix = ":"
 
@@ -131,27 +106,24 @@ class PLReadSubber(Subber): # !!!TODO!!! move to polars_utils
         self._data = {}
 
     def __getitem__(self, keyname):
-
         res = f"{self.prefix}{keyname}"
-
         self._data[keyname] = super().__getitem__(keyname)
-    
         return res
-
 
     def as_dict(self):
         return self._data
 
 
 class PolarsPrepared(NamedTuple):  # !!!TODO!!! move to polars_utils
-    """ tqry_for_polars : %(varname)s gets replaced with :varname 
+    """ tqry_for_polars : %(varname)s gets replaced with :varname
         parameters      : {"varname" : somevalue }"""
     tqry_for_polars : str
     parameters_for_polars : dict[str,Any]
     colnames : list[str]
 
 
-def prep_polars_query_params(tqry, *args, colnames : list[str]|None=None) -> tuple[str,dict[str,Any]]: # !!!TODO!!! move to polars_utils
+def prep_polars_query_params(
+    tqry, *args, colnames : list[str]|None=None) -> tuple[str,dict[str,Any]]:
     """
     formats the query to conform to pl.read_database requirements i.e. :varname
     preps all %(var)s as a dict  {<varname> :  <value>}
@@ -163,19 +135,17 @@ def prep_polars_query_params(tqry, *args, colnames : list[str]|None=None) -> tup
         tqry_for_polars = fill_template(tqry, subber)
         parameters_for_polars = subber.as_dict()
         return PolarsPrepared(tqry_for_polars,parameters_for_polars,colnames)
-    #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    #pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
 
 
-
 def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
     try:
-
-
-            # use :varname rather than %(varname)s coming in, but also return a parameters dict as well as the select-clause aliases/colnames
+            # use :varname rather than %(varname)s coming in,
+            # but also return a parameters dict as well as the select-clause aliases/colnames
             lo_tqry, parameters, colnames = prep_polars_query_params(tqry,*args, colnames=colnames)
 
             sqa_qry = sqlalchemy.text(lo_tqry)
@@ -184,12 +154,10 @@ def read_df(db : Any, tqry, *args, colnames : list[str]|None=None):
 
             renames = {old:new for old,new in zip(dftmp.schema.keys(),colnames)}
             df = dftmp.rename(renames)
-
-
             return df
 
-    #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    #pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -199,32 +167,30 @@ class SplitExists(NamedTuple):
     not_exists : pl.DataFrame
 
 
-
 def reorder_as_other(df : pl.DataFrame, other : pl.DataFrame) -> pl.DataFrame:
     "used for concats.  will not fix datatype errors"
     return df.select(other.columns)
 
 
-def split_on_exist_notexist(df : pl.DataFrame, dfcheck : pl.DataFrame, on : Any, left_on =None, right_on=None) -> tuple[pl.DataFrame, pl.DataFrame]:
+def split_on_exist_notexist(
+    df : pl.DataFrame, dfcheck : pl.DataFrame,
+    on : Any, left_on =None, right_on=None) -> tuple[pl.DataFrame, pl.DataFrame]:
     """ split on an existance check
-    
-    df:1,2,3,4 dfcheck:1,3
-        => (df:1,3 , df:2,4) 
 
-        
-    
+    df:1,2,3,4 dfcheck:1,3
+        => (df:1,3 , df:2,4)
+
     """
     try:
         df_exists = df.join(dfcheck, on=on, left_on=left_on,right_on=right_on, how="semi")
         df_notexists = df.join(dfcheck, on=on, left_on=left_on,right_on=right_on, how="anti")
 
         return SplitExists(df_exists, df_notexists)
-    #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    #pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
-
 
 
 def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = False,keep_counts = False):
@@ -240,26 +206,20 @@ def check_for_duplicates(df: pl.DataFrame, on: Any, stop = False, keys_only = Fa
 
         else:
             dfwithdupes = df.join(dfdupekeys,on=on)
-            # breakpoint() #🛑
             pass
-
 
         dfwithdupes = dfwithdupes.sort(on)
 
-
-
         if stop:
             with pl.Config(fmt_str_lengths=60,tbl_rows=20, tbl_cols = 20):
-                print(dfwithdupes)
-
-
-                breakpoint() #🛑
+                print(dfwithdupes)  # debugging
+                breakpoint()
                 pass
 
         return dfwithdupes
 
-    #pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e: 
+    #pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise

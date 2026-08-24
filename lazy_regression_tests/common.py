@@ -2,10 +2,12 @@
 common lazy functionality
 """
 
+import functools
 import inspect
 import operator
 import os
 import re
+import signal
 import sys
 import unittest
 from abc import abstractmethod
@@ -31,13 +33,13 @@ from typing import (
     runtime_checkable,
 )
 
-import lazy_regression_tests.constants as constants
-
 #################################################################
 # Dependencies
 #################################################################
 import pydantic
-from bemyerp.websec.log_settings import Log
+from pydantic import ConfigDict
+
+import lazy_regression_tests.constants as constants
 from lazy_regression_tests._baseutils import (
     DictFormatter,
     Dummy,
@@ -61,40 +63,61 @@ from lazy_regression_tests.basics import (
     MediatedEnvironDict,
     ValidationError,
     get_alias_check_equality,
+    get_lazy_logger,
 )
-from pydantic import ConfigDict
-
-log = Log(__name__)
 
 
-try:
-    from rich import inspect as rin
-# pragma: no cover pylint: disable=unused-variable
-except (ImportError,) as e:
-    rin = NotImplemented
+def timeout(seconds: float):
+    """force a timeout on long-running diffs """
 
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if not hasattr(signal, "SIGALRM"):
+                raise RuntimeError("timeout_std requires SIGALRM support")
 
-try:
-    from timeout_decorator import TimeoutError as CustomTimeoutError
-    from timeout_decorator import timeout
-except (ImportError,) as e:
-    timeout = None
+            def _handle_timeout(signum, frame):
+                raise TimeoutError(f"{func.__name__} timed out after {seconds} seconds")
 
-    class CustomTimeoutError(Exception):
-        """shouldnt see this"""
+            previous_handler = signal.getsignal(signal.SIGALRM)
+            previous_timer = signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.setitimer(signal.ITIMER_REAL, seconds)
+            try:
+                return func(*args, **kwargs)
+            except (TypeError,) as _e:
+                if cpdb():
+                    signal.setitimer(signal.ITIMER_REAL, 0)
+                    signal.signal(signal.SIGALRM, previous_handler)
+                    breakpoint()
+                    pass
+                raise
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, previous_handler)
+                remaining, interval = previous_timer
+                if remaining > 0 or interval > 0:
+                    signal.setitimer(signal.ITIMER_REAL, remaining, interval)
+
+        return wrapper
+
+    return decorator
 
 
 verbose = "-v" in sys.argv
+di_ext_provider = {}
+undefined = NotImplemented
+warning = "\n!!!"
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+rpdb = breakpoints = cpdb
+
 
 #################################################################
 # Default validation functions
 #################################################################
-
-di_ext_provider = {}
-
-
-warning = "\n🧨 "
-
 
 def _checktypes(got, exp, validator: "Validator"):
     """warn if there was type mismatch"""
@@ -103,13 +126,8 @@ def _checktypes(got, exp, validator: "Validator"):
             selector_msg = f" using {validator.selector=}"
         else:
             selector_msg = ""
-        log(
-            f"{warning}{repr(validator)}: Possible type mismatch exp={type(exp)} vs got={type(got)=} {selector_msg}\n",
-            loglevel="warning",
-        )
-
-
-undefined = NotImplemented
+        message = f"_checktypes: type mismatch? {selector_msg=}"
+        get_lazy_logger().warning(message)
 
 
 def cpdblazy(*args, **kwargs):
@@ -222,8 +240,8 @@ class _Control(object):
     def skip(self):
         try:
             return self.directive == constants.OPT_DIRECTIVE_SKIP
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -235,15 +253,11 @@ class _Control(object):
         return self.directive == constants.OPT_DIRECTIVE_NODIFF
 
 
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
-
-
 class LazyTemp:
-    """ """
+    """
+    This is a reporting datatype that both `assert_same` and `validate` both create on demand,
+    as well returning a True or False to be used by the unitest assertion.
+    """
 
     def __repr__(self):
         return "LazyTemp[id=%s]" % (id(self))
@@ -255,12 +269,11 @@ class LazyTemp:
         self.message = ""
         self.filtered = Dummy()
         self.testee = testee
-        # 🎫004.lazy.052.polars_diffing  - we we have visibility on config here???
 
         if breakpoints(
             "providerclassname", {"providerclassname": type(provider).__name__}
         ):  # pragma: no cover
-            print(f"\n\n🔬🔬🔬providerclassname:{type(provider).__name__}")
+            print(f"\n\n!!!providerclassname:{type(provider).__name__}") # debugging
             breakpoint()
             pass
 
@@ -303,8 +316,8 @@ class ValidatorTemp:
 
             return self._formatted_got
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -322,8 +335,8 @@ class ValidatorTemp:
                     self.checker.f.filter(self.data_in)
 
             return self._filtered
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -342,8 +355,8 @@ class ValidatorTemp:
                 else:
                     self._filtered[k] = v
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -362,8 +375,8 @@ class ValidatorTemp:
             if value:
                 assert self.data_in
                 assert self.rawdata
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -389,14 +402,14 @@ def nested_get(data: Any, selector: str) -> Any:
                 return data
         return data
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -423,14 +436,12 @@ class PAbstractExtProvider(Protocol):
     TYPE_RAW: Any
     text_based: bool = True
 
-    # 🎫004.lazy.052.polars_diffing - rename to differentiate
+    #  - rename to differentiate
     def check_equal(
         self, testee: unittest.TestCase, validator: "Validator", exp, got
     ) -> bool:
         """check if exp can be considered equal"""
         try:
-            # breakpoint() #🛑
-            # pass
             if isinstance(got, (list, set)) and isinstance(exp, (list, set)):
                 got = set(got)
                 exp = set(exp)
@@ -438,17 +449,17 @@ class PAbstractExtProvider(Protocol):
             return exp == got
             # return 1
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (AssertionError,) as e:
+        # pragma: no cover
+        except (AssertionError,) as e: # noqa F841
             raise
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
-    # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+    #  - modify to pass in Checker, in order to access ValidatorMgr.config...
     def assert_equal(
         self,
         checker: "Checker",
@@ -460,8 +471,6 @@ class PAbstractExtProvider(Protocol):
     ) -> bool:
         """check if exp can be considered equal"""
         try:
-            # breakpoint() #🛑
-            # pass
             if (
                 list_to_set
                 and isinstance(got, (list, set))
@@ -473,12 +482,12 @@ class PAbstractExtProvider(Protocol):
             testee.assertEqual(exp, got, message)
             return True
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (AssertionError,) as e:
+        # pragma: no cover
+        except (AssertionError,) as e: # noqa F841
             raise
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -506,8 +515,8 @@ class PAbstractExtProvider(Protocol):
         """try to adjust for arbitrary validator functions"""
         try:
             raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -522,8 +531,8 @@ class PAbstractExtProvider(Protocol):
 
             temp.__dict__["_data_in"] = value
             return
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -533,8 +542,8 @@ class PAbstractExtProvider(Protocol):
         try:
             try:
                 hash_ = hash(self.datain_to_str(data_in, checker))
-            # pragma: no cover pylint: disable=unused-variable
-            except (TypeError,) as e:
+            # pragma: no cover
+            except (TypeError,) as e: # noqa F841
                 hash_ = hash(f"{id(data_in)}")
 
             if checker.data_hash == hash_ and checker.temp:
@@ -543,8 +552,8 @@ class PAbstractExtProvider(Protocol):
             checker.data_hash = hash_
 
             return self.cls_temp(checker=checker, data_in=data_in, **kwargs)
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -555,8 +564,8 @@ class PAbstractExtProvider(Protocol):
         try:
             res = checker.provider.datain_to_str(checker.temp.rawdata, checker)
             return res
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -577,8 +586,8 @@ class PAbstractExtProvider(Protocol):
 
             return filter2
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -607,8 +616,10 @@ class PAbstractExtProvider(Protocol):
                     try:
                         res = data[selector]
                         return res
-                    except (KeyError,) as e:
-                        msg = f"{validator.mgr.ext}.{repr(self)}. select_by_string : {e}:  Known keys : {list(data.keys())}"
+                    except (KeyError,) as e: # noqa F841
+                        msg = f"""
+{validator.mgr.ext}.{repr(self)}. select_by_string : {e}:
+Known keys : {list(data.keys())}"""
                         raise ConfigurationException(msg)
                 else:
                     path = ""
@@ -616,7 +627,7 @@ class PAbstractExtProvider(Protocol):
                         path += f".{part}"
                         try:
                             data = data[part]
-                        except (KeyError,) as e:
+                        except (KeyError,) as e: # noqa F841
                             msg = f"{repr(self)} : {e}:  {path=} Known keys : {list(data.keys())}"
                             raise ConfigurationException(msg)
 
@@ -629,20 +640,20 @@ class PAbstractExtProvider(Protocol):
                     return data
                 try:
                     data = getattr(data_in, selector)
-                except (AttributeError,) as e:
+                except (AttributeError,) as e: # noqa F841
                     msg = f"{repr(self)} : {e}:  Known fields : {list(vars(data_in).keys())}"
                     raise ConfigurationException(msg)
 
             return data
-        # pragma: no cover pylint: disable=unused-variable
-        except (ConfigurationException,) as e:
+        # pragma: no cover
+        except (ConfigurationException,) as e: # noqa F841
             if cpdb() and e.allow_cpdb():
-                breakpoint()  # 🛑
+                breakpoint()
                 pass
 
             raise
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -679,8 +690,8 @@ def parse_pydantic_validation_error(src):
 
         res = {v["loc"][0]: v for v in errors()}
         return res
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -783,8 +794,8 @@ class RegexSubstitFilter(BFilter):
         try:
             super().__init__(**kwargs)
             self.patre = re.compile(self.f)
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -807,8 +818,8 @@ class RegexSubstitFilter(BFilter):
                 line2 = self.patre.sub(self.replace, line)
                 return False, line2
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -883,10 +894,10 @@ class Filter(BFilter):
                 return v_in
 
             raise ValueError(f"unsupported {v_in=}")
-        # pragma: no cover pylint: disable=unused-variable
-        except (ValueError,) as e:
+        # pragma: no cover
+        except (ValueError,) as e: # noqa F841
             pass
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -926,11 +937,11 @@ class Filter(BFilter):
                 raise ConfigurationException(msg)
 
             return self
-        # pragma: no cover pylint: disable=unused-variable
-        except (ConfigurationException,) as e:
+        # pragma: no cover
+        except (ConfigurationException,) as e: # noqa F841
             raise
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -946,7 +957,6 @@ class TextFilterWrapper(PTextFilterWrapper):
         if isinstance(res, tuple):
             return res
 
-        # breakpoint()
 
         return bool(res)
 
@@ -1003,8 +1013,8 @@ class DictFilterWrapper(PDictFilterWrapper):
                 data, di_formatter=self.di_filt, in_place=True, keep=filtered
             )
             return filtered
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1027,8 +1037,8 @@ class DictFilter(RawFilter):
                 return formatter
             raise ValueError(f"unsupported {v_in=}")
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1043,8 +1053,8 @@ class DictFilter(RawFilter):
                 self.f = f
 
             return self
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1056,8 +1066,8 @@ class DictFilter(RawFilter):
                 data = data.rawdata
             out = self.f.apply(data)
             return out
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1165,10 +1175,6 @@ class FilterMgr(pydantic.BaseModel):
                         holdback, line = filter_.filter(line)
                         if holdback:
                             if filter_.name:
-                                # textfilters do not do scalar
-                                # if filter_.scalar:
-                                #     di_hit[filter_.name]= line
-                                # else:
                                 di_hit[filter_.name].append(line)
                             break
                     else:
@@ -1182,8 +1188,8 @@ class FilterMgr(pydantic.BaseModel):
                 temp.filtered = di_hit
                 temp._formatted_got = res = data4textfilter.strip()
                 return res
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1205,30 +1211,23 @@ class FilterMgr(pydantic.BaseModel):
                 raise ConfigurationException(
                     f"{self.__class__}: could not add Filter from {value_in=}"
                 )
-
             return self
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     def show(self, nesting="", file=None):
+        "for debugging"
         try:
-            plocal = not file
             file = file or StringIO()
-            log(f"{self.__class__.__name__}:{self.ext=},{self.alias=}")
-            log("Filters:")
             indent = nesting + "  "
             for f in self.filters:
                 f.show(file=file, nesting=indent)
-
-            if plocal:
-                log(file.getvalue())
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1274,12 +1273,12 @@ class Checker:
             else:
                 self.v = ValidatorMgr(checker=self, ext=self.ext, alias=self.alias)
 
-            # 🎫004.lazy.052.polars_diffing - what about here, to link in the config... we do have its ValidatorMgr...
+            #  - what about here, to link in the config... we do have its ValidatorMgr...
 
             self.alias = get_alias_check_equality([alias_f, alias_v])
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1294,15 +1293,10 @@ class Checker:
         return di_ext_provider[self.alias or self.ext]
 
     def show(self, file: Any = None, nesting="", showtemp=False):
+        """for debugging"""
         try:
-            plocal = not file
             file = file or StringIO()
 
-            log(
-                nesting,
-                f"{self.__class__.__name__}:ext={self.ext},provider={self.provider}",
-                file=file,
-            )
             indent = nesting + "  "
             if self.f:
                 self.f.show(file=file, nesting=indent)
@@ -1312,12 +1306,8 @@ class Checker:
 
             if showtemp and self.temp:
                 self.temp.show(nesting=indent, file=file)
-
-            if plocal:
-                log(file.getvalue())
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1354,7 +1344,7 @@ class Checker:
             )
             return self.temp
 
-        except (AssertionError,) as e:
+        except (AssertionError,) as e: # noqa F841
             # we want to raise a new exception, minus all the info about finding diffs and formatting error
             # messages which is... what lazydiff does
 
@@ -1366,9 +1356,9 @@ class Checker:
 
             # https://docs.python.org/3.3/whatsnew/3.3.html#pep-409-suppressing-exception-context
             # howto- https://stackoverflow.com/a/17092033 - suppress causal exception
-            raise new_exc from None  # 🧨🧨🧨differences found🧨🧨🧨
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+            raise new_exc from None
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1386,7 +1376,6 @@ class Checker:
         **kwargs,
     ) -> LazyTemp:
         try:
-            prefix = "Checker._lazycheck:"
 
             self.lazy_save_got = lazy_save_got
             self.lazy_save_exp = lazy_save_exp
@@ -1397,7 +1386,6 @@ class Checker:
 
             self._lazy_control = control = _Control(self, env, checker)
 
-            log(f"{prefix}{control=}")
 
             # only create the lazy temp the first time.
             tmp = self.lazytemp = getattr(self, "lazytemp", None) or LazyTemp(
@@ -1410,7 +1398,7 @@ class Checker:
                 return tmp
 
             # calculate the paths of the exp/got files
-            # 🎫004.lazy.054.underscore_lz
+            #
             testee = self._lz.testee
 
             # Issue.011.eval.tabulator
@@ -1418,19 +1406,16 @@ class Checker:
                 exp_got="got", suffix=suffix, testee=testee, control=control
             )
 
-            # tmp.fnp_exp = fnp_exp = self._get_fnp_save("exp", options, suffix)
             tmp.fnp_exp = fnp_exp = checker.get_fnp_save(
                 exp_got="exp", suffix=suffix, testee=testee, control=control
             )
 
-            log(f"{prefix}{fnp_exp=},{fnp_got=}")
 
             if breakpoints("_lazycheck", {"always": 1}):  # pragma: no cover
-                print("\n\n🔬🔬🔬Checker.lazycheck")
+                print("\n\n!!!Checker.lazycheck") # debugging
                 breakpoint()
                 pass
 
-            log(f"{type(checker)}.write_raw")
             checker.write_raw(
                 provider=self.provider,
                 suffix=suffix,
@@ -1440,35 +1425,24 @@ class Checker:
             )
 
             # linefeeds have a tendency to creep in sometimes
-
-            log(f"{prefix}1398:{got is None=}")
-
-            # 🎫004.lazy.052.polars_diffing
-            log(f"{prefix}.got.stripping")
-            # breakpoint()
             if filter_:
                 formatted_got = self.temp.formatted_got
-                log(f"{prefix}1404:{formatted_got is None=}")
             else:
                 formatted_got = checker.checker.provider.datain_to_str(
                     got, checker.checker
                 )
-                log(f"{prefix}1409:{formatted_got is None=}")
 
             formatted_got = self.provider.strip(formatted_got)
 
-            log(f"{prefix}1413:{formatted_got is None=}")
 
             # at this point, we want to write the received, formatted, data regardless
             if self.lazy_save_got:
-                log(f"{prefix}:{fnp_got=}.open+write")
 
                 self.provider.write(fnp_got, formatted_got)
 
             # the newly received data is to be taken as our expectations
             # typically indicated by setting environment variable `lzrt_directive=baseline`
             if control.baseline() and self.lazy_save_exp:
-                log(f"{prefix}:{fnp_exp=}.open+write")
 
                 header = None
                 if metadata_header:
@@ -1491,8 +1465,6 @@ class Checker:
 
             if external_exp is undefined:
                 try:
-                    # 🎫004.lazy.052.polars_diffing
-
                     exp = self.provider.read(fnp_exp)
                     exp = self.provider.strip(exp)
 
@@ -1520,11 +1492,8 @@ class Checker:
 
             try:
                 # supports a timeout mechanism, if the module is available
-                log(f"{prefix}1480{formatted_got is None=}")
-                log(f"{prefix}1481{exp is None=}")
-
                 self.assertEqualTimed(testee, exp, formatted_got, tmp=tmp, **kwargs)
-            except (CustomTimeoutError,) as e:  # pragma: no cover
+            except (TimeoutError,) as _e:  # pragma: no cover # noqa F841
                 tmp.message = message = (
                     "exp and got are not equal but comparison timed out after %s seconds"
                     % (constants.TIMEOUT_MAXTIME_TO_ALLOW)
@@ -1533,7 +1502,7 @@ class Checker:
 
             return self.lazytemp
 
-        except (AssertionError,) as exc:
+        except (AssertionError,) as exc: # noqa F841
             for attrname in "fnp_exp fnp_got".split():
                 v = getattr(tmp, attrname, undefined)
 
@@ -1541,63 +1510,37 @@ class Checker:
                     setattr(exc, attrname, v)
 
             raise
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
-    if (
-        False and timeout
-    ):  #!!!TODO!!! 🎫004.lazy.052.polars_diffing - remove the False, which is only in place to facilitate debugging by not going off main Thread
 
-        @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
-        def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None):
-            """ comparisons will automatically times out after %s seconds""" % (
-                constants.TIMEOUT_MAXTIME_TO_ALLOW
-            )
+    @timeout(constants.TIMEOUT_MAXTIME_TO_ALLOW)
+    def assertEqualTimed(self, testee, exp, got, tmp: LazyTemp, message=None,**kwargs):
+        """ comparisons will automatically times out after %s seconds""" % (
+            constants.TIMEOUT_MAXTIME_TO_ALLOW
+        )
 
-            try:
-                breakpoint()  # 🛑
-                pass
-                # testee.assertEqual(exp, got, message)
-                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(self, testee, exp, got, message)
-            except (AssertionError,) as e:
-                raise self.format_assertion_message(e, tmp, testee)
-            # pragma: no cover pylint: disable=unused-variable
-            except (Exception,) as e:
-                if cpdb():
-                    breakpoint()
-                raise
+        try:
+            self.provider.assert_equal(self, testee, exp, got, message,**kwargs)
+        except (AssertionError,) as e: # noqa F841
+            raise self.format_assertion_message(e, tmp, testee)
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
+            if cpdb():
+                breakpoint()
+            raise
 
-    else:
-        #
-        def assertEqualTimed(
-            self, testee, exp, got, tmp: LazyTemp, message=None, **kwargs
-        ):
-            """fallback if timeout package is not available"""
-            try:
-                # testee.assertEqual(exp, got, message)
-                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
-                self.provider.assert_equal(self, testee, exp, got, message, **kwargs)
-            except (AssertionError,) as e:
-                raise self.format_assertion_message(e, tmp, testee)
-            except (Exception,) as e:
-                if cpdb():
-                    breakpoint()
-                raise
 
     def format_assertion_message(self, ori, tmp: LazyTemp, testee):
         """message thrown on assert_same failures"""
 
-        log(f"{testee}:diff:fnp_exp={tmp.fnp_exp}", loglevel="warning")
-        log(f"{testee}:diff:fnp_got={tmp.fnp_got}", loglevel="warning")
 
         message = f"""
 
-
-❌❌❌Regressions found:
+!!!Regressions found:
 
 Expected contents are in file:
   {tmp.fnp_exp}
@@ -1607,7 +1550,8 @@ Received contents are in file:
 
 Original exception:
  {ori}
-❌❌❌
+
+!!!
 """
         exc = ori.__class__(message)
         return exc
@@ -1629,8 +1573,8 @@ class TextExtProvider(PAbstractExtProvider):
         """convert data if needed"""
         try:
             raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1639,13 +1583,12 @@ class TextExtProvider(PAbstractExtProvider):
     def datain_to_str(cls, data: str, checker: "Checker", temp: LazyTemp = None) -> str:
         try:
             if not isinstance(data, str):
-                raise ConfigurationException(
-                    # 🎫004.lazy.054.underscore_lz
-                    f" data type {type(data)} not supported by {cls.__name__} which supports strings.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-                )
+                raise ConfigurationException(f"""
+data type {type(data)} not supported by {cls.__name__} which supports strings.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
             return data.strip()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1682,8 +1625,8 @@ class FunctionCheck(ValidatorCheck):
 
         try:
             sign = inspect.signature(f)
-        # pragma: no cover pylint: disable=unused-variable
-        except (TypeError,) as e:
+        # pragma: no cover
+        except (TypeError,) as e: # noqa F841
             sign = ""
 
         f_msg = f"{f.__module__}.{f.__name__} {sign}"
@@ -1727,7 +1670,7 @@ class FunctionCheck(ValidatorCheck):
                 di["validator"] = validator
 
             try:
-                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+                #  - modify to pass in Checker, in order to access ValidatorMgr.config...
                 res = bool(self.f(value, **di))
 
                 # assume custom checkers
@@ -1740,8 +1683,8 @@ class FunctionCheck(ValidatorCheck):
                             validator.name, validator=validator, got=value
                         )
 
-            # pragma: no cover pylint: disable=unused-variable
-            except (TypeError,) as e:
+            # pragma: no cover
+            except (TypeError,) as e: # noqa F841
                 checker = validator.mgr.checker
                 value2 = checker.provider.adjust_value_for_validation(
                     checker=checker, validator=self, fn=self.f, value=value, exc=e
@@ -1758,10 +1701,10 @@ class FunctionCheck(ValidatorCheck):
                 raise ValidationError(validator.name, validator=validator, got=value2)
 
             return res
-        # pragma: no cover pylint: disable=unused-variable
-        except (AssertionError, ConfigurationException) as e:
+        # pragma: no cover
+        except (AssertionError, ConfigurationException) as e: # noqa F841
             raise
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1803,7 +1746,7 @@ class Validator(pydantic.BaseModel):
         try:
             try:
                 specials = v in Selectors
-            except (TypeError,) as e:
+            except (TypeError,) as e: # noqa F841
                 specials = False
 
             if specials:
@@ -1815,8 +1758,8 @@ class Validator(pydantic.BaseModel):
 
             return v
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1826,20 +1769,9 @@ class Validator(pydantic.BaseModel):
     def build_validator(cls, value, info: pydantic.ValidationInfo):
         """prep the validator wrapper"""
         try:
-            # options = values["options"]
             if value in S_VALIDATIONS:
-                # options.validate_with_testee = options.validate_with_validator = True
                 return FunctionCheck(f=value)
             if callable(value):
-                # sign = inspect.signature(value)
-                # validator = sign.parameters.get("validator")
-                # if validator:
-                #     options.validate_with_validator = True
-
-                # testee = sign.parameters.get("testee")
-                # if testee:
-                #     options.validate_with_testee = True
-
                 return FunctionCheck(f=value)
             elif isinstance(value, ValidatorCheck):
                 return value
@@ -1854,8 +1786,8 @@ class Validator(pydantic.BaseModel):
                 raise NotImplementedError(f"{cls}.build:value:?")
 
             return value
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1865,22 +1797,20 @@ class Validator(pydantic.BaseModel):
     def pause_for_debug(cls, data: Any) -> Any:
         try:
             name = data.get("name")
-
             selector = data.get("selector")
-
             lookup = (cls, name, selector, "ante")
 
             if (
-                breakpoints("pause_for_debug", {"name": name}) and not lookup in seen
+                breakpoints("pause_for_debug", {"name": name}) and lookup not in seen
             ):  # pragma: no cover
-                print(f"\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}")
+                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}") # debugging
                 seen.add(lookup)
                 breakpoint()
                 pass
 
             return data
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1897,17 +1827,17 @@ class Validator(pydantic.BaseModel):
 
             if (
                 breakpoints("pause_for_debug_post", {"name": name})
-                and not lookup in seen
+                and lookup not in seen
             ):  # pragma: no cover
-                print(f"\n\n🔬🔬🔬{cls}.pause_for_debug:{name=} {selector=}")
+                print(f"\n\n!!!{cls}.pause_for_debug:{name=} {selector=}") # debugging
                 seen.add(lookup)
                 breakpoint()
                 pass
 
             return data
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            if 1 or cpdb():
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
+            if cpdb():
                 breakpoint()
             raise
 
@@ -1939,8 +1869,8 @@ class Validator(pydantic.BaseModel):
 
             return dupe
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1970,8 +1900,8 @@ def is_custom_checker(f: Any) -> bool:
 
         return repr(inspect.signature(f)) in _callibration_signatures
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -1989,27 +1919,9 @@ class ValidatorMgr(pydantic.BaseModel):
 
     alias: Optional[str] = None
 
-    # 🎫004.lazy.052.polars_diffing - we may want it, but it's probably gonna have to come in via `ExtAlias`
-    #
+    #  - we may want it, but it's probably gonna have to come in via `ExtAlias`
     config: dict[str, Any] | None = None
 
-    # @pydantic.model_validator(mode='before')
-    # @classmethod
-    # def pause_for_debug(cls, data: Any) -> Any:
-    #     try:
-    #         dodebug = data.get("ext") in ("parquet","dataframe")
-
-    #         if breakpoints('buildvalidator', {'always': dodebug}):  # pragma: no cover
-    #             print(f'\n\n🔬🔬🔬always:{1}')
-    #             breakpoint()
-    #             pass
-
-    #         return data
-    #     #pragma: no cover pylint: disable=unused-variable
-    #     except (Exception,) as e:
-    #         if cpdb():
-    #             breakpoint()
-    #         raise
 
     def __sub__(self, value_in):
         """logically delete a validator by setting active to False"""
@@ -2021,7 +1933,7 @@ class ValidatorMgr(pydantic.BaseModel):
                     tgt = value_in["name"]
                 else:
                     raise NotImplementedError()
-            except (KeyError, NotImplementedError) as e:
+            except (KeyError, NotImplementedError) as e: # noqa F841
                 raise ConfigurationException(
                     f"you need to pass in the name of the validator you wish to delete, not {value_in}"
                 )
@@ -2030,15 +1942,15 @@ class ValidatorMgr(pydantic.BaseModel):
 
             try:
                 di[tgt].active = False
-            except (KeyError,) as e:
+            except (KeyError,) as e: # noqa F841
                 raise ConfigurationException(
                     f"unknown validator {tgt}. known:{'/'.join(di.keys())}"
                 )
 
             return self
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2061,8 +1973,8 @@ class ValidatorMgr(pydantic.BaseModel):
 
             return self
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2073,14 +1985,14 @@ class ValidatorMgr(pydantic.BaseModel):
         try:
             lookup = self.alias or self.ext
             return di_ext_provider[lookup]
-        # pragma: no cover pylint: disable=unused-variable
-        except (KeyError,) as e:
-            raise ConfigurationException(
-                f"{self.__class__}.provider() {lookup=} not found for {self.ext=} {self.alias=}.  known provider extensions/aliases: {list(di_ext_provider.keys())}"
-            )
+        # pragma: no cover
+        except (KeyError,) as e: # noqa F841
+            raise ConfigurationException(f"""
+{self.__class__}.provider() {lookup=} not found for {self.ext=} {self.alias=}.
+known provider extensions/aliases: {list(di_ext_provider.keys())}""")
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2105,8 +2017,8 @@ class ValidatorMgr(pydantic.BaseModel):
                         return True
 
             return False
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2148,18 +2060,19 @@ class ValidatorMgr(pydantic.BaseModel):
             for val in actuals:
                 if not val.active:
                     continue
-                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config... - `self.checker` ought to do it...
+                # modify to pass in Checker, in order to access ValidatorMgr.config...
+                # `self.checker` ought to do it...
                 valid = val.assert_valid(self.testee, rawdata, data)
                 if not valid:
                     raise ValidationError(f"{val.name}", validator=val)
 
             return self.temp
 
-        # pragma: no cover pylint: disable=unused-variable
-        except tu_raise as e:
+        # pragma: no cover
+        except tu_raise as e: # noqa F841
             raise
 
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2170,9 +2083,8 @@ class ValidatorMgr(pydantic.BaseModel):
         """returns a new ValidationMgr with additional configuration"""
         try:
             # TODO:  delete debug code
-            before = after_val = replacer = add = None
+            after_val = replacer = add = None
 
-            before = self.dict()
 
             dupe = self.copy(deep=True)
 
@@ -2189,13 +2101,13 @@ class ValidatorMgr(pydantic.BaseModel):
                 if is_dict:
                     try:
                         name = add["name"]
-                    except (KeyError,) as e:
+                    except (KeyError,) as e: # noqa F841
                         raise ConfigurationException(f"{add} doesn't have a `name`")
 
                 else:
                     try:
                         name = add.name
-                    except (AttributeError,) as e:
+                    except (AttributeError,) as e: # noqa F841
                         raise ConfigurationException(f"{add} doesn't have a `name`")
 
                 ante = after_val.get(name)
@@ -2231,34 +2143,14 @@ class ValidatorMgr(pydantic.BaseModel):
 
             return res
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     def show(self, nesting="", file=None, header: Any = None):
-        try:
-            plocal = not file
-            file = file or StringIO()
-
-            if header:
-                log(header)
-
-            log(f"{self.__class__.__name__}:{self.alias=}")
-
-            for v in self.validators:
-                v.show(nesting=nesting, file=file)
-
-            if plocal:
-                log(file.getvalue())
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            if cpdb():
-                breakpoint()
-            raise
-
+        "do-nothing !!!TODELETE!!!"
 
 #################################################################
 # assert_same
@@ -2273,8 +2165,6 @@ class SameAssertor:
     )
 
     def __init__(self, checker: "Checker"):
-        # 🎫004.lazy.052.polars_diffing (Pdb) rin(checker.provider) <class 'bemyerp.tests.validators_polars.Polars_Provider'>
-
         self.checker = checker
 
     def __repr__(self):
@@ -2312,7 +2202,6 @@ class SameAssertor:
             )
 
             # calculating the directory path
-            # t_dirname = self._lazy_get_t_dirname(exp_got, subber)
             t_dirname = self._lazy_get_t_dirname(exp_got, subber, control, testee)
 
             if t_dirname is None:
@@ -2350,27 +2239,26 @@ class SameAssertor:
 
             return Path(os.path.join(dirname, basename))
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     def write_raw(
         self, provider: PAbstractExtProvider, suffix, testee, control, got
-    ):  # 🎫004.lazy.052.polars_diffing
+    ):  #
         """
         where do we save the raw received data,
         after formatting, but before filtering ?
         """
 
-        # suffix=suffix, testee=testee, control=control, got=got
 
         try:
             if not control.env.get("save_raw_received_data"):
                 return
 
-            # 🎫004.lazy.052.polars_diffing - route some of this to checker.provider
+            #  - route some of this to checker.provider
 
             fnp = self.get_fnp_save(
                 testee=testee, exp_got="report", control=control, suffix=suffix
@@ -2382,8 +2270,8 @@ class SameAssertor:
 
             provider.write(fnp, got2)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2412,8 +2300,8 @@ class SameAssertor:
 
             return dirname2
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2430,17 +2318,6 @@ class SameAssertor:
         """
 
         try:
-            if os.getenv("lazyrpdb"):
-                from bemyerp.lib.utils import (
-                    pp,
-                    ppp,
-                    rin,
-                    rindebug,
-                    show,
-                )  # noqa - debug
-
-                breakpoint()
-                pass
 
             dirname_extras = getattr(testee, "lazy_dirname_extras", "")
             if not dirname_extras:
@@ -2458,8 +2335,8 @@ class SameAssertor:
 
             return _litd
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2474,7 +2351,7 @@ class Selectors(str, Enum):
     name = "name"
 
 
-# 🎫004.lazy.052.polars_diffing - assertEqual on a variable, not the whole data
+#  - assertEqual on a variable, not the whole data
 def check_equal(
     data: Any,
     testee: unittest.TestCase,
@@ -2487,7 +2364,7 @@ def check_equal(
         exp = exp or validator.exp
 
         if breakpoints("lazy", {"validator": validator.name}):  # pragma: no cover
-            print(f"\n\n🔬🔬🔬validator:{validator.name}")
+            print(f"\n\n!!!validator:{validator.name}")  # debugging
             breakpoint()
             pass
 
@@ -2495,12 +2372,11 @@ def check_equal(
             exp = exp.get_exp(validator, testee)
 
         if not isinstance(data, type(exp)):
-            # 🎫004.lazy.052.polars_diffing - this is the old-style assertEqual applied to a variable, not the entire data p
+            #  - this is the old-style assertEqual applied to a variable, not the entire data p
             provider_check_equal = validator.mgr.provider.check_equal
             if provider_check_equal:
-                # breakpoint() #🛑
                 pass
-                # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+                #  - modify to pass in Checker, in order to access ValidatorMgr.config...
                 res = provider_check_equal(
                     testee=testee, validator=validator, exp=exp, got=data
                 )
@@ -2523,17 +2399,17 @@ def check_equal(
             raise ValidationError(msg, validator=validator, got=data)
 
         return res
-    # pragma: no cover pylint: disable=unused-variable
-    except ConfigurationException as e:
+    # pragma: no cover
+    except ConfigurationException as e: # noqa F841
         e.got = data
         raise
-    except ValidationError as e:
+    except ValidationError as e: # noqa F841
         if os.getenv("cpdb"):
             breakpoint()
             pass
 
         raise
-    except (Exception,) as e:
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -2562,11 +2438,11 @@ def check_exp_in_data(
             raise ValidationError(msg, validator=validator, got=data)
 
         return res
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (ValidationError,):
         raise
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -2589,12 +2465,12 @@ def check_in(
 
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
+    # pragma: no cover
     except (ValidationError,):
         raise
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -2624,8 +2500,8 @@ def _flatten_from_string(li: List[Union[Validator, dict]], values: str):
             else:
                 li.append(dict(name=v))
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -2662,8 +2538,8 @@ def flatten_to_validators_dicts(
                 f"flatten_to_validators_dicts:unsupported {values=} "
             )
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise
@@ -2694,11 +2570,11 @@ class ActualValidator(Validator):
                 value = CHECK_EQUALITY
 
             return value
-        # pragma: no cover pylint: disable=unused-variable
-        except (ConfigurationException,) as e:
+        # pragma: no cover
+        except (ConfigurationException,) as e: # noqa F841
             raise
 
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2715,8 +2591,8 @@ class ActualValidator(Validator):
                 self.exp = AutoExp
             return self
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -2749,7 +2625,6 @@ class ActualValidator(Validator):
                 elif selector is select_by_provider:
                     data = select_by_provider(**kwargs)
                 elif callable(selector):
-                    # breakpoint() #🛑
                     if type(selector) in (operator.itemgetter, operator.attrgetter):
                         data = selector(data_in)
                     else:
@@ -2771,13 +2646,13 @@ class ActualValidator(Validator):
                     raise NotImplementedError(f"unsupported {type(selector)=}")
             else:
                 data = data_in
-            # 🎫004.lazy.052.polars_diffing - modify to pass in Checker, in order to access ValidatorMgr.config...
+            #  - modify to pass in Checker, in order to access ValidatorMgr.config...
             valid = self.v.is_valid(data, testee=testee, validator=self)
             return valid
-        except tu_raises as e:
+        except tu_raises as e: # noqa F841
             raise
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise

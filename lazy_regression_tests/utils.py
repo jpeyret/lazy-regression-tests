@@ -1,39 +1,28 @@
-import re
-import os
-import difflib
-from collections import deque, namedtuple
-from functools import partial
 
-
-import pdb
+# ruff: disable[F401]
+from traceback import print_exc as xp  #
 
 from lazy_regression_tests._baseutils import (
-    set_cpdb,
-    set_rpdb,
-    disable_cpdb,
-    ppp,
-    debugObject,
-    fill_template,
-    Subber,
+    DictFormatter,
+    Dummy,
     RescueDict,
+    Subber,
+    debugObject,
+    disable_cpdb,
+    fill_template,
+    first,
+    force_verbose,
+    getpath,
     nested_dict_get,
     nested_dict_pop,
-    first,
-    getpath,
-    DictFormatter,
+    ppp,
     set_breakpoints3,
-    Dummy,
-    UnavailableLibrary as BaseUnavailableLibrary,
-    force_verbose,
+    set_cpdb,
+    set_rpdb,
 )
-
-
-from traceback import print_exc as xp  # pylint: disable=unused-import
-
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+from lazy_regression_tests._baseutils import (
+    UnavailableLibrary as BaseUnavailableLibrary,
+)
 
 undefined = NotImplemented
 
@@ -51,11 +40,11 @@ class InvalidConfigurationException(ValueError):
     def __init__(self, msg, *args, **kwargs):
 
         new_message = f"""
-❌⚙️❌⚙️❌⚙️❌
+!!!!!!!!!!!!
 
 {msg}
 
-❌⚙️❌⚙️❌⚙️❌
+!!!!!!!!!!!!
 """
         super(InvalidConfigurationException, self).__init__(
             new_message, *args, **kwargs
@@ -63,8 +52,8 @@ class InvalidConfigurationException(ValueError):
 
 
 class UnavailableLibrary(BaseUnavailableLibrary):
-    """ exception with message detailing what was not installed 
-        with emoji banner 
+    """ exception with message detailing what was not installed
+        with emoji banner
     """
 
     exception_cls = InvalidConfigurationException

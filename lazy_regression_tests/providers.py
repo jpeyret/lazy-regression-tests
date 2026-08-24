@@ -1,37 +1,38 @@
 """store Extention Providers """
-from typing import Any, Union
-from io import StringIO
-import pprint
 import json
+import pprint
 import re
-
-from lazy_regression_tests.common import (
-    ConfigurationException,
-    LazyTemp,
-    PAbstractExtProvider,
-    di_ext_provider,
-    DEFAULT_PROVIDER,
-    DictFilter,
-    DictFilterWrapper,
-    BFilter,
-    ValidationError,
-    undefined,
-)
-
-from lazy_regression_tests._baseutils import dropbad_dump
-
-
-def cpdb(*args, **kwargs):
-    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
-
-
-rpdb = breakpoints = cpdb
+from _pickle import PicklingError
+from io import StringIO
+from typing import Any, Union
 
 #################################################################
 # Dependencies
 #################################################################
 from yaml import dump as ydump
-import requests
+
+from lazy_regression_tests._baseutils import dropbad_dump
+from lazy_regression_tests.common import (
+    DEFAULT_PROVIDER,
+    BFilter,
+    Checker,
+    ConfigurationException,
+    DictFilter,
+    DictFilterWrapper,
+    LazyTemp,
+    PAbstractExtProvider,
+    ValidationError,
+    di_ext_provider,
+    get_lazy_logger,
+)
+
+undefined = NotImplemented
+
+def cpdb(*args, **kwargs):
+    "disabled conditional breakpoints - does nothing until activated by set_cpdb/rpdb/breakpoint3"
+
+rpdb = breakpoints = cpdb
+
 
 
 class DictExtProvider(PAbstractExtProvider):
@@ -41,7 +42,7 @@ class DictExtProvider(PAbstractExtProvider):
 
     TYPE_RAW = (dict, list)
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """convert data if needed"""
         try:
 
@@ -52,28 +53,26 @@ class DictExtProvider(PAbstractExtProvider):
                     if isinstance(res, str) and name == "json":
                         res = json.loads(res)
                     if not isinstance(res, dict):
-                        raise ConfigurationException(
-                            # 🎫004.lazy.054.underscore_lz
-                            f" data type {type(res)}, returned by data.{name}() not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-                        )
+                        raise ConfigurationException(f"""
+data type {type(res)}, returned by data.{name}() not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
                     return res
-            raise ConfigurationException(
-                # 🎫004.lazy.054.underscore_lz
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-            )
+            raise ConfigurationException(f"""
+data type {type(data)} not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
         except (json.decoder.JSONDecodeError):
             raise
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     @classmethod
     def datain_to_str(
-        cls, data: dict, checker: "Checker", temp: LazyTemp = None
+        cls, data: dict, checker: Checker, temp: LazyTemp = None
     ) -> str:
         """pretty print dict to string"""
         try:
@@ -85,16 +84,15 @@ class DictExtProvider(PAbstractExtProvider):
                 if callable(f):
                     data = f()
                 else:
-                    raise ConfigurationException(
-                        # 🎫004.lazy.054.underscore_lz
-                        f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-                    )
+                    raise ConfigurationException(f"""
+data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
             out = StringIO()
             pprint.pprint(data, out, width=1)
             return out.getvalue().strip()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -120,8 +118,8 @@ class DictExtProvider(PAbstractExtProvider):
 
             return filter2
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -146,18 +144,18 @@ class JsonExtProvider(DictExtProvider):
                     break
 
             if content_type is not None:
-                if not "json" in content_type:
+                if "json" not in content_type:
                     raise ValidationError(
                         f"did not get a json response {content_type=} with {status_code=}{url_msg}"
                     )
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """convert data if needed"""
         try:
 
@@ -176,21 +174,19 @@ class JsonExtProvider(DictExtProvider):
                         v = json.loads(v)
                     return v
 
-            raise ConfigurationException(
-                # 🎫004.lazy.054.underscore_lz
-                f" data type {type(data)} not supported by {self}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-            )
+            raise ConfigurationException(f"""
+data type {type(data)} not supported by {self}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
-            # raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
     @classmethod
     def datain_to_str(
-        cls, data: dict, checker: "Checker", temp: LazyTemp = None
+        cls, data: dict, checker: Checker, temp: LazyTemp = None
     ) -> str:
         """pretty print dict to string"""
         try:
@@ -204,7 +200,12 @@ class JsonExtProvider(DictExtProvider):
                 return json.dumps(data, indent=2, sort_keys=True).strip()
             elif data is None:
                 return "{}"
-            elif isinstance(data, requests.models.Response):
+            elif (
+                callable(getattr(data, "json", None))
+                and hasattr(data, "status_code")
+                and hasattr(data, "headers")
+            ):
+                #this is intended for requests.models.Response objects
                 return json.dumps(data.json(), indent=2, sort_keys=True).strip()
 
             elif hasattr(data, "getvalue") and callable(data.getvalue):
@@ -212,7 +213,7 @@ class JsonExtProvider(DictExtProvider):
                 if isinstance(res, (str, bytes)):
                     try:
                         res = json.loads(res)
-                    except (json.decoder.JSONDecodeError,) as e:
+                    except (json.decoder.JSONDecodeError,) as e: # noqa F841
                         cls.check_is_json(data, checker, temp)
 
                 elif isinstance(res, dict):
@@ -230,19 +231,17 @@ class JsonExtProvider(DictExtProvider):
                         res = json.dumps(res, indent=2, sort_keys=True)
                     return res.strip()
 
-                raise ConfigurationException(
-                    # 🎫004.lazy.054.underscore_lz
-                    f" data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.  known extensions for testcase: {','.join(checker._lz.extensions)}"
-                )
+                raise ConfigurationException(f"""
+data type {type(data)} not supported by {cls.__name__} which supports {tu_supp}.
+known extensions for testcase: {','.join(checker._lz.extensions)}""")
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
 
-from _pickle import PicklingError
 
 
 def yaml_strip(data: str | Any) -> str | Any:
@@ -282,22 +281,20 @@ class YamlProvider(DictExtProvider):
     def strip(self, data: str | Any) -> str | Any:
         return yaml_strip(data)
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """no conversion needed, that's the point of using yaml"""
         return data
 
     @classmethod
     def datain_to_str(
-        cls, data: dict, checker: "Checker", temp: LazyTemp = None
+        cls, data: dict, checker: Checker, temp: LazyTemp = None
     ) -> str:
         """yaml dump"""
         try:
             try:
 
-                # from yaml import dump as ydump
                 import yaml
 
-                # breakpoint()
 
                 # https://stackoverflow.com/a/66853182
 
@@ -306,40 +303,33 @@ class YamlProvider(DictExtProvider):
                         return True
 
                 res = yaml.dump(data, default_flow_style=False)
-
                 res = yaml_strip(res)
-
                 return res
 
-            # pragma: no cover pylint: disable=unused-variable
-            except (TypeError, ValueError, PicklingError) as e:
+            # pragma: no cover
+            except (TypeError, ValueError, PicklingError) as e: # noqa F841
                 data2 = dropbad_dump(data, ydump)
                 res2 = ydump(data2, default_flow_style=False).strip()
                 res2 = yaml_strip(res2)
-
                 return res2
-        # pragma: no cover pylint: disable=unused-variable
-        except (TypeError,) as e:
+        # pragma: no cover
+        except (TypeError,) as e: # noqa F841
             raise
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (PicklingError,) as e:
-            if 1:
-                for k, v in vars(data).items():
-                    print(k, end="")
-                    try:
-                        _ = yaml.dump(v)
-                        print("✅")
-                    # pragma: no cover pylint: disable=unused-variable
-                    except (Exception,) as e2:
-                        print("🧨")
+        # pragma: no cover
+        except (PicklingError,) as e: # noqa F841
+            for k, v in vars(data).items():
+                print(k, end="") # debugging
+                try:
+                    _ = yaml.dump(v)
+                # pragma: no cover
+                except (Exception,) as e2: # noqa F841
+                    get_lazy_logger().error(f"{cls.__name__}.datain_to_str:PicklingError= {e2}")
 
-            # if cpdb():
-            #     breakpoint()
             raise TypeError(e)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise

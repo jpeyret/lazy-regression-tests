@@ -1,59 +1,50 @@
-""" base utilities package, shared among libraries
+"""base utilities package, shared among libraries
 
-    do not expect much coverage of it in any library because
-    most libraries won't use much of its functionality.
+do not expect much coverage of it in any library because
+most libraries won't use much of its functionality.
 
 """
-from contextlib import contextmanager
-from dataclasses import dataclass, field
-import logging
-import sys
-import types
-import re
-import builtins
-import pprint
-from urllib.parse import urlparse, quote, urlunparse
 
-from pathlib import Path
-import subprocess
-from time import time
+import builtins
+import copy
+import json
+import logging
 import os
+import pprint
+import re
 import shutil
 import stat
-
+import sys
+import tomllib
+import types
+from _pickle import PicklingError
 from collections import namedtuple
-
-try:
-    # 3.8
-    from collections import MutableMapping
-# pragma: no cover pylint: disable=unused-variable
-except (ImportError,) as e:
-    # 3.10
-    from collections.abc import MutableMapping
-
-from string import Template
+from contextlib import contextmanager
+from datetime import datetime
 from functools import partial, wraps
 from io import StringIO  # 223ed
-import json
-import copy
+from pathlib import Path
+from string import Template
+from types import SimpleNamespace
 
 #######################################################
 # Typing
 #######################################################
-from typing import Optional, Any, Union, List, Dict, Callable
-
+from typing import Any, Callable, Optional, Sequence
+from urllib.parse import quote, urlparse, urlunparse
 
 #################################################################
 # Dependencies
 #################################################################
-from yaml import safe_load as yload, safe_dump as ydump
-from more_itertools import partition
+from yaml import safe_load as yload
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("lazy")  #!!!TODO!!! figure common.get_lazy_logger
 type_regex_hack = re.compile("").__class__
 undefined = NotImplemented
 verbose = "-v" in sys.argv
 cache = {}
+
+log = logger.debug
 
 
 def def_repr(self):
@@ -74,6 +65,66 @@ def cast_bytes2str(fn):
     return decorated
 
 
+def _fmt_as_tuple_str(input_: Sequence[str] | str | None, sep: str = " ") -> tuple[str, ...]:
+    """transforms input_ into a tuple of strings. better than lists for caching"""
+    if not input_:
+        return tuple()
+
+    if isinstance(input_, str):
+        input_ = input_.replace(",", " ").strip()
+        input_ = input_.split(sep)
+    tu = tuple(v2 for v in input_ if (v2 := v.strip(r"\ ")))
+    return tu
+
+
+def parse_dict_to_simplenamespaces(data: dict[str, Any]):
+    """transform dict(a=1,b=dict(c=3) into o(a=1,b=o(c=3))"""
+    if type(data) is list:
+        return list(map(parse_dict_to_simplenamespaces, data))
+    elif type(data) is dict:
+        sns = SimpleNamespace()
+        for key, value in data.items():
+            setattr(sns, key, parse_dict_to_simplenamespaces(value))
+        return sns
+    else:
+        return data
+
+
+def read_data(content: str | Path | dict | Any, passthru_on_unhandled=False) -> dict | Any:
+    try:
+        if isinstance(content, str) and '"' in content:
+            try:
+                j_data = json.loads(content)
+                return j_data
+            # pragma: no cover
+            except (Exception,) as _e:
+                pass
+
+        pa = Path(content)
+        with pa.open() as fi:
+            match pa.suffix:
+                case ".json":
+                    j_data = json.load(fi)
+                case ".yaml":
+                    j_data = yload(fi)
+                case ".toml":
+                    with pa.open("rb") as fi:
+                        j_data = tomllib.load(fi)
+                case _:
+                    raise NotImplementedError(f"{pa.suffix=}")
+            return j_data
+
+        if not passthru_on_unhandled:
+            raise NotImplementedError(f"{content=}")
+        return content
+
+    # pragma: no cover
+    except (Exception,) as _e:
+        if cpdb():
+            breakpoint()
+        raise
+
+
 #################################
 
 
@@ -90,7 +141,6 @@ def _pseudo_decor(fn, attrname):
     def ret_fun(*args, **kwargs):
         # do stuff here, for eg.
 
-        # print ("decorator arg is %s" % str(attrname))
         res = fn(*args, **kwargs)
         value = getattr(res, attrname)
         if isinstance(value, bytes):
@@ -105,8 +155,13 @@ def _pseudo_decor(fn, attrname):
 cast_contentbytes2str = partial(_pseudo_decor, attrname="content")
 
 
-def cpdb(*args, **kwargs):
-    "disabled"
+def cpdb(*args, **kwargs) -> bool:
+    "disabled by default, but can be replaced"
+    return False
+
+
+# always returns False
+fake_cpdb = cpdb
 
 
 def rpdb(*args, **kwargs):
@@ -122,7 +177,7 @@ def real_rpdb() -> bool:  # pragma: no cover
 
     try:
         res = bool(cache.get("rpdb_enabled"))
-    except Exception as e:
+    except Exception as _e:
         # that's probably a redis.exceptions.ConnectionError, but don't want
         # to couple this too much at this point
         res = None
@@ -144,16 +199,13 @@ def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
     if "--rpdb" in sys.argv:
         real_rpdb.count = 3
 
-        try:
-            from django.core.cache import cache
-        except (Exception,) as e:
-            cache.set("rpdb_enabled", 1, 300)
+        cache["rpdb_enabled"] = 1
+
 
     if recurse:
         for module in list(sys.modules.values()):
             try:
                 # this checks if it's likely to be cpdb, not something w same name
-                # _ = module.rpdb.enabled
                 module.rpdb = real_rpdb
             except AttributeError:  # pragma: no cover
                 pass
@@ -161,7 +213,7 @@ def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
     if remove:
         try:
             sys.argv.remove("--rpdb")
-        except (ValueError,) as e:
+        except (ValueError,) as _e:
             pass
 
     return real_rpdb
@@ -178,12 +230,6 @@ def real_cpdb(**kwds):  # pragma: no cover
 
 
 real_cpdb.count = int(os.getenv("cpdb_count", 3))
-# breakpoint()
-# pass
-
-
-def cpdb():
-    "disabled"
 
 
 def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callable:
@@ -203,26 +249,18 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
 
     flags = set(["--cpdbmany", "--cpdbonce", single_use_flag])
     args = set(sys.argv)
-
-    # print("sys.argv#20", id(sys.argv), sys.argv, id(sys.argv))
-
     single_use_flag = "once" if single_use_flag in sys.argv else False
-
     found = single_use_flag or (args & flags)
 
     if remove:
         for flag in flags:
             try:
                 sys.argv.remove(flag)
-            except (ValueError,) as e:
+            except (ValueError,) as _e:
                 pass
 
     if boolvalue is None:
-        boolvalue = (
-            bool(found)
-            or getattr(cpdb_in, "enabled", False)
-            or getattr(cpdb_in, "count", 0)
-        )
+        boolvalue = bool(found) or getattr(cpdb_in, "enabled", False) or getattr(cpdb_in, "count", 0)
 
     if boolvalue:
         # it was set before or its being set for the first time.
@@ -231,23 +269,11 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
             # set cpdbs on modules that have a stub for it
             for module in list(sys.modules.values()):
                 try:
-                    # breakpoint()
-                    # print(module)
                     # this checks if it's likely to be cpdb, not something w same name
                     existing = getattr(module, "cpdb", None)
                     if existing:
-                        if existing.__doc__ == "disabled":
-                            # if verbose:
-                            #     logger.info("matching cpdb")
-                            pass
-                        else:
-                            # # breakpoint()
-                            # if 0 and verbose:
-                            #     logger.info("old style cpdb on %s" % (module))
-                            # else:
-                            #     pass
-                            pass
-
+                        if not ("disabled" in existing.__doc__ or "do-nothing" in existing.__doc__):
+                            continue
                         module.cpdb = real_cpdb
                 except AttributeError:  # pragma: no cover
                     pass
@@ -267,16 +293,13 @@ def ppp(o=None, header=None, skip=[], **kwargs):
         o = kwargs
 
     if header is None:
-        # if isinstance(o, (dict,list,str,set)):
         if o.__class__.__name__ in dir(builtins):
-
-            # header = "[%s %s...]" % (type(o), repr(o)[0:10])
             header = f"{o.__class__.__name__}..."
         else:
             header = "[%s %s]" % (type(o), repr(o))
 
     msg = debugObject(o, header, li_skipfield=skip)
-    print(msg)
+    print(msg) # debugging
 
 
 def stripdict(di, *args):
@@ -300,20 +323,13 @@ def debugObject(
 
     if isinstance(obj, dict):
         di = obj
-        return debugDict(
-            di, header, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed
-        )
+        return debugDict(di, header, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed)
     elif isinstance(obj, list):
         return (
             header
             + "\n"
             + "\n".join(
-                [
-                    debugObject(
-                        o, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed
-                    )
-                    for o in obj[0:5]
-                ]
+                [debugObject(o, li_skipfield, sep, indentlevel=indentlevel, linefeed=linefeed) for o in obj[0:5]]
             )
         )
 
@@ -321,7 +337,6 @@ def debugObject(
         return "\n%s:%s" % (header, obj)
 
     else:
-
         if not header and isinstance(obj, object):
             header = "%s@%s" % (obj.__class__.__name__, obj.__module__)
 
@@ -330,7 +345,6 @@ def debugObject(
         cls_ = getattr(obj, "__class__", None)
 
         for attrname in dir(obj):
-
             # properties can make a huge mess of things...
             attr = getattr(cls_, attrname, None)
             if attr and isinstance(attr, property):
@@ -341,8 +355,8 @@ def debugObject(
                 continue
             try:
                 attrval = di[attrname] = getattr(obj, attrname, "???")
-            except Exception as e:  # pragma: no cover
-                attrval = "exception:%s" % (e)
+            except Exception as _e:  # pragma: no cover
+                attrval = "exception:%s" % (_e)
 
             if type(attrval) in li_skiptype:
                 li_skipfield.append(attrname)
@@ -361,7 +375,6 @@ def debugObject(
         )
 
 
-# from repr import repr
 
 
 def debugDict(
@@ -384,7 +397,7 @@ def debugDict(
 
     try:
         li.sort()
-    except (TypeError,) as e:
+    except (TypeError,) as _e:
         logger.debug("debugDict:li.sort() error on %s" % (li))
         pass
 
@@ -467,7 +480,6 @@ class Subber(object):
 
     def __init__(self, *args: Any, verbose=False):
         self.li_arg = list(args)
-        # raise NotImplementedError, "li_arg:%s" % (self.li_arg)
         self.di_res = {}
         self.verbose = verbose
 
@@ -476,7 +488,7 @@ class Subber(object):
         a common use would be not have `self` as a subber on property
         lookups
         """
-        args2 = [arg for arg in self.li_arg if not arg in remove_args]
+        args2 = [arg for arg in self.li_arg if arg not in remove_args]
         return Subber(*args2)
 
     def append(self, obj: Any):
@@ -508,7 +520,7 @@ class Subber(object):
                     if arg2 == "self":
                         li_sub.append(obj)
                         continue
-                    elif not "." in arg2:
+                    elif "." not in arg2:
                         sub = getattr(obj, arg2)
                         li_sub.append(sub)
                         continue
@@ -522,42 +534,28 @@ class Subber(object):
         """generic way to look for a key in the arg list"""
 
         for arg in self.li_arg:
-
             try:
                 got = arg[key]
-                if self.verbose:
-                    print("got:%s from %s.return" % (key, arg))
                 return got
-            except (KeyError):
+            except KeyError:
                 try:
                     # try getattr
                     got = getattr(arg, key)
-                    if self.verbose:
-                        print("got:%s from %s.return" % (key, arg))
                     return got
                 except AttributeError:  # pragma: no cover
-                    if self.verbose:
-                        print("no luck:%s from %s.continue" % (key, arg))
-
                     continue
 
             except (AttributeError, TypeError):
                 # no __getitem__, try getattr
                 try:
                     got = getattr(arg, key)
-                    if self.verbose:
-                        print("got:%s from %s.return" % (key, arg))
                     return got
                 except AttributeError:  # pragma: no cover
-                    if self.verbose:
-                        print("no luck:%s from %s.continue" % (key, arg))
                     continue
 
         try:
-            if self.verbose:
-                print("no luck:%s .  KeyError using subber: %s" % (key, self))
             raise KeyError(key)
-        except Exception as e:  # pragma: no cover
+        except Exception as _e:  # pragma: no cover
             raise
 
     def get(self, key, default=None):
@@ -568,7 +566,6 @@ class Subber(object):
             return default
 
     def __getitem__(self, keyname):
-
         """
         implement dictionary, attribute, func/method call lookup - a la Django Templates, but across
         a number of passed in arguments.
@@ -593,8 +590,8 @@ class Subber(object):
                     di.update(**di2)
 
             return di
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -641,7 +638,6 @@ class RescueDictValue(object):
 
 def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
     try:
-
         # top-level
         if lookup is None:
             return dict_
@@ -655,7 +651,7 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
         for key in li_approach:
             try:
                 di = di[key]
-            except (KeyError,) as e:  # pragma: no cover
+            except (KeyError,) as _e:  # pragma: no cover
                 raise
 
         if default is not undefined:
@@ -665,9 +661,7 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
 
         return res
 
-    except (
-        Exception,
-    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+    except (Exception,):  # pragma: no cover
         if cpdb():
             breakpoint()
         raise
@@ -675,7 +669,6 @@ def nested_dict_get(dict_: dict, lookup: Optional[str], default=undefined):
 
 def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
     try:
-
         lookups = lookup.split(".")
 
         li_approach = lookups[:-1]
@@ -697,9 +690,7 @@ def nested_dict_pop(dict_: dict, lookup: str, value=undefined):
             # will do a KeyError
             return di.pop(final)
 
-    except (
-        Exception,
-    ) as e:  # pragma: no cover pylint: disable=unused-variable, broad-except
+    except (Exception,):  # pragma: no cover
         if cpdb():
             breakpoint()
         raise
@@ -713,12 +704,12 @@ class Dummy(object):
     def setdefault(self, attrname, value):
         try:
             return getattr(self, attrname)
-        except (AttributeError,) as e:  # pragma: nocover
+        except (AttributeError,) as _e:  # pragma: nocover
             setattr(self, attrname, value)
             return value
 
     def debug(self):
-        ppp(self.__dict__)
+        ppp(self.__dict__)  # debugging
 
     def to_json(self):
         return self.__dict__
@@ -757,27 +748,26 @@ class Dummy(object):
 def getpath(src: Any, path: str) -> Any:
     """get nested path x.y.z against dictorary or object"""
     try:
-
         current = src
         accessors = path.split(".")
         for accessor in accessors:
             if isinstance(current, dict):
                 try:
                     current = current[accessor]
-                # pragma: no cover pylint: disable=unused-variable
-                except (KeyError,) as e:
+                # pragma: no cover
+                except (KeyError,) as _e:
                     raise AttributeError(accessor)
             else:
                 current = getattr(current, accessor)
 
         return current
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (AttributeError,) as e:
+    # pragma: no cover
+    except (AttributeError,) as _e:
         raise
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -830,9 +820,7 @@ class DictFormatter:
             di_formatter = di_formatter or self.di_default_formatter
 
             if not isinstance(di_formatter, dict):
-                raise TypeError(
-                    f"{self.__class__.__name__}.process needs to be called with formatting dictionary or needs to have been initialized with one"
-                )
+                raise TypeError(f"{self.__class__.__name__}.process needs a formatting dictionary")
 
             f_default = f_default or self.default_processor
 
@@ -841,13 +829,11 @@ class DictFormatter:
             di_keys = None
 
             for key, func_fmt in li_tu_key_func:
-
                 func_fmt = func_fmt or f_default
 
                 if isinstance(key, type_regex_hack):
                     di_keys = di_keys or list(di.keys())
                     for di_key in di_keys:
-
                         if not isinstance(di_key, str):
                             continue
 
@@ -867,7 +853,6 @@ class DictFormatter:
 
                             elif isinstance(func_fmt, dict):
                                 if keep is not None:
-
                                     childkeep = keep[di_key] = {}
                                 else:
                                     childkeep = None
@@ -879,9 +864,7 @@ class DictFormatter:
                                     keep=childkeep,
                                 )
                             else:
-                                raise NotImplementedError(
-                                    f"{self}.process:regex:{key=}:{func_fmt=}"
-                                )
+                                raise NotImplementedError(f"{self}.process:regex:{key=}:{func_fmt=}")
                     continue
 
                 v = di.get(key, undefined)
@@ -890,15 +873,10 @@ class DictFormatter:
 
                 elif isinstance(v, dict):
 
-                    # if rpdb(): # pragma: no cover
-                    #     breakpoint()
-
                     func_fmt = di_formatter[key]
                     if isinstance(func_fmt, dict):
-
                         if keep is not None:
                             childkeep = keep[key] = {}
-                            # breakpoint()
                         else:
                             childkeep = None
 
@@ -935,8 +913,8 @@ class DictFormatter:
 
             return di
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -950,24 +928,21 @@ class InvalidConfigurationException(ValueError):
     def __init__(self, msg, *args, **kwargs):
 
         new_message = f"""
-⚙️⚙️⚙️⚙️⚙️⚙️⚙️
+!!!!!!!!!!!!!!
 
 {msg}
 
-⚙️⚙️⚙️⚙️⚙️⚙️⚙️
+!!!!!!!!!!!!!!
 """
-        super(InvalidConfigurationException, self).__init__(
-            new_message, *args, **kwargs
-        )
+        super(InvalidConfigurationException, self).__init__(new_message, *args, **kwargs)
 
 
 class Breakpoints(object):
-
     enabled = False
 
     @classmethod
     def factory(cls, options=None, active=False, fnp_config=None):  # pragma: no cover
-        fnp_config = fnp_config or getattr(options, OPTION_NAME, None)
+        fnp_config = fnp_config or getattr(options, "breakpoints", None)
         if fnp_config:
             try:
                 return Breakpoints(fnp_config, active)
@@ -997,12 +972,6 @@ class Breakpoints(object):
 
         try:
             breakpoints = self.config.get("breakpoints", {})
-            # logger.debug("\n"+"*" * 80)
-            # logger.debug("lookup:%s" % (lookup))
-            # logger.debug("caller_variables:%s" % (caller_variables))
-            # logger.debug("breakpoints:%s" % (breakpoints.keys()))
-            # logger.debug("*" * 80 + "\n")
-            # breakpoint()
 
             conditions = breakpoints.get(lookup, [])
 
@@ -1012,28 +981,36 @@ class Breakpoints(object):
             for condition_ in conditions:
                 # https://stackoverflow.com/questions/10832373/python-dictionary-match-key-values-in-two-dictionaries
                 # for possible alternatives
-                caller_status = dict(
-                    [
-                        (k, v)
-                        for k, v in caller_variables.items()
-                        if k in condition_.keys()
-                    ]
-                )
+                caller_status = dict([(k, v) for k, v in caller_variables.items() if k in condition_.keys()])
 
                 if condition_ == caller_status:
-                    logger.info(
-                        "breakpoint activated @%s for %s" % (lookup, condition_)
-                    )
+                    logger.info("breakpoint activated @%s for %s" % (lookup, condition_))
                     res = self.enabled = True
                     return res
 
             return False
 
-        except Exception as e:  # pragma: no cover
-            logger.error(repr(e)[:100])
+        except Exception as _e:  # pragma: no cover
+            logger.error(repr(_e)[:100])
             if cpdb():
                 breakpoint()
             raise
+
+    __call__ = breakpoint
+
+
+class DisabledBreakpoints(Breakpoints):  # pragma: no cover
+    "do-nothing"
+
+    active = enabled = False
+
+    __repr__ = def_repr
+
+    def __init__(self, *args, **kwds):
+        pass
+
+    def breakpoint(self, *args, **kwds):
+        pass
 
     __call__ = breakpoint
 
@@ -1047,18 +1024,16 @@ except NameError:
 
 
 def set_breakpoints3(recurse=True, fnp_config=None):
-
     """swap the dummy breakpoints for an active one"""
 
     # dont expect any coverage: explicitly disabled under pytest
     # pragma: no cover
 
     if fnp_config is None:
-
         argv = sys.argv
 
-        if not "-b" in argv:
-            print("no breakpoints")
+        if "-b" not in argv:
+            print("no breakpoints") # debugging
             return None
 
         pos_flag = argv.index("-b")
@@ -1066,9 +1041,9 @@ def set_breakpoints3(recurse=True, fnp_config=None):
         fnp_config = argv.pop(pos_flag + 1)
         _ = argv.pop(pos_flag)
 
-        print("fnp_config:%s" % (fnp_config))
-        print("_:", _)
-        print("sys.argv:%s" % (sys.argv))
+        print("fnp_config:%s" % (fnp_config)) # debugging
+        print("_:", _) # debugging
+        print("sys.argv:%s" % (sys.argv)) # debugging
 
     breakpoints = Breakpoints.factory(fnp_config=fnp_config, active=True)
     if breakpoints.active:
@@ -1090,7 +1065,7 @@ class UnavailableLibrary:
         try:
             from yaml import dump as ydump
         #use this to get a path to the client module
-        except (ImportError,) as e:
+        except (ImportError,) as _e:
             class Foo:
                 pass
 
@@ -1134,76 +1109,6 @@ You need to install it before using {self.name}
 TimedValue = namedtuple("TimedValue", "time_in value")
 
 
-class CacheDict(MutableMapping):
-    def __init__(self, timetolive, **kwargs):
-        self.timetolive = timetolive
-        self.mapping = {}
-        self.update(kwargs)
-
-    def _check_age(self, key, res, purge=False):
-        try:
-
-            is_ok = (time() - res.time_in) <= self.timetolive
-
-            if not is_ok and purge:
-                self.mapping.pop(key, None)
-
-            return is_ok
-
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
-            if cpdb():
-                breakpoint()
-            raise
-
-    def __getitem__(self, key):
-        try:
-
-            res = self.mapping[key]
-            if not self._check_age(key, res, True):
-                raise KeyError
-
-            return res.value
-        # pragma: no cover pylint: disable=unused-variable
-        except (KeyError,) as e:
-            raise
-        except (Exception,) as e:
-            if cpdb():
-                breakpoint()
-            raise
-
-    def __delitem__(self, key):
-        try:
-            del self.mapping[key]
-        # pragma: no cover pylint: disable=unused-variable
-        except (KeyError,) as e:
-            pass
-
-    def __setitem__(self, key, value):
-        tvalue = TimedValue(time(), value)
-        self.mapping[key] = tvalue
-
-    def __iter__(self):
-
-        keys = iter(self.mapping)
-
-        for key in iter(self.mapping):
-            if self._check_age(key, self.mapping[key]):
-                yield key
-            else:
-                continue
-
-    def __len__(self):
-        cntr = 0
-        for v in self.mapping.values():
-            if self._check_age(None, v):
-                cntr += 1
-        return cntr
-
-    def __repr__(self):
-        return f"{type(self).__name__}({self.mapping})"
-
-
 def debug_nested_dict_types(di, path=""):
     """mostly used to figure out annoying YAML/JSON dump problems"""
 
@@ -1212,14 +1117,13 @@ def debug_nested_dict_types(di, path=""):
         if isinstance(v, dict):
             debug_nested_dict_types(v, f"{path}.{k}")
         else:
-            print(f"{path}.{k} : {type(v)}")
+            print(f"{path}.{k} : {type(v)}") # debugging
 
 
 def copytree(src, dst, symlinks=False, ignore=None):
     """shamelessly copied from https://stackoverflow.com/a/22331852"""
 
     try:
-
         # support pathlib.Path
         src = str(src)
         dst = str(dst)
@@ -1242,15 +1146,15 @@ def copytree(src, dst, symlinks=False, ignore=None):
                     st = os.lstat(s)
                     mode = stat.S_IMODE(st.st_mode)
                     os.lchmod(d, mode)
-                except:
+                except Exception:
                     pass  # lchmod not available
             elif os.path.isdir(s):
                 copytree(s, d, symlinks, ignore)
             else:
                 shutil.copy2(s, d)
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
@@ -1311,7 +1215,6 @@ class YAMLAncestorLoader:
     def load(self, ignore_in=None):
         "load data and merge as necessary"
         try:
-
             ignore = ignore_in or self.ignore
 
             with self.pa_yaml.open() as fi:
@@ -1328,8 +1231,8 @@ class YAMLAncestorLoader:
 
             return data
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as _e:
             if cpdb():
                 breakpoint()
             raise
@@ -1368,16 +1271,16 @@ def oshow(self, nesting="", file=None, private=False):
         plocal = not file
         file = file or StringIO()
 
-        print(nesting, f"{repr(self)}", file=file)
+        print(nesting, f"{repr(self)}", file=file) # debugging
 
         try:
             dict_ = self.dict()
-        # pragma: no cover pylint: disable=unused-variable
-        except (AttributeError,) as e:
+        # pragma: no cover
+        except (AttributeError,) as _e:
             dict_ = self.__dict__.copy()
 
         skipshow = getattr(self, "skipshow", [])
-        dict_ = {k: v for k, v in self.__dict__.items() if not k in skipshow}
+        dict_ = {k: v for k, v in self.__dict__.items() if k not in skipshow}
 
         if not private:
             dict_ = {k: v for k, v in dict_.items() if not k.startswith("_")}
@@ -1389,21 +1292,18 @@ def oshow(self, nesting="", file=None, private=False):
         indent = nesting + "  "
 
         out = StringIO()
-        pprint.pprint(dict_, out, width=1)
+        pprint.pprint(dict_, out, width=1) #debugging
         for line in out.getvalue().splitlines():
-            print(indent, f"  {line}", file=file)
+            print(indent, f"  {line}", file=file) # debugging
 
         if plocal:
-            print(file.getvalue())
+            print(file.getvalue()) # debugging
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise
-
-
-from _pickle import PicklingError
 
 
 def dropbad_dump(obj, fdump, seen: set | None = None):
@@ -1419,59 +1319,51 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 
         seen.add(id_)
 
-        # _dropbad_dump = getattr(obj,"_dropbad_dump",None)
-        # if _dropbad_dump:
-        #     return obj._dropbad_dump()
-
-        # print(f"dropbad_dump({obj=})", flush=True)
         fdump(obj)
         return obj
-    # pragma: no cover pylint: disable=unused-variable
-    except (TypeError, ValueError, PicklingError) as e:
+    # pragma: no cover
+    except (TypeError, ValueError, PicklingError) as _e:
         res = {}
         if isinstance(obj, dict):
             for k, v in obj.items():
                 try:
                     fdump(v)
                     res[k] = v
-                # pragma: no cover pylint: disable=unused-variable
-                except (TypeError, ValueError, PicklingError) as e:
+                # pragma: no cover
+                except (TypeError, ValueError, PicklingError) as _e:
                     try:
                         safe = dropbad_dump(v, fdump=fdump, seen=seen)
                         res[k] = safe
-                    # pragma: no cover pylint: disable=unused-variable
-                    except (Exception,) as e:
+                    # pragma: no cover
+                    except (Exception,) as _e:
                         res[k] = str(v)
 
         elif hasattr(obj, "__iter__"):
             try:
                 res = []
-                # breakpoint() #🛑
                 pass
                 for v in obj:
                     try:
                         fdump(v)
                         res.append(v)
-                    # pragma: no cover pylint: disable=unused-variable
-                    except (TypeError, ValueError) as e:
+                    # pragma: no cover
+                    except (TypeError, ValueError) as _e:
                         res.append(dropbad_dump(v, fdump=fdump, seen=seen))
                 return res
-            except (TypeError, ValueError, KeyError) as e:
+            except (TypeError, ValueError, KeyError) as _e:
                 res = str(obj)
                 return res
 
         elif hasattr(obj, "__dict__"):
-
             for k, v in vars(obj).items():
                 try:
                     fdump(v)
                     res[k] = v
-                # pragma: no cover pylint: disable=unused-variable
-                except (TypeError, ValueError) as e:
+                # pragma: no cover
+                except (TypeError, ValueError) as _e:
                     safe = dropbad_dump(v, fdump=fdump, seen=seen)
                     res[k] = safe
         else:
-            # breakpoint() #🛑
             pass
             return {}
 
@@ -1480,7 +1372,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 
 def eprint(*args, **kwargs):
     """print to sys.stderr"""
-    print(*args, file=sys.stderr, **kwargs)
+    print(*args, file=sys.stderr, **kwargs) # debugging
 
 
 def format_url(url: str) -> str:
@@ -1491,8 +1383,8 @@ def format_url(url: str) -> str:
         res = urlunparse(parsed2)
         return res
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover
+    except (Exception,) as _e:
         if cpdb():
             breakpoint()
         raise

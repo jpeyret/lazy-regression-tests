@@ -1,9 +1,11 @@
 """ Django-specific validations"""
 
-from django.forms.utils import ErrorDict
 import unittest
 
-from lazy_regression_tests.validators import Validator, AutoExp
+from django.forms.utils import ErrorDict
+
+from lazy_regression_tests.basics import ValidationError
+from lazy_regression_tests.validators import AutoExp, Validator
 
 
 def cpdb(*args, **kwargs):
@@ -28,7 +30,7 @@ def check_form_errors(data: ErrorDict, testee: unittest.TestCase, validator: Val
 
             exp = expectations.pop(fieldname, None)
             if exp is None:
-                msg = f"{field=} unexpected error(s): {got}"
+                msg = f"{fieldname=} unexpected error(s): {got}"
                 raise ValidationError(msg, exp=exp, got=got, validator=validator)
 
             if isinstance(exp, str):
@@ -37,7 +39,7 @@ def check_form_errors(data: ErrorDict, testee: unittest.TestCase, validator: Val
                 exp = set(exp)
 
             if exp != got:
-                msg = f"{field=} unexpected error(s): {got}"
+                msg = f"{fieldname=} unexpected error(s): {got}"
                 raise ValidationError(msg, exp=exp, got=got, validator=validator)
 
         if expectations:
@@ -46,8 +48,8 @@ def check_form_errors(data: ErrorDict, testee: unittest.TestCase, validator: Val
 
         return 1
 
-    # pragma: no cover pylint: disable=unused-variable
-    except (Exception,) as e:
+    # pragma: no cover 
+    except (Exception,) as e: # noqa F841
         if cpdb():
             breakpoint()
         raise

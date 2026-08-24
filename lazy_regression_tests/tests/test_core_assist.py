@@ -1,36 +1,49 @@
 """ basic test """
 # -*- coding: utf-8 -*-
 import os
-import sys
 import re
+import sys
 import unittest
-from typing import Dict
-from pathlib import Path
 from operator import itemgetter
+from pathlib import Path
+from typing import Dict
+
+import lazy_regression_tests.common as common
+import lazy_regression_tests.core_assist2 as core_assist2
+import lazy_regression_tests.validators as validators
+import pydantic
 
 #################################################################
 # Dependencies
 #################################################################
-
-
 import pytest
-import pydantic
-
+from lazy_regression_tests.common import (
+    Auto,
+    ConfigurationException,
+    ExtAlias,
+    Filter,
+    ValidationError,
+)
+from lazy_regression_tests.core_assist2 import (
+    Checker,
+    FilterMgr,
+    LazyMixin,
+    _LazyMeta,
+)
+from lazy_regression_tests.filters import DictFilter
+from lazy_regression_tests.tests.helper_tst import (
+    TData,
+    TstMixin,
+    TstMixinSeeder,
+    check_keep,
+    get_fake_response_from_html,
+)
 
 # disable noisy linting...
 # the classes like Top, Level2, Level3... look unused, they are not
-# pylint: disable=unused-variable,unused-import,c-extension-no-member,superfluous-parens
-# pylint: disable=possibly-unused-variable,no-member
-
-
-from lazy_regression_tests.utils import (
-    set_cpdb,
-    set_rpdb,
-    set_breakpoints3,
-    ppp,
-    disable_cpdb,
-    force_verbose
-)
+#
+#
+from lazy_regression_tests.utils import disable_cpdb, force_verbose, set_breakpoints3, set_cpdb, set_rpdb
 
 
 def cpdb(*args, **kwargs):
@@ -43,38 +56,6 @@ if __name__ == "__main__":
     cpdb = set_cpdb()
     rpdb = set_rpdb()
     breakpoints = set_breakpoints3() or breakpoints
-
-from lazy_regression_tests.core_assist2 import (
-    _LazyMeta,
-    Filter,
-    FilterMgr,
-    LazyMixin,
-    Checker,
-)
-from lazy_regression_tests.filters import DictFilter
-
-# from lazy_tstmixin import TstMixin
-import lazy_regression_tests.core_assist2 as core_assist2
-import lazy_regression_tests.validators as validators
-
-import lazy_regression_tests.validators_http as validators_http
-import lazy_regression_tests.common as common
-
-
-from lazy_regression_tests.common import (
-    parse_pydantic_validation_error,
-    ConfigurationException,
-    ValidationError,
-    ExtAlias,
-    Auto,
-)
-from lazy_regression_tests.tests.helper_tst import (
-    TData,
-    TstMixinSeeder,
-    get_fake_response_from_html,
-    TstMixin,
-    check_keep,
-)
 
 
 # environment control of certain tests
@@ -140,8 +121,8 @@ class Base(TstMixin, TstMixinSeeder, unittest.TestCase):
             classes = self.get_classes_oi(locals())
             return {cls_.__name__: cls_ for cls_ in classes}
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -171,8 +152,8 @@ class Test_Dict(Base):
             res = {cls_.__name__: cls_ for cls_ in classes}
             return res
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -192,7 +173,7 @@ class Test_Dict(Base):
         try:
 
             if sys.argv[0].endswith("pytest"):
-                print("skip test with pytest")
+                print("skip test with pytest") # debugging
                 return
 
             di_cls = self.gen_test_classes()
@@ -205,15 +186,15 @@ class Test_Dict(Base):
             lz = testee._lz
             checker = getattr(lz, self.ext, None)
             if not checker:
-                print(f"{self} {testee=}.lz has no {self.ext}")
+                print(f"{self} {testee=}.lz has no {self.ext}") # debugging
                 return
 
             self.seed(data, checker=checker, testee=testee)
             data["skip21"] = "?"
             checker.assert_same(data)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -242,8 +223,8 @@ class Test_Dict(Base):
             s_exp = checker.provider.datain_to_str(di_exp, checker=checker)
             self.assertEqual(s_exp, s_got)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -265,7 +246,6 @@ class Test_Dict(Base):
             self.assertIs(checker.filters[0], checker.f.named_filters[nameoi])
 
             input_ = self.input1.copy()
-            b_input = input_.copy()
 
             di_exp = {k: v for k, v in input_.items() if not k.startswith("skip")}
             s_got = filter_(input_)
@@ -281,8 +261,8 @@ class Test_Dict(Base):
                 for key in di.keys():
                     self.assertTrue(key.startswith("skip"))
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -313,8 +293,8 @@ class Test_Json(Test_Dict):
 
             return res
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -325,7 +305,7 @@ class Test_InvertActivate(Base):
 
     text1 = """
 abc
-def 
+def
 ghik
 klm
 abcdefxx
@@ -362,9 +342,8 @@ careamouseghidef
 
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
-                # self.fail(f"shoulda failed. bad function signature {bad_func}")
-            # pragma: no cover pylint: disable=unused-variable
-            except (ValueError, pydantic.ValidationError) as e:
+            # pragma: no cover
+            except (ValueError, pydantic.ValidationError) as e: # noqa F841
                 pass
 
             def bad_func2(a: str) -> dict:
@@ -373,7 +352,7 @@ careamouseghidef
 
             try:
 
-                with disable_cpdb() as con:
+                with disable_cpdb() as con: # noqa F841
                     with pytest.raises(ConfigurationException):
 
                         class Bad2(metaclass=_LazyMeta):
@@ -381,14 +360,14 @@ careamouseghidef
 
                             cls_filters = dict(txt=[dict(f=bad_func)])
 
-            # pragma: no cover pylint: disable=unused-variable
-            except (pydantic.ValidationError,) as e:
+            # pragma: no cover
+            except (pydantic.ValidationError,) as e: # noqa F841
                 pass
-            except (ValueError,) as e:
+            except (ValueError,) as e: # noqa F841
                 self.assertTrue("expecting" in str(e))
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -407,7 +386,6 @@ careamouseghidef
 
             testee = clsoi()
 
-            #🎫004.lazy.054.underscore_lz
             got = testee._lz.txt.f(self.text1)
 
             self.assertFalse("abc" in got)
@@ -419,24 +397,22 @@ careamouseghidef
             # and a direct descendant of Top, no alterations to cls_filters, should work just like it.
             testee2 = di_gen["DirectTop"]()
 
-            #🎫004.lazy.054.underscore_lz
             got = testee2._lz.txt.f(self.text1)
             self.assertEqual(exp, got)
 
             clsoi = di_gen["Level3"]
             testee = clsoi()
 
-            #🎫004.lazy.054.underscore_lz
             got = testee._lz.txt.f(self.text1)
 
             exp = self.get_filter_exp(
-                self.text1, lambda line: ("abc" in line) or not ("ghi" in line)
+                self.text1, lambda line: ("abc" in line) or "ghi" not in line
             )
 
             self.assertEqual(exp, got)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -446,10 +422,6 @@ careamouseghidef
         try:
             di_gen = self.gen_test_classes()
             clsoi = di_gen["Named"]
-
-            exp = self.get_filter_exp(
-                self.text1, lambda line: ("abc" in line) or not ("ghi" in line)
-            )
 
             testee = clsoi()
 
@@ -463,8 +435,8 @@ careamouseghidef
 
             self.assertFalse("ghi" in got)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -501,7 +473,7 @@ careamouseghidef
             core_assist2.verbose = ori
 
         # pragma: no cover
-        except (Exception,) as e:
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -515,7 +487,7 @@ class Test_LazyRoot(Base):
         try:
             # don't need to assume too much about the internals of core_assist
             # so lets keep this import limited to the test
-            # pylint: disable=import-outside-toplevel
+            #
             from lazy_regression_tests.core_assist2 import LazyRoot
 
             classes = self.gen_test_classes()
@@ -532,8 +504,8 @@ class Test_LazyRoot(Base):
             inst_root = lz.clone()
             self.assertEqual(inst_root.txt.ext, lz.txt.ext)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -566,14 +538,14 @@ class Test_Actual(unittest.TestCase):
             try:
                 tester.test_bad()
                 self.fail("Tester.test_bad() should have failed on ")
-            # pragma: no cover pylint: disable=unused-variable
-            except (AssertionError,) as e:
+            # pragma: no cover
+            except (AssertionError,) as e: # noqa F841
                 pass
 
             tester.test_good()
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -610,8 +582,8 @@ class BaseValidatorTst(Base):
             classes = self.get_classes_oi(locals())
             return {cls_.__name__: cls_ for cls_ in classes}
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -664,13 +636,10 @@ class Test_Validator(BaseValidatorTst):
             testee = Level3()
 
             checker = testee._lz.dict
-
-            lvalidators = checker.validators
-
             checker.v(data)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -697,25 +666,22 @@ class Test_Validator(BaseValidatorTst):
             self.assertFalse(got)
 
             try:
-                with disable_cpdb() as con:
-                    missing = lz.missing
+                with disable_cpdb() as con: # noqa F841
                     self.fail("`missing` should fail AttributeError")
-            except (AttributeError,) as e:
+            except (AttributeError,) as e: # noqa F841
                 pass
 
-            validator = lz.txt.v
 
             testee = clsoi()
-            # testee._lz.txt.v.testee = testee
 
             try:
                 data = "addxc"
                 with disable_cpdb():
                     testee._lz.txt.v(data)
                 self.fail(f"abc presence test shoulda failed on {data}")
-            except (AssertionError,) as e:
+            except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"ok{self}.expected error: {e}") # debugging
 
             data = "abcd"
             v = testee._lz.txt.v
@@ -742,13 +708,13 @@ class Test_Validator(BaseValidatorTst):
                 with disable_cpdb():
                     checker.v(data2)
                 self.fail(f"abc presence test shoulda failed on {data2}")
-            # pragma: no cover pylint: disable=unused-variable
-            except (AssertionError,) as e:
+            # pragma: no cover
+            except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"ok{self}.expected error: {e}") # debugging
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if testee:
                 testee._lz.show()
             if cpdb():
@@ -768,10 +734,8 @@ class Test_Validator(BaseValidatorTst):
                 "check that you can build a class dynamically once more"
                 cls_validators = dict(txt=[dict(name=valname, active=False)])
 
-            #🎫004.lazy.054.underscore_lz
             self.assertTrue(DynTest._lz.txt.v)
 
-            #🎫004.lazy.054.underscore_lz
             self.assertFalse(DynTest._lz.txt.validators[valname].active)
 
             testee = DynTest()
@@ -792,9 +756,9 @@ class Test_Validator(BaseValidatorTst):
                 with disable_cpdb():
                     testee._lz.txt.v("xxx")
                     raiser("abc presence validator has no validation function")
-            except (AssertionError) as e:
+            except (AssertionError) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"ok{self}.expected error: {e}") # debugging
 
             validator = testee._lz.txt.validators["abc_in_data"]
 
@@ -805,14 +769,14 @@ class Test_Validator(BaseValidatorTst):
             try:
                 with disable_cpdb():
                     testee._lz.txt.v("xxx")
-            except (AssertionError,) as e:
+            except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅{self}.expected error: {e}")
+                    print(f"ok{self}.expected error: {e}") # debugging
 
             testee._lz.txt.v("xabcd")
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -829,18 +793,15 @@ class Test_Validator(BaseValidatorTst):
             class TstBase(unittest.TestCase, metaclass=_LazyMeta):
                 """we know we want to test a status code"""
 
-                # status_code = 200
                 cls_validators = dict(yaml=[valstatus])
 
             missing_validator = TstBase()
             missing_validator.status_code = 500
             foob = TData(status_code=200)
 
-            #🎫004.lazy.054.underscore_lz
             checker = missing_validator._lz.yaml
 
             with disable_cpdb() as disabled:
-                # with disable_cpdb() as disabled:
                 with pytest.raises(
                     (ValidationError, pydantic.ValidationError)
                 ):
@@ -853,7 +814,6 @@ class Test_Validator(BaseValidatorTst):
 
             # reactivate the validator, set to check Validator.exp == data
             checker.validators["status_code"].active = True
-            # checker.validators["status_code"].v = validators.check_equal
 
             with disable_cpdb() as disabled:
                 with pytest.raises((AssertionError, ConfigurationException)):
@@ -878,7 +838,7 @@ class Test_Validator(BaseValidatorTst):
             foo404badtype = TData(status_code="404")
 
             with force_verbose(validators):
-                with disable_cpdb() as disabled:
+                with disable_cpdb() as disabled:  # noqa F841
                     with pytest.raises(AssertionError):
                         checker.v(foo404badtype)
 
@@ -896,8 +856,8 @@ class Test_Validator(BaseValidatorTst):
 
             checker.v(dict(status_code=404))
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -910,8 +870,8 @@ class Test_Validator(BaseValidatorTst):
             def equality_check(data, validator):
                 try:
                     return validator.exp == data
-                # pragma: no cover pylint: disable=unused-variable
-                except (Exception,) as e:
+                # pragma: no cover
+                except (Exception,) as e: # noqa F841
                     if cpdb():
                         breakpoint()
                     raise
@@ -941,8 +901,8 @@ class Test_Validator(BaseValidatorTst):
                 with disable_cpdb():
                     checker.v(response)
                 raise AssertionError("shoulda failed on 404")
-            # pragma: no cover pylint: disable=unused-variable
-            except (AssertionError,) as e:
+            # pragma: no cover
+            except (AssertionError,) as e: # noqa F841
                 pass
 
             response = get_fake_response_from_html()
@@ -951,7 +911,6 @@ class Test_Validator(BaseValidatorTst):
             valname = "status_code"
 
             class TstOKEqual(metaclass=_LazyMeta):
-                # class TstOK(TstBase, unittest.TestCase):
                 cls_validators = dict(
                     html=[
                         dict(
@@ -978,8 +937,8 @@ class Test_Validator(BaseValidatorTst):
             foo2 = get_fake_response_from_html(status=200)
             checker.v(foo2)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1012,13 +971,13 @@ class Test_Validator(BaseValidatorTst):
 
             try:
                 checker.v(data)
-            # pragma: no cover pylint: disable=unused-variable
-            except (AssertionError,) as e:
+            # pragma: no cover
+            except (AssertionError,) as e: # noqa F841
                 if verbose:
-                    print(f"✅ expected failure {e} for {data=}")
+                    print(f"ok expected failure {e} for {data=}") # debugging
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1069,8 +1028,8 @@ class Test_ValidatorMgr_Stacking(Base):
 
             self.di_vbase = {v.name: v for v in self.validation_manager_http.validators}
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1081,8 +1040,8 @@ class Test_ValidatorMgr_Stacking(Base):
             self.assertEqual(None, di[self.name_contenttype].exp)
             self.assertEqual(self.ok, di[self.name_status].exp)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1140,9 +1099,6 @@ class Test_ValidatorMgr_Stacking(Base):
             with pytest.raises(ConfigurationException) as tmp:
                 v(data)
 
-            # di_error = parse_pydantic_validation_error(tmp)
-            # msg = di_error.get("v", {}).get("msg")
-            # self.assertIn("v is missing", msg)
 
             # deactivate json validation
             testee._lz.json.validators[self.name_valjson].active = False
@@ -1150,7 +1106,6 @@ class Test_ValidatorMgr_Stacking(Base):
             # now we are missing status_code on data
             delattr(testee, "status_code")
 
-            # with pytest.raises(validators.ConfigurationException) as tmp:
             v(data)
 
             self.assertEqual(tmp._excinfo[0], validators.ConfigurationException)
@@ -1163,15 +1118,14 @@ class Test_ValidatorMgr_Stacking(Base):
             with pytest.raises(tu_exp_exc) as tmp:
                 v(data)
 
-            # self.assertEqual(tmp._excinfo[0], validators.ValidationError)
             self.assertIn(self.name_status, str(tmp._excinfo[1]))
 
             # should pass
             data.status_code = 404
             v(data)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1182,10 +1136,8 @@ class Test_ValidatorMgr_Stacking(Base):
         try:
             mgr = self.validation_manager_http.extend(
                 validators.Validator(name=self.name_contenttype, exp=self.content_html),
-                # ext=self.ext_html,
             )
 
-            # self.assertEqual(self.ext_html, mgr.ext)
 
             di_v = {v.name: v for v in mgr.validators}
 
@@ -1214,8 +1166,8 @@ class Test_ValidatorMgr_Stacking(Base):
             )
             checker.v(data)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1241,8 +1193,8 @@ class Test_ValidatorMgr_Stacking(Base):
                     di_v[name].selector, f"selector missing on {di_v[name]}"
                 )
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1328,8 +1280,8 @@ class Test_Aliasing(Base):
             res = {cls_.__name__: cls_ for cls_ in classes}
             return res
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1359,8 +1311,8 @@ class Test_Aliasing(Base):
             data = data or self.input1.copy()
 
             return testee, data
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1375,9 +1327,8 @@ class Test_Aliasing(Base):
             with pytest.raises(common.ValidationError):
                 checker.v(data)
 
-            # raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1390,8 +1341,8 @@ class Test_Aliasing(Base):
             checker = testee._lz.settings
             checker.v(data)
 
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1404,9 +1355,8 @@ class Test_Aliasing(Base):
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
-            # raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1419,9 +1369,8 @@ class Test_Aliasing(Base):
             self.assertEqual(checker.alias, "json")
             checker.v(data)
 
-            # raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1437,9 +1386,8 @@ class Test_Aliasing(Base):
             with pytest.raises(common.ValidationError):
                 checker.v(data)
 
-            # raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1451,9 +1399,8 @@ class Test_Aliasing(Base):
             checker = testee._lz.json
             checker.v(data)
 
-            # raise NotImplementedError()
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
@@ -1469,7 +1416,6 @@ verbose = False
 
 if __name__ == "__main__":
 
-    # if __name__ == "__main__":
     cpdb = set_cpdb()
     rpdb = set_rpdb()
 

@@ -1,8 +1,9 @@
-from typing import Any, Callable
-import lazy_regression_tests.providers as providers
-from lazy_regression_tests.common import LazyTemp, ConfigurationException
+from typing import Any
 
 import sqlparse
+
+import lazy_regression_tests.providers as providers
+from lazy_regression_tests.common import Checker, ConfigurationException, LazyTemp
 
 
 def cpdb(*args, **kwargs):
@@ -21,7 +22,7 @@ class SQL_Provider(providers.PAbstractExtProvider):
     TYPE_RAW = str
 
     @classmethod
-    def datain_to_str(cls, data: Any, checker: "Checker", temp: LazyTemp = None) -> str:
+    def datain_to_str(cls, data: Any, checker: Checker, temp: LazyTemp = None) -> str:
         """data to str"""
         try:
 
@@ -35,13 +36,13 @@ class SQL_Provider(providers.PAbstractExtProvider):
 
             data = sqlparse.format(data, reindent=True, keyword_case="upper")
             return data
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover 
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
 
-    def prep_rawdata(self, checker: "Checker", data: Any) -> Any:
+    def prep_rawdata(self, checker: Checker, data: Any) -> Any:
         """convert data if needed"""
         try:
 
@@ -49,8 +50,8 @@ class SQL_Provider(providers.PAbstractExtProvider):
                 return data
 
             raise ConfigurationException(f"{self}.unsupported data type {type(data)=}")
-        # pragma: no cover pylint: disable=unused-variable
-        except (Exception,) as e:
+        # pragma: no cover 
+        except (Exception,) as e: # noqa F841
             if cpdb():
                 breakpoint()
             raise
