@@ -201,7 +201,6 @@ def set_rpdb(rpdb_in=None, remove=True, recurse=True, *kwargs):
 
         cache["rpdb_enabled"] = 1
 
-
     if recurse:
         for module in list(sys.modules.values()):
             try:
@@ -271,8 +270,9 @@ def set_cpdb(cpdb_in=None, remove=True, recurse=True, boolvalue=None) -> Callabl
                 try:
                     # this checks if it's likely to be cpdb, not something w same name
                     existing = getattr(module, "cpdb", None)
+                    _doc = (existing.__doc__ or "").lower()
                     if existing:
-                        if not ("disabled" in existing.__doc__ or "do-nothing" in existing.__doc__):
+                        if not ("disabled" in _doc or "do-nothing" in _doc):
                             continue
                         module.cpdb = real_cpdb
                 except AttributeError:  # pragma: no cover
@@ -299,7 +299,7 @@ def ppp(o=None, header=None, skip=[], **kwargs):
             header = "[%s %s]" % (type(o), repr(o))
 
     msg = debugObject(o, header, li_skipfield=skip)
-    print(msg) # debugging
+    print(msg)  # debugging
 
 
 def stripdict(di, *args):
@@ -373,8 +373,6 @@ def debugObject(
             linefeed=linefeed,
             truncate=truncate,
         )
-
-
 
 
 def debugDict(
@@ -545,7 +543,7 @@ class Subber(object):
                 except AttributeError:  # pragma: no cover
                     continue
 
-            except (AttributeError, TypeError):
+            except AttributeError, TypeError:
                 # no __getitem__, try getattr
                 try:
                     got = getattr(arg, key)
@@ -872,7 +870,6 @@ class DictFormatter:
                     continue
 
                 elif isinstance(v, dict):
-
                     func_fmt = di_formatter[key]
                     if isinstance(func_fmt, dict):
                         if keep is not None:
@@ -1033,7 +1030,7 @@ def set_breakpoints3(recurse=True, fnp_config=None):
         argv = sys.argv
 
         if "-b" not in argv:
-            print("no breakpoints") # debugging
+            print("no breakpoints")  # debugging
             return None
 
         pos_flag = argv.index("-b")
@@ -1041,9 +1038,9 @@ def set_breakpoints3(recurse=True, fnp_config=None):
         fnp_config = argv.pop(pos_flag + 1)
         _ = argv.pop(pos_flag)
 
-        print("fnp_config:%s" % (fnp_config)) # debugging
-        print("_:", _) # debugging
-        print("sys.argv:%s" % (sys.argv)) # debugging
+        print("fnp_config:%s" % (fnp_config))  # debugging
+        print("_:", _)  # debugging
+        print("sys.argv:%s" % (sys.argv))  # debugging
 
     breakpoints = Breakpoints.factory(fnp_config=fnp_config, active=True)
     if breakpoints.active:
@@ -1117,7 +1114,7 @@ def debug_nested_dict_types(di, path=""):
         if isinstance(v, dict):
             debug_nested_dict_types(v, f"{path}.{k}")
         else:
-            print(f"{path}.{k} : {type(v)}") # debugging
+            print(f"{path}.{k} : {type(v)}")  # debugging
 
 
 def copytree(src, dst, symlinks=False, ignore=None):
@@ -1271,7 +1268,7 @@ def oshow(self, nesting="", file=None, private=False):
         plocal = not file
         file = file or StringIO()
 
-        print(nesting, f"{repr(self)}", file=file) # debugging
+        print(nesting, f"{repr(self)}", file=file)  # debugging
 
         try:
             dict_ = self.dict()
@@ -1292,12 +1289,12 @@ def oshow(self, nesting="", file=None, private=False):
         indent = nesting + "  "
 
         out = StringIO()
-        pprint.pprint(dict_, out, width=1) #debugging
+        pprint.pprint(dict_, out, width=1)  # debugging
         for line in out.getvalue().splitlines():
-            print(indent, f"  {line}", file=file) # debugging
+            print(indent, f"  {line}", file=file)  # debugging
 
         if plocal:
-            print(file.getvalue()) # debugging
+            print(file.getvalue())  # debugging
 
     # pragma: no cover
     except (Exception,) as _e:
@@ -1372,7 +1369,7 @@ def dropbad_dump(obj, fdump, seen: set | None = None):
 
 def eprint(*args, **kwargs):
     """print to sys.stderr"""
-    print(*args, file=sys.stderr, **kwargs) # debugging
+    print(*args, file=sys.stderr, **kwargs)  # debugging
 
 
 def format_url(url: str) -> str:
