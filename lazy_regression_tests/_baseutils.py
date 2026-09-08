@@ -543,7 +543,7 @@ class Subber(object):
                 except AttributeError:  # pragma: no cover
                     continue
 
-            except AttributeError, TypeError:
+            except (AttributeError, TypeError) as _e:
                 # no __getitem__, try getattr
                 try:
                     got = getattr(arg, key)
